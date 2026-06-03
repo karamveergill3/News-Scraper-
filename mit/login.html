@@ -59,15 +59,15 @@ body{background:#0d0d0d;color:#f2f0eb;font-family:'Inter',sans-serif;min-height:
 </div>
 <script>
 const SB_URL = 'https://xglnoorboeuiozwhdhde.supabase.co'
-const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhnbG5vb3Jib2V1aW96d2hkaGRlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MTAwNjIsImV4cCI6MjA5NjA4NjA2Mn0.TdK2R3wjp9mfmbE593uXJ6MJ0VvWyuzrAEFOQSlAUCI'
+const SB_KEY = 'REPLACE_ANON_KEY'
 const sb = window.supabase.createClient(SB_URL, SB_KEY)
 
 async function init() {
   const { data: { session } } = await sb.auth.getSession()
   if (!session) return
   const { data: p } = await sb.from('profiles').select('*').eq('id', session.user.id).single()
-  if (p?.is_admin || p?.status === 'approved') location.href = '/mit/index.html'
-  else location.href = '/mit/pending.html'
+  if (p?.is_admin || p?.status === 'approved') location.href = '/index.html'
+  else location.href = '/pending.html'
 }
 init()
 
@@ -88,8 +88,8 @@ async function signIn() {
   if (error) { msg.textContent = error.message; msg.className = 'msg error'; btn.disabled = false; btn.textContent = 'Sign In'; return }
   const { data: { user } } = await sb.auth.getUser()
   const { data: p } = await sb.from('profiles').select('*').eq('id', user.id).single()
-  if (p?.is_admin || p?.status === 'approved') location.href = '/mit/index.html'
-  else location.href = '/mit/pending.html'
+  if (p?.is_admin || p?.status === 'approved') location.href = '/index.html'
+  else location.href = '/pending.html'
 }
 
 async function signUp() {
@@ -104,7 +104,7 @@ async function signUp() {
   if (error) { msg.textContent = error.message; msg.className = 'msg error'; btn.disabled = false; btn.textContent = 'Request Access'; return }
   msg.textContent = 'Request submitted! You will be notified when approved.'; msg.className = 'msg success'
   btn.textContent = 'Request Sent ✓'
-  setTimeout(() => location.href = '/mit/pending.html', 2000)
+  setTimeout(() => location.href = '/pending.html', 2000)
 }
 </script>
 </body>
