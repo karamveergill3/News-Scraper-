@@ -1,7 +1,7 @@
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
 
 const supabaseUrl = 'https://xglnoorboeuiozwhdhde.supabase.co'
-const supabaseAnonKey = 'YOUR_ANON_KEY_HERE'
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhnbG5vb3Jib2V1aW96d2hkaGRlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MTAwNjIsImV4cCI6MjA5NjA4NjA2Mn0.TdK2R3wjp9mfmbE593uXJ6MJ0VvWyuzrAEFOQSlAUCI'
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
