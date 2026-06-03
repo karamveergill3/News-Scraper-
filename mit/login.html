@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MarketIntel — Sign In</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:#0d0d0d;color:#f2f0eb;font-family:'Inter',sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
@@ -13,129 +13,98 @@ body{background:#0d0d0d;color:#f2f0eb;font-family:'Inter',sans-serif;min-height:
 .logo{font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:700;letter-spacing:-1px;margin-bottom:6px}
 .logo span{color:#22c77a}
 .tagline{font-size:13px;color:#5a5a58;margin-bottom:36px;line-height:1.5}
-.tabs{display:flex;gap:0;margin-bottom:28px;border-bottom:1px solid rgba(255,255,255,0.08)}
-.tab{flex:1;padding:10px;text-align:center;font-size:13px;font-weight:500;color:#5a5a58;cursor:pointer;border-bottom:2px solid transparent;transition:all 0.15s;margin-bottom:-1px;background:none;border-left:none;border-right:none;border-top:none;font-family:'Inter',sans-serif}
+.tabs{display:flex;margin-bottom:28px;border-bottom:1px solid rgba(255,255,255,0.08)}
+.tab{flex:1;padding:10px;text-align:center;font-size:13px;font-weight:500;color:#5a5a58;cursor:pointer;border:none;border-bottom:2px solid transparent;background:none;font-family:'Inter',sans-serif;margin-bottom:-1px;transition:all 0.15s}
 .tab.active{color:#22c77a;border-bottom-color:#22c77a}
 .form{display:flex;flex-direction:column;gap:14px}
 .field label{display:block;font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#5a5a58;margin-bottom:6px}
 .field input{width:100%;background:#141414;border:1px solid rgba(255,255,255,0.1);color:#f2f0eb;font-family:'Inter',sans-serif;font-size:14px;padding:11px 14px;border-radius:8px;outline:none;transition:border-color 0.15s}
 .field input:focus{border-color:#22c77a}
 .field input::placeholder{color:#3a3a38}
-.btn-submit{width:100%;background:#22c77a;color:#000;border:none;font-family:'Inter',sans-serif;font-size:14px;font-weight:600;padding:12px;border-radius:8px;cursor:pointer;transition:opacity 0.15s;margin-top:4px}
-.btn-submit:hover{opacity:0.85}
-.btn-submit:disabled{opacity:0.4;cursor:not-allowed}
+.btn{width:100%;background:#22c77a;color:#000;border:none;font-family:'Inter',sans-serif;font-size:14px;font-weight:600;padding:12px;border-radius:8px;cursor:pointer;transition:opacity 0.15s;margin-top:4px}
+.btn:hover{opacity:0.85}
+.btn:disabled{opacity:0.4;cursor:not-allowed}
 .msg{font-size:12px;padding:10px 12px;border-radius:8px;margin-top:4px;display:none}
 .msg.error{background:rgba(240,68,68,0.12);color:#f04444;border:1px solid rgba(240,68,68,0.2);display:block}
 .msg.success{background:rgba(34,199,122,0.12);color:#22c77a;border:1px solid rgba(34,199,122,0.2);display:block}
-.divider{text-align:center;font-size:11px;color:#3a3a38;margin:4px 0}
-.rejected-banner{background:rgba(240,68,68,0.12);border:1px solid rgba(240,68,68,0.2);color:#f04444;padding:12px;border-radius:8px;font-size:13px;margin-bottom:20px;display:none}
+.note{text-align:center;font-size:11px;color:#3a3a38;margin-top:8px}
 </style>
 </head>
 <body>
 <div class="box">
   <div class="logo">Market<span>Intel</span></div>
   <div class="tagline">Multi-asset market intelligence terminal.<br>Sign in or request access below.</div>
-
-  <div id="rejectedBanner" class="rejected-banner">Your access request was not approved. Contact the administrator.</div>
-
   <div class="tabs">
-    <button class="tab active" onclick="showTab('signin')">Sign In</button>
-    <button class="tab" onclick="showTab('signup')">Request Access</button>
+    <button class="tab active" onclick="showTab('signin',this)">Sign In</button>
+    <button class="tab" onclick="showTab('signup',this)">Request Access</button>
   </div>
-
-  <!-- SIGN IN -->
   <div id="signinForm">
     <div class="form">
-      <div class="field">
-        <label>Email</label>
-        <input type="email" id="siEmail" placeholder="your@email.com">
-      </div>
-      <div class="field">
-        <label>Password</label>
-        <input type="password" id="siPassword" placeholder="••••••••">
-      </div>
+      <div class="field"><label>Email</label><input type="email" id="siEmail" placeholder="your@email.com"></div>
+      <div class="field"><label>Password</label><input type="password" id="siPassword" placeholder="••••••••"></div>
       <div id="siMsg" class="msg"></div>
-      <button class="btn-submit" onclick="signIn()" id="siBtn">Sign In</button>
+      <button class="btn" id="siBtn" onclick="signIn()">Sign In</button>
     </div>
   </div>
-
-  <!-- SIGN UP -->
   <div id="signupForm" style="display:none">
     <div class="form">
-      <div class="field">
-        <label>Full Name</label>
-        <input type="text" id="suName" placeholder="Your name">
-      </div>
-      <div class="field">
-        <label>Email</label>
-        <input type="email" id="suEmail" placeholder="your@email.com">
-      </div>
-      <div class="field">
-        <label>Password</label>
-        <input type="password" id="suPassword" placeholder="Min 8 characters">
-      </div>
+      <div class="field"><label>Full Name</label><input type="text" id="suName" placeholder="Your name"></div>
+      <div class="field"><label>Email</label><input type="email" id="suEmail" placeholder="your@email.com"></div>
+      <div class="field"><label>Password</label><input type="password" id="suPassword" placeholder="Min 8 characters"></div>
       <div id="suMsg" class="msg"></div>
-      <button class="btn-submit" onclick="signUp()" id="suBtn">Request Access</button>
-      <div class="divider">Your request will be reviewed before you can access the dashboard</div>
+      <button class="btn" id="suBtn" onclick="signUp()">Request Access</button>
+      <div class="note">Your request will be reviewed before you can access the dashboard</div>
     </div>
   </div>
 </div>
+<script>
+const SB_URL = 'https://xglnoorboeuiozwhdhde.supabase.co'
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhnbG5vb3Jib2V1aW96d2hkaGRlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MTAwNjIsImV4cCI6MjA5NjA4NjA2Mn0.TdK2R3wjp9mfmbE593uXJ6MJ0VvWyuzrAEFOQSlAUCI'
+const sb = window.supabase.createClient(SB_URL, SB_KEY)
 
-<script type="module">
-import { supabase } from './lib/supabase.js'
-
-// Check if rejected
-const params = new URLSearchParams(window.location.search)
-if (params.get('rejected')) document.getElementById('rejectedBanner').style.display = 'block'
-
-// Check if already logged in
-const { data: { session } } = await supabase.auth.getSession()
-if (session) {
-  const { data: profile } = await supabase.from('profiles').select('*').eq('id', session.user.id).single()
-  if (profile?.status === 'approved') window.location.href = '/index.html'
-  else if (profile?.status === 'pending') window.location.href = '/pending.html'
+async function init() {
+  const { data: { session } } = await sb.auth.getSession()
+  if (!session) return
+  const { data: p } = await sb.from('profiles').select('*').eq('id', session.user.id).single()
+  if (p?.is_admin || p?.status === 'approved') location.href = '/mit/index.html'
+  else location.href = '/mit/pending.html'
 }
+init()
 
-window.showTab = (tab) => {
+function showTab(tab, el) {
   document.getElementById('signinForm').style.display = tab === 'signin' ? 'block' : 'none'
   document.getElementById('signupForm').style.display = tab === 'signup' ? 'block' : 'none'
-  document.querySelectorAll('.tab').forEach((t, i) => t.classList.toggle('active', (i === 0) === (tab === 'signin')))
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'))
+  el.classList.add('active')
 }
 
-window.signIn = async () => {
-  const btn = document.getElementById('siBtn')
-  const msg = document.getElementById('siMsg')
+async function signIn() {
+  const btn = document.getElementById('siBtn'), msg = document.getElementById('siMsg')
   const email = document.getElementById('siEmail').value.trim()
-  const password = document.getElementById('siPassword').value
-  if (!email || !password) { showMsg(msg, 'Please fill in all fields', 'error'); return }
+  const pass = document.getElementById('siPassword').value
+  if (!email || !pass) { msg.textContent = 'Please fill in all fields'; msg.className = 'msg error'; return }
   btn.disabled = true; btn.textContent = 'Signing in...'
-  const { error } = await supabase.auth.signInWithPassword({ email, password })
-  if (error) { showMsg(msg, error.message, 'error'); btn.disabled = false; btn.textContent = 'Sign In'; return }
-  const { data: profile } = await supabase.from('profiles').select('*').eq('id', (await supabase.auth.getUser()).data.user.id).single()
-  if (profile?.status === 'approved') window.location.href = '/index.html'
-  else if (profile?.is_admin) window.location.href = '/index.html'
-  else window.location.href = '/pending.html'
+  const { error } = await sb.auth.signInWithPassword({ email, password: pass })
+  if (error) { msg.textContent = error.message; msg.className = 'msg error'; btn.disabled = false; btn.textContent = 'Sign In'; return }
+  const { data: { user } } = await sb.auth.getUser()
+  const { data: p } = await sb.from('profiles').select('*').eq('id', user.id).single()
+  if (p?.is_admin || p?.status === 'approved') location.href = '/mit/index.html'
+  else location.href = '/mit/pending.html'
 }
 
-window.signUp = async () => {
-  const btn = document.getElementById('suBtn')
-  const msg = document.getElementById('suMsg')
+async function signUp() {
+  const btn = document.getElementById('suBtn'), msg = document.getElementById('suMsg')
   const name = document.getElementById('suName').value.trim()
   const email = document.getElementById('suEmail').value.trim()
-  const password = document.getElementById('suPassword').value
-  if (!name || !email || !password) { showMsg(msg, 'Please fill in all fields', 'error'); return }
-  if (password.length < 8) { showMsg(msg, 'Password must be at least 8 characters', 'error'); return }
+  const pass = document.getElementById('suPassword').value
+  if (!name || !email || !pass) { msg.textContent = 'Please fill in all fields'; msg.className = 'msg error'; return }
+  if (pass.length < 8) { msg.textContent = 'Password must be at least 8 characters'; msg.className = 'msg error'; return }
   btn.disabled = true; btn.textContent = 'Submitting...'
-  const { error } = await supabase.auth.signUp({ email, password, options: { data: { full_name: name } } })
-  if (error) { showMsg(msg, error.message, 'error'); btn.disabled = false; btn.textContent = 'Request Access'; return }
-  showMsg(msg, 'Access request submitted! You will be notified when approved.', 'success')
+  const { error } = await sb.auth.signUp({ email, password: pass, options: { data: { full_name: name } } })
+  if (error) { msg.textContent = error.message; msg.className = 'msg error'; btn.disabled = false; btn.textContent = 'Request Access'; return }
+  msg.textContent = 'Request submitted! You will be notified when approved.'; msg.className = 'msg success'
   btn.textContent = 'Request Sent ✓'
-  setTimeout(() => window.location.href = '/pending.html', 2000)
-}
-
-function showMsg(el, text, type) {
-  el.textContent = text
-  el.className = 'msg ' + type
+  setTimeout(() => location.href = '/mit/pending.html', 2000)
 }
 </script>
 </body>
