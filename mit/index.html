@@ -450,7 +450,7 @@ function showToast(text) {
   setTimeout(()=>document.getElementById('toast').style.display='none',12000)
 }
 
-async function signOut() { await sb.auth.signOut(); location.href='/mit/login.html' }
+async function signOut() { await sb.auth.signOut(); window.location.href = '/mit/login.html'; }
 
 if(window.speechSynthesis)window.speechSynthesis.onvoiceschanged=()=>{}
 init()
