@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MarketIntel — Pending Approval</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0d0d0d;color:#f2f0eb;font-family:'Inter',sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.box{width:100%;max-width:400px;text-align:center}
+.logo{font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;letter-spacing:-1px;margin-bottom:32px}
+.logo span{color:#22c77a}
+.icon{width:64px;height:64px;background:rgba(240,168,50,0.12);border:1px solid rgba(240,168,50,0.25);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 20px}
+h2{font-size:18px;font-weight:600;margin-bottom:10px}
+p{font-size:13px;color:#6a6a68;line-height:1.65;margin-bottom:24px}
+.email-box{background:#141414;border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:12px 16px;font-size:13px;color:#9a9890;margin-bottom:28px}
+.btn{display:inline-flex;padding:10px 20px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:transparent;color:#6a6a68;font-size:13px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.15s}
+.btn:hover{color:#f2f0eb;border-color:rgba(255,255,255,0.2)}
+</style>
+</head>
+<body>
+<div class="box">
+  <div class="logo">Market<span>Intel</span></div>
+  <div class="icon">⏳</div>
+  <h2>Access request submitted</h2>
+  <p>Your request is being reviewed by the administrator. You'll receive an email once your account has been approved.</p>
+  <div class="email-box" id="userEmail">Checking your account...</div>
+  <p style="font-size:12px;color:#3a3a38;margin-bottom:20px">This usually takes less than 24 hours</p>
+  <button class="btn" onclick="signOut()">Sign out</button>
+</div>
+<script type="module">
+import { supabase } from './lib/supabase.js'
+const { data: { user } } = await supabase.auth.getUser()
+if (!user) { window.location.href = '/login.html'; }
+else {
+  document.getElementById('userEmail').textContent = user.email
+  const { data: profile } = await supabase.from('profiles').select('status').eq('id', user.id).single()
+  if (profile?.status === 'approved') window.location.href = '/index.html'
+}
+window.signOut = async () => { await supabase.auth.signOut(); window.location.href = '/login.html' }
+</script>
+</body>
+</html>

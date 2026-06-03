@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0d0d0d">
+<title>MarketIntel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg0:#0d0d0d;--bg1:#111;--bg2:#1a1a1a;--bg3:#212121;--bg4:#2a2a2a;--border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);--text:#f2f0eb;--text2:#9a9890;--text3:#5a5855;--green:#22c77a;--green2:rgba(34,199,122,0.12);--red:#f04444;--red2:rgba(240,68,68,0.12);--amber:#f0a832;--amber2:rgba(240,168,50,0.12);--blue:#4488f0;--blue2:rgba(68,136,240,0.12);--purple:#a066f0;--purple2:rgba(160,102,240,0.12);--gold:#d4a843;--gold2:rgba(212,168,67,0.12);--r:8px;--r2:12px}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg0);color:var(--text);font-family:'Inter',sans-serif;font-size:14px;min-height:100vh;overflow-x:hidden}
+.topbar{position:sticky;top:0;z-index:100;background:rgba(13,13,13,0.96);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 20px;height:52px;gap:12px}
+.logo{font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;letter-spacing:-0.5px;white-space:nowrap;cursor:pointer}
+.logo span{color:var(--green)}
+.topbar-center{display:flex;align-items:center;gap:8px;flex:1;justify-content:center}
+.status-pill{display:flex;align-items:center;gap:5px;padding:4px 11px;background:var(--bg2);border:1px solid var(--border);border-radius:999px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text3);white-space:nowrap}
+.sdot{width:6px;height:6px;border-radius:50%;background:var(--text3);flex-shrink:0}
+.sdot.live{background:var(--green);animation:blink 2s ease-in-out infinite}
+.sdot.scanning{background:var(--amber);animation:blink 0.5s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+.topbar-right{display:flex;align-items:center;gap:6px}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 13px;border-radius:var(--r);font-size:12px;font-weight:500;cursor:pointer;transition:all 0.15s;border:1px solid var(--border2);background:transparent;color:var(--text3);font-family:'Inter',sans-serif;white-space:nowrap}
+.btn:hover{background:var(--bg3);color:var(--text)}
+.btn:disabled{opacity:0.35;cursor:not-allowed}
+.btn-green{background:var(--green);color:#000;border-color:var(--green);font-weight:600}
+.btn-green:hover{opacity:0.85;background:var(--green);color:#000}
+.layout{display:grid;grid-template-columns:210px 1fr 268px;min-height:calc(100vh - 52px)}
+@media(max-width:1080px){.layout{grid-template-columns:1fr}.sidebar,.rightpanel{display:none}}
+.sidebar{background:var(--bg1);border-right:1px solid var(--border);padding:14px 0;overflow-y:auto;position:sticky;top:52px;height:calc(100vh - 52px)}
+.sb-label{font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--text3);padding:0 14px;margin-bottom:5px}
+.sb-item{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;cursor:pointer;font-size:13px;color:var(--text3);transition:all 0.12s;border-left:2px solid transparent;gap:8px}
+.sb-item:hover{color:var(--text);background:var(--bg2)}
+.sb-item.active{color:var(--text);background:var(--bg2);border-left-color:var(--green)}
+.sb-item-l{display:flex;align-items:center;gap:7px}
+.sb-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.badge{font-family:'JetBrains Mono',monospace;font-size:10px;padding:2px 6px;border-radius:5px;background:var(--bg3);color:var(--text3);min-width:20px;text-align:center}
+.badge.hot{background:var(--red2);color:var(--red)}
+.sb-divider{height:1px;background:var(--border);margin:8px 14px}
+.next-box{margin:0 10px;padding:11px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r)}
+.next-label{font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:3px}
+.next-time{font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:600;color:var(--green);letter-spacing:-0.5px}
+.next-cd{font-size:11px;color:var(--text3);margin-top:2px;font-family:'JetBrains Mono',monospace}
+.sched-row{display:flex;align-items:center;justify-content:space-between;padding:4px 14px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text3)}
+.sched-on{color:var(--green)}
+.history-row{display:flex;align-items:center;justify-content:space-between;padding:5px 14px;font-size:11px;border-bottom:1px solid var(--border)}
+.history-row:last-child{border:none}
+.ht{font-family:'JetBrains Mono',monospace;color:var(--text2)}
+.hc{font-family:'JetBrains Mono',monospace;color:var(--text3)}
+.feed{background:var(--bg0);overflow-y:auto;display:flex;flex-direction:column}
+.feed-head{position:sticky;top:0;background:rgba(13,13,13,0.96);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);padding:10px 18px;display:flex;align-items:center;justify-content:space-between;gap:10px;z-index:10;flex-shrink:0}
+.feed-title{font-size:13px;font-weight:600;letter-spacing:-0.2px}
+.chips{display:flex;gap:5px;flex-wrap:wrap}
+.chip{font-size:11px;padding:4px 10px;border-radius:999px;border:1px solid var(--border);color:var(--text3);cursor:pointer;background:transparent;font-family:'Inter',sans-serif;transition:all 0.12s;white-space:nowrap}
+.chip:hover{border-color:var(--border2);color:var(--text2)}
+.chip.on{border-color:var(--green);color:var(--green);background:var(--green2)}
+.chip.on-red{border-color:var(--red);color:var(--red);background:var(--red2)}
+.feed-body{padding:14px 18px;display:flex;flex-direction:column;gap:10px;flex:1}
+.card{background:var(--bg1);border:1px solid var(--border);border-radius:var(--r2);overflow:hidden;transition:border-color 0.15s}
+.card:hover{border-color:var(--border2)}
+.card.urgent{border-color:rgba(240,68,68,0.35)!important}
+.card-stripe{height:3px;width:100%}
+.card-inner{padding:13px 15px}
+.card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:7px}
+.card-tags{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.tag{font-size:10px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;padding:2px 8px;border-radius:5px}
+.tag-trump{background:rgba(240,100,50,0.15);color:#f06432}
+.tag-geo{background:var(--amber2);color:var(--amber)}
+.tag-cb{background:var(--blue2);color:var(--blue)}
+.tag-eco{background:var(--red2);color:var(--red)}
+.tag-eq{background:var(--purple2);color:var(--purple)}
+.tag-com{background:var(--gold2);color:var(--gold)}
+.tag-cry{background:var(--purple2);color:var(--purple)}
+.tag-high{background:var(--red2);color:var(--red)}
+.tag-med{background:var(--amber2);color:var(--amber)}
+.tag-low{background:var(--bg3);color:var(--text3)}
+.tag-urg{background:var(--red2);color:var(--red);animation:urgpulse 1s ease-in-out infinite}
+@keyframes urgpulse{0%,100%{opacity:1}50%{opacity:0.55}}
+.card-time{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text3);white-space:nowrap;flex-shrink:0}
+.card-source{font-size:11px;color:var(--text3);margin-bottom:3px;font-family:'JetBrains Mono',monospace}
+.card-headline{font-size:14px;font-weight:600;line-height:1.38;margin-bottom:6px}
+.card-context{font-size:12.5px;line-height:1.65;color:var(--text2);margin-bottom:11px}
+.pairs-head{font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--text3);margin-bottom:7px}
+.pairs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:6px;margin-bottom:9px}
+.pair-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:8px 10px}
+.pair-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.pair-name{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600}
+.pair-dir{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600}
+.bull{color:var(--green)}.bear{color:var(--red)}.neut{color:var(--text3)}
+.bar-wrap{height:3px;background:var(--bg3);border-radius:2px;margin-bottom:5px;overflow:hidden}
+.bar{height:100%;border-radius:2px}
+.b-bull{background:var(--green)}.b-bear{background:var(--red)}.b-neut{background:var(--text3)}
+.pair-analysis{font-size:11px;color:var(--text2);line-height:1.45}
+.signal-box{display:flex;align-items:flex-start;gap:8px;padding:9px 11px;border-radius:var(--r);margin-bottom:9px}
+.sig-bull{background:rgba(34,199,122,0.07);border-left:2px solid var(--green)}
+.sig-bear{background:rgba(240,68,68,0.07);border-left:2px solid var(--red)}
+.sig-mixed{background:rgba(240,168,50,0.07);border-left:2px solid var(--amber)}
+.sig-neut{background:var(--bg2);border-left:2px solid var(--text3)}
+.sig-icon{font-size:13px;flex-shrink:0;margin-top:1px}
+.sig-text{font-size:12px;line-height:1.55;color:var(--text)}
+.card-footer{display:flex;align-items:center;gap:7px;padding-top:9px;border-top:1px solid var(--border)}
+.card-btn{display:inline-flex;align-items:center;gap:4px;padding:5px 11px;border-radius:var(--r);border:1px solid var(--border);background:transparent;color:var(--text3);font-size:11px;font-weight:500;cursor:pointer;transition:all 0.12s;font-family:'Inter',sans-serif}
+.card-btn:hover{background:var(--bg3);color:var(--text);border-color:var(--border2)}
+.card-btn.playing{border-color:var(--amber);color:var(--amber);background:var(--amber2)}
+.shim-card{background:var(--bg1);border:1px solid var(--border);border-radius:var(--r2);padding:15px}
+.shim{background:var(--bg3);border-radius:4px;animation:shimmer 1.3s ease-in-out infinite}
+@keyframes shimmer{0%,100%{opacity:0.35}50%{opacity:0.75}}
+.empty{padding:56px 20px;text-align:center;color:var(--text2)}
+.empty-icon{font-size:32px;margin-bottom:14px;opacity:0.3;display:block}
+.empty h3{font-size:15px;font-weight:600;color:var(--text);margin-bottom:7px}
+.empty p{font-size:13px;line-height:1.65;max-width:360px;margin:0 auto}
+.rightpanel{background:var(--bg1);border-left:1px solid var(--border);padding:14px;overflow-y:auto;position:sticky;top:52px;height:calc(100vh - 52px);display:flex;flex-direction:column;gap:18px}
+.rp-title{font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--text3);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.alert-card{padding:8px 10px;background:var(--bg2);border:1px solid var(--border);border-left:2px solid var(--red);border-radius:var(--r);margin-bottom:5px}
+.alert-card.amber{border-left-color:var(--amber)}
+.alert-h{font-size:12px;font-weight:500;color:var(--text);margin-bottom:2px;line-height:1.35}
+.alert-m{font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace}
+.sent-row{display:flex;align-items:center;gap:7px;margin-bottom:5px}
+.sent-n{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text2);min-width:34px}
+.sent-bw{flex:1;height:3px;background:var(--bg3);border-radius:2px;overflow:hidden}
+.sent-b{height:100%;border-radius:2px}
+.sent-v{font-family:'JetBrains Mono',monospace;font-size:10px;min-width:28px;text-align:right}
+.setup-card{padding:8px 10px;background:var(--bg2);border:1px solid var(--border);border-left:2px solid var(--amber);border-radius:var(--r);margin-bottom:6px}
+.setup-n{font-size:9px;font-weight:700;letter-spacing:0.1em;color:var(--amber);text-transform:uppercase;margin-bottom:3px;font-family:'JetBrains Mono',monospace}
+.setup-t{font-size:12px;color:var(--text);line-height:1.5}
+.modal-overlay{display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0.82);backdrop-filter:blur(4px);align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto}
+.modal-overlay.open{display:flex}
+.modal{background:var(--bg1);border:1px solid var(--border2);border-radius:var(--r2);width:100%;max-width:720px;margin:auto;overflow:hidden}
+.modal-head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border)}
+.modal-title{font-size:14px;font-weight:600;letter-spacing:-0.2px;padding-right:16px;line-height:1.4}
+.modal-body{padding:18px;max-height:72vh;overflow-y:auto}
+.modal-text{font-size:13px;line-height:1.75;color:var(--text2)}
+.modal-loading{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--amber);display:flex;align-items:center;gap:8px}
+.spinner{width:13px;height:13px;border:2px solid var(--amber2);border-top-color:var(--amber);border-radius:50%;animation:spin 0.7s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+.toast{position:fixed;bottom:20px;right:20px;z-index:300;background:var(--bg2);border:1px solid rgba(240,68,68,0.4);border-radius:var(--r2);padding:13px 15px;max-width:300px;animation:slideup 0.3s ease}
+@keyframes slideup{from{transform:translateY(12px);opacity:0}to{transform:translateY(0);opacity:1}}
+.toast-label{font-size:10px;font-weight:700;letter-spacing:0.08em;color:var(--red);text-transform:uppercase;font-family:'JetBrains Mono',monospace;margin-bottom:5px;display:flex;align-items:center;gap:5px}
+.toast-text{font-size:12px;color:var(--text);line-height:1.4;margin-bottom:9px}
+.toast-close{font-size:11px;color:var(--text3);cursor:pointer;border:1px solid var(--border);background:transparent;padding:3px 9px;border-radius:5px;font-family:'Inter',sans-serif}
+.mobile-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:rgba(17,17,17,0.97);backdrop-filter:blur(12px);border-top:1px solid var(--border);padding:8px 16px;padding-bottom:max(8px,env(safe-area-inset-bottom));z-index:100;gap:4px}
+@media(max-width:1080px){.mobile-nav{display:flex}}
+.mn-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 4px;border-radius:var(--r);cursor:pointer;color:var(--text3);border:none;background:transparent;transition:all 0.12s;font-family:'Inter',sans-serif}
+.mn-item:hover,.mn-item.active{color:var(--green);background:var(--green2)}
+.mn-icon{font-size:17px;line-height:1}
+.mn-label{font-size:9px;font-weight:500;letter-spacing:0.05em;text-transform:uppercase}
+@media(max-width:1080px){body{padding-bottom:68px}}
+::-webkit-scrollbar{width:3px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:2px}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo" onclick="window.location.href='/index.html'">Market<span>Intel</span></div>
+  <div class="topbar-center">
+    <div class="status-pill">
+      <span class="sdot" id="sdot"></span>
+      <span id="slabel">Loading...</span>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <button class="btn" onclick="openReport()" id="reportBtn" disabled>Report</button>
+    <button class="btn" onclick="window.location.href='/admin.html'" id="adminBtn" style="display:none">Admin</button>
+    <button class="btn btn-green" onclick="triggerScan()" id="scanBtn">⚡ Scan</button>
+    <button class="btn" onclick="signOut()">Sign out</button>
+  </div>
+</div>
+
+<div class="layout">
+  <div class="sidebar">
+    <div style="margin-bottom:14px">
+      <div class="sb-label">Intel Feed</div>
+      <div class="sb-item active" onclick="setFilter('all',this)"><div class="sb-item-l"><span class="sb-dot" style="background:var(--green)"></span>All Sources</div><span class="badge" id="c-all">0</span></div>
+      <div class="sb-item" onclick="setFilter('trump',this)"><div class="sb-item-l"><span class="sb-dot" style="background:#f06432"></span>Trump</div><span class="badge" id="c-trump">0</span></div>
+      <div class="sb-item" onclick="setFilter('geopolitical',this)"><div class="sb-item-l"><span class="sb-dot" style="background:var(--amber)"></span>Geopolitical</div><span class="badge" id="c-geo">0</span></div>
+      <div class="sb-item" onclick="setFilter('central-bank',this)"><div class="sb-item-l"><span class="sb-dot" style="background:var(--blue)"></span>Central Banks</div><span class="badge" id="c-cb">0</span></div>
+      <div class="sb-item" onclick="setFilter('economic',this)"><div class="sb-item-l"><span class="sb-dot" style="background:var(--red)"></span>Forex Factory</div><span class="badge" id="c-eco">0</span></div>
+      <div class="sb-item" onclick="setFilter('equities',this)"><div class="sb-item-l"><span class="sb-dot" style="background:var(--purple)"></span>Equities</div><span class="badge" id="c-eq">0</span></div>
+      <div class="sb-item" onclick="setFilter('commodities',this)"><div class="sb-item-l"><span class="sb-dot" style="background:var(--gold)"></span>Commodities</div><span class="badge" id="c-com">0</span></div>
+      <div class="sb-item" onclick="setFilter('crypto',this)"><div class="sb-item-l"><span class="sb-dot" style="background:var(--purple)"></span>Crypto</div><span class="badge" id="c-cry">0</span></div>
+    </div>
+    <div class="sb-divider"></div>
+    <div style="margin:14px 0">
+      <div class="sb-label">Next Scan</div>
+      <div style="padding:0 10px">
+        <div class="next-box">
+          <div class="next-label">Scheduled</div>
+          <div class="next-time" id="nextTime">--:--</div>
+          <div class="next-cd" id="nextCd">calculating...</div>
+        </div>
+      </div>
+    </div>
+    <div class="sb-divider"></div>
+    <div style="margin:14px 0">
+      <div class="sb-label">Schedule</div>
+      <div class="sched-row"><span>07:00</span><span class="sched-on">●</span></div>
+      <div class="sched-row"><span>15:00</span><span class="sched-on">●</span></div>
+      <div class="sched-row"><span>23:00</span><span class="sched-on">●</span></div>
+    </div>
+    <div class="sb-divider"></div>
+    <div style="margin-top:14px">
+      <div class="sb-label">Scan History</div>
+      <div id="historyList"><div style="padding:6px 14px;font-size:11px;color:var(--text3)">No scans yet</div></div>
+    </div>
+  </div>
+
+  <div class="feed">
+    <div class="feed-head">
+      <div class="feed-title" id="feedTitle">All Intel</div>
+      <div class="chips">
+        <button class="chip on" onclick="setSort('time',this)">Latest</button>
+        <button class="chip" onclick="setSort('impact',this)">High Impact</button>
+        <button class="chip" onclick="setSort('urgent',this)">Urgent</button>
+      </div>
+    </div>
+    <div class="feed-body" id="feedBody">
+      <div class="empty">
+        <span class="empty-icon">📡</span>
+        <h3>Terminal ready</h3>
+        <p>Hit <strong style="color:var(--text)">⚡ Scan</strong> to pull live intel across Trump posts, Forex Factory red events, geopolitics, central banks, equities, commodities and crypto — with pair-by-pair analysis and trader signals.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="rightpanel">
+    <div>
+      <div class="rp-title">Urgent Alerts</div>
+      <div id="urgentList"><div style="font-size:11px;color:var(--text3)">No urgent alerts</div></div>
+    </div>
+    <div>
+      <div class="rp-title">Asset Sentiment</div>
+      <div id="sentPanel"><div style="font-size:11px;color:var(--text3)">Run a scan to generate</div></div>
+    </div>
+    <div>
+      <div class="rp-title">Trade Setups</div>
+      <div id="setupPanel"><div style="font-size:11px;color:var(--text3)">Setups appear after scanning</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="mobile-nav">
+  <button class="mn-item active" onclick="mobileTab(this)"><span class="mn-icon">📰</span><span class="mn-label">Feed</span></button>
+  <button class="mn-item" onclick="mobileTab(this)"><span class="mn-icon">⚡</span><span class="mn-label">Alerts</span></button>
+  <button class="mn-item" onclick="triggerScan()"><span class="mn-icon">🔄</span><span class="mn-label">Scan</span></button>
+  <button class="mn-item" onclick="mobileTab(this)"><span class="mn-icon">📊</span><span class="mn-label">Sentiment</span></button>
+  <button class="mn-item" onclick="openReport()"><span class="mn-icon">📋</span><span class="mn-label">Report</span></button>
+</div>
+
+<div class="modal-overlay" id="diveModal">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title" id="diveTitle">Deep Dive Analysis</div>
+      <button class="btn" style="flex-shrink:0" onclick="document.getElementById('diveModal').classList.remove('open')">✕</button>
+    </div>
+    <div class="modal-body"><div class="modal-text" id="diveBody"></div></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="reportModal">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <div class="modal-title">Comprehensive Market Brief</div>
+        <div style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-top:2px" id="reportDate"></div>
+      </div>
+      <button class="btn" style="flex-shrink:0" onclick="document.getElementById('reportModal').classList.remove('open')">✕</button>
+    </div>
+    <div class="modal-body"><div class="modal-text" id="reportBody"></div></div>
+  </div>
+</div>
+
+<div id="toast" style="display:none" class="toast">
+  <div class="toast-label"><span style="animation:blink 0.5s ease-in-out infinite">▲</span>Urgent Event</div>
+  <div class="toast-text" id="toastText"></div>
+  <button class="toast-close" onclick="document.getElementById('toast').style.display='none'">Dismiss</button>
+</div>
+
+<script type="module">
+import { supabase, requireApproved } from './lib/supabase.js'
+
+const profile = await requireApproved()
+if (!profile) { /* redirected */ }
+
+if (profile.is_admin) document.getElementById('adminBtn').style.display = 'inline-flex'
+
+let allEvents = [], activeFilter = 'all', sortMode = 'time', lastReport = '', currentUtterance = null
+
+window.signOut = async () => { await supabase.auth.signOut(); window.location.href = '/login.html' }
+
+async function loadLatest() {
+  const { data, error } = await supabase
+    .from('scans')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single()
+  if (error || !data) return
+  allEvents = data.events || []
+  renderFeed()
+  renderSentiment(data.sentiment || {})
+  renderSetups(data.setups || [])
+  renderUrgent(data.urgent_alerts || [])
+  updateCounts()
+  if (data.market_summary) {
+    lastReport = data.market_summary
+    document.getElementById('reportBtn').disabled = false
+    document.getElementById('reportDate').textContent = (data.scan_date || '') + ' · ' + (data.scan_time || '')
+  }
+  setStatus('live', 'Updated ' + (data.scan_time || ''))
+}
+
+async function loadHistory() {
+  const { data } = await supabase.from('scans').select('scan_time,scan_date,event_count,created_at').order('created_at', { ascending: false }).limit(6)
+  if (!data?.length) return
+  document.getElementById('historyList').innerHTML = data.map(s =>
+    `<div class="history-row"><span class="ht">${s.scan_time || '--:--'}</span><span class="hc">${s.event_count || 0} events</span></div>`
+  ).join('')
+}
+
+window.triggerScan = async () => {
+  const btn = document.getElementById('scanBtn')
+  btn.disabled = true
+  setStatus('scanning', 'Scanning...')
+  renderShimmers()
+  const apiKey = localStorage.getItem('mit_api_key')
+  if (!apiKey) {
+    const key = prompt('Enter your Anthropic API key (sk-ant-...):')
+    if (!key) { btn.disabled = false; setStatus('', 'Ready'); return }
+    localStorage.setItem('mit_api_key', key)
+  }
+  await runScan(localStorage.getItem('mit_api_key'))
+  btn.disabled = false
+}
+
+async function runScan(apiKey) {
+  const now = new Date()
+  const dateStr = now.toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long', year:'numeric' })
+  const timeStr = now.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' })
+  const prompt = `You are a senior multi-asset macro analyst. Today is ${dateStr} at ${timeStr} UK time. Search the web for current breaking financial and geopolitical news. Cover: Trump Truth Social posts about markets/tariffs/trade, Forex Factory red events today, active geopolitical conflicts, central bank decisions and speeches, major equity moves, commodity shifts, crypto. For every event give detailed FX pair impact analysis with specific price levels. Return ONLY valid JSON: {"scan_time":"${timeStr}","scan_date":"${dateStr}","events":[{"id":"unique","type":"trump|geopolitical|central-bank|economic|equities|commodities|crypto","urgent":bool,"impact":"HIGH|MEDIUM|LOW","source":"string","headline":"string max 15 words","context":"2-3 sentences with numbers","time":"HH:MM or relative","pairs":[{"pair":"EUR/USD","direction":"bullish|bearish|neutral","strength":0-100,"analysis":"one sentence with price levels"}],"overall":"bullish|bearish|neutral|mixed","signal":"actionable trader signal with levels"}],"urgent_alerts":["string"],"sentiment":{"USD":0,"EUR":0,"GBP":0,"JPY":0,"CHF":0,"AUD":0,"CAD":0,"Gold":0,"Oil":0,"BTC":0},"setups":["Setup with pair entry target stop"],"market_summary":"4 paragraph brief"}`
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 4000, tools: [{ type: 'web_search_20250305', name: 'web_search' }], messages: [{ role: 'user', content: prompt }] })
+    })
+    if (!res.ok) throw new Error('API error ' + res.status)
+    const data = await res.json()
+    let raw = data.content.filter(b => b.type === 'text').map(b => b.text).join('').trim().replace(/```json|```/g, '').trim()
+    const s = raw.indexOf('{'), e = raw.lastIndexOf('}')
+    if (s === -1) throw new Error('No JSON')
+    const result = JSON.parse(raw.slice(s, e + 1))
+    result.event_count = (result.events || []).length
+
+    await supabase.from('scans').insert([result])
+
+    allEvents = result.events || []
+    renderFeed()
+    renderSentiment(result.sentiment || {})
+    renderSetups(result.setups || [])
+    renderUrgent(result.urgent_alerts || [])
+    updateCounts()
+    loadHistory()
+    if (result.market_summary) { lastReport = result.market_summary; document.getElementById('reportBtn').disabled = false; document.getElementById('reportDate').textContent = result.scan_date + ' · ' + result.scan_time }
+    const urgents = allEvents.filter(e => e.urgent || e.impact === 'HIGH')
+    if (urgents.length) showToast(urgents[0].headline)
+    setStatus('live', 'Updated ' + result.scan_time)
+  } catch (err) {
+    setStatus('', 'Scan failed — ' + err.message)
+    document.getElementById('feedBody').innerHTML = `<div class="empty"><span class="empty-icon">⚠</span><h3>Scan failed</h3><p>${err.message}</p></div>`
+  }
+}
+
+function setStatus(state, label) {
+  document.getElementById('sdot').className = 'sdot' + (state === 'live' ? ' live' : state === 'scanning' ? ' scanning' : '')
+  document.getElementById('slabel').textContent = label
+}
+
+function renderShimmers() {
+  document.getElementById('feedBody').innerHTML = Array(4).fill(0).map(() => `
+    <div class="shim-card">
+      <div class="shim" style="width:32%;height:10px;margin-bottom:12px"></div>
+      <div class="shim" style="width:78%;height:14px;margin-bottom:8px"></div>
+      <div class="shim" style="width:100%;height:10px;margin-bottom:5px"></div>
+      <div class="shim" style="width:65%;height:10px;margin-bottom:16px"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+        <div class="shim" style="height:54px"></div><div class="shim" style="height:54px"></div>
+      </div>
+    </div>`).join('')
+}
+
+function renderFeed() {
+  let events = activeFilter === 'all' ? [...allEvents] : allEvents.filter(e => e.type === activeFilter)
+  if (sortMode === 'impact') { const o = { HIGH: 0, MEDIUM: 1, LOW: 2 }; events.sort((a, b) => (o[a.impact] || 2) - (o[b.impact] || 2)) }
+  if (sortMode === 'urgent') events = events.filter(e => e.urgent || e.impact === 'HIGH')
+  if (!events.length) { document.getElementById('feedBody').innerHTML = `<div class="empty"><span class="empty-icon">🔍</span><h3>No events</h3><p>No events match this filter.</p></div>`; return }
+  document.getElementById('feedBody').innerHTML = events.map(buildCard).join('')
+}
+
+function buildCard(ev) {
+  const tm = { trump: 'tag-trump', geopolitical: 'tag-geo', 'central-bank': 'tag-cb', economic: 'tag-eco', equities: 'tag-eq', commodities: 'tag-com', crypto: 'tag-cry' }
+  const tl = { trump: 'Trump', geopolitical: 'Geopolitical', 'central-bank': 'Central Bank', economic: 'Forex Factory', equities: 'Equities', commodities: 'Commodities', crypto: 'Crypto' }
+  const sc = { trump: '#f06432', geopolitical: 'var(--amber)', 'central-bank': 'var(--blue)', economic: 'var(--red)', equities: 'var(--purple)', commodities: 'var(--gold)', crypto: 'var(--purple)' }
+  const it = ev.impact === 'HIGH' ? 'tag-high' : ev.impact === 'MEDIUM' ? 'tag-med' : 'tag-low'
+  const sgc = ev.overall === 'bullish' ? 'sig-bull' : ev.overall === 'bearish' ? 'sig-bear' : ev.overall === 'mixed' ? 'sig-mixed' : 'sig-neut'
+  const sgi = ev.overall === 'bullish' ? 'var(--green)' : ev.overall === 'bearish' ? 'var(--red)' : 'var(--amber)'
+  const sgt = ev.overall === 'bullish' ? '▲' : ev.overall === 'bearish' ? '▼' : ev.overall === 'mixed' ? '◆' : '–'
+  const pairs = (ev.pairs || []).map(p => {
+    const dc = p.direction === 'bullish' ? 'bull' : p.direction === 'bearish' ? 'bear' : 'neut'
+    const bc = p.direction === 'bullish' ? 'b-bull' : p.direction === 'bearish' ? 'b-bear' : 'b-neut'
+    const dl = p.direction === 'bullish' ? '↑ Long' : p.direction === 'bearish' ? '↓ Short' : '→ Watch'
+    return `<div class="pair-card"><div class="pair-top"><span class="pair-name">${p.pair}</span><span class="pair-dir ${dc}">${dl}</span></div><div class="bar-wrap"><div class="bar ${bc}" style="width:${p.strength||65}%"></div></div><div class="pair-analysis">${p.analysis}</div></div>`
+  }).join('')
+  return `<div class="card${ev.urgent ? ' urgent' : ''}" id="ev-${ev.id}">
+    <div class="card-stripe" style="background:${sc[ev.type] || 'var(--blue)'}"></div>
+    <div class="card-inner">
+      <div class="card-top">
+        <div class="card-tags">${ev.urgent ? '<span class="tag tag-urg">⚡ Urgent</span>' : ''}<span class="tag ${tm[ev.type] || 'tag-cb'}">${tl[ev.type] || ev.type}</span><span class="tag ${it}">${ev.impact || 'LOW'}</span></div>
+        <span class="card-time">${ev.time || ''}</span>
+      </div>
+      <div class="card-source">${ev.source || ''}</div>
+      <div class="card-headline">${ev.headline}</div>
+      <div class="card-context">${ev.context}</div>
+      <div class="pairs-head">Pair impact</div>
+      <div class="pairs-grid">${pairs}</div>
+      <div class="signal-box ${sgc}"><span class="sig-icon" style="color:${sgi}">${sgt}</span><span class="sig-text">${ev.signal}</span></div>
+      <div class="card-footer">
+        <button class="card-btn" onclick="readCard('${ev.id}')" id="pb-${ev.id}">▶ Read</button>
+        <button class="card-btn" onclick="deepDive('${ev.id}')">Deep Dive →</button>
+      </div>
+    </div>
+  </div>`
+}
+
+function updateCounts() {
+  const c = { all: allEvents.length, trump: 0, geopolitical: 0, 'central-bank': 0, economic: 0, equities: 0, commodities: 0, crypto: 0 }
+  allEvents.forEach(e => { if (c[e.type] !== undefined) c[e.type]++ })
+  Object.entries(c).forEach(([k, v]) => { const el = document.getElementById('c-' + (k === 'central-bank' ? 'cb' : k === 'geopolitical' ? 'geo' : k === 'economic' ? 'eco' : k === 'equities' ? 'eq' : k === 'commodities' ? 'com' : k === 'crypto' ? 'cry' : k)); if (el) el.textContent = v })
+  const u = allEvents.filter(e => e.urgent).length
+  document.getElementById('c-all').classList.toggle('hot', u > 0)
+}
+
+window.setFilter = (f, el) => {
+  activeFilter = f
+  document.querySelectorAll('.sb-item').forEach(i => i.classList.remove('active'))
+  el.classList.add('active')
+  const labels = { all: 'All Intel', trump: 'Trump', geopolitical: 'Geopolitical', 'central-bank': 'Central Banks', economic: 'Forex Factory Red', equities: 'Equities', commodities: 'Commodities', crypto: 'Crypto' }
+  document.getElementById('feedTitle').textContent = labels[f] || f
+  renderFeed()
+}
+
+window.setSort = (s, el) => {
+  sortMode = s
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('on', 'on-red'))
+  el.classList.add(s === 'urgent' ? 'on-red' : 'on')
+  renderFeed()
+}
+
+function renderSentiment(s) {
+  document.getElementById('sentPanel').innerHTML = Object.entries(s).map(([n, v]) => {
+    const pct = Math.min(100, Math.abs(v))
+    const cls = v > 10 ? 'b-bull' : v < -10 ? 'b-bear' : 'b-neut'
+    const vc = v > 10 ? 'var(--green)' : v < -10 ? 'var(--red)' : 'var(--text3)'
+    return `<div class="sent-row"><span class="sent-n">${n}</span><div class="sent-bw"><div class="sent-b ${cls}" style="width:${pct}%"></div></div><span class="sent-v" style="color:${vc}">${v > 0 ? '+' : ''}${Math.round(v)}</span></div>`
+  }).join('') || '<div style="font-size:11px;color:var(--text3)">No data</div>'
+}
+
+function renderSetups(setups) {
+  if (!setups.length) return
+  document.getElementById('setupPanel').innerHTML = setups.map((s, i) => `<div class="setup-card"><div class="setup-n">Setup ${i + 1}</div><div class="setup-t">${s}</div></div>`).join('')
+}
+
+function renderUrgent(alerts) {
+  document.getElementById('urgentList').innerHTML = alerts.length
+    ? alerts.map(a => `<div class="alert-card"><div class="alert-h">${a}</div><div class="alert-m">⚡ High priority</div></div>`).join('')
+    : '<div style="font-size:11px;color:var(--text3)">No urgent alerts</div>'
+}
+
+function updateCountdown() {
+  const times = ['07:00', '15:00', '23:00']
+  const now = new Date()
+  const nowM = now.getHours() * 60 + now.getMinutes()
+  let next = times.find(t => { const [h, m] = t.split(':').map(Number); return h * 60 + m > nowM }) || times[0]
+  document.getElementById('nextTime').textContent = next
+  const [h, m] = next.split(':').map(Number)
+  let target = new Date(); target.setHours(h, m, 0, 0)
+  if (target <= now) target.setDate(target.getDate() + 1)
+  const diff = target - now
+  document.getElementById('nextCd').textContent = `in ${Math.floor(diff / 3600000)}h ${Math.floor((diff % 3600000) / 60000)}m`
+}
+
+function getAmericanVoice() {
+  const voices = window.speechSynthesis?.getVoices() || []
+  return ['Samantha', 'Ava', 'Susan', 'Karen', 'Allison'].map(n => voices.find(v => v.name.includes(n))).find(Boolean) || voices.find(v => v.lang?.startsWith('en-US')) || voices[0]
+}
+
+window.readCard = (id) => {
+  const ev = allEvents.find(e => e.id === id)
+  if (!ev) return
+  const btn = document.getElementById('pb-' + id)
+  if (currentUtterance) { window.speechSynthesis.cancel(); document.querySelectorAll('.card-btn.playing').forEach(b => { b.textContent = '▶ Read'; b.classList.remove('playing') }); currentUtterance = null; return }
+  const text = `${ev.source}. ${ev.headline}. ${ev.context} ${(ev.pairs || []).map(p => `${p.pair}: ${p.direction}. ${p.analysis}`).join('. ')} Signal: ${ev.signal}`
+  const u = new SpeechSynthesisUtterance(text)
+  const v = getAmericanVoice(); if (v) u.voice = v
+  u.lang = 'en-US'; u.rate = 0.94; u.pitch = 1.05
+  if (btn) { btn.textContent = '■ Stop'; btn.classList.add('playing') }
+  u.onend = () => { if (btn) { btn.textContent = '▶ Read'; btn.classList.remove('playing') }; currentUtterance = null }
+  currentUtterance = u; window.speechSynthesis.speak(u)
+}
+
+window.deepDive = async (id) => {
+  const ev = allEvents.find(e => e.id === id); if (!ev) return
+  document.getElementById('diveTitle').textContent = ev.headline
+  document.getElementById('diveBody').innerHTML = '<div class="modal-loading"><div class="spinner"></div>Generating deep-dive analysis...</div>'
+  document.getElementById('diveModal').classList.add('open')
+  const apiKey = localStorage.getItem('mit_api_key'); if (!apiKey) return
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1500, messages: [{ role: 'user', content: `Deep dive FX analysis for experienced trader. Event: ${ev.headline}. Context: ${ev.context}. Cover: macro context, pair-by-pair entry/stop/target/RR, correlated assets, risk events next 48h, intraday + swing + positional ideas. Be specific with price levels.` }] })
+    })
+    const d = await res.json()
+    const text = d.content.filter(b => b.type === 'text').map(b => b.text).join('')
+    document.getElementById('diveBody').innerHTML = `<div class="modal-text">${text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>')}</div>`
+  } catch (e) { document.getElementById('diveBody').innerHTML = `<div style="color:var(--red);font-size:13px">Failed: ${e.message}</div>` }
+}
+
+window.openReport = () => {
+  document.getElementById('reportBody').innerHTML = `<div class="modal-text">${lastReport.replace(/\n/g, '<br>')}</div>`
+  document.getElementById('reportModal').classList.add('open')
+}
+
+function showToast(text) {
+  document.getElementById('toastText').textContent = text
+  const t = document.getElementById('toast'); t.style.display = 'block'
+  setTimeout(() => t.style.display = 'none', 12000)
+}
+
+window.mobileTab = (el) => { document.querySelectorAll('.mn-item').forEach(i => i.classList.remove('active')); el.classList.add('active') }
+
+if (window.speechSynthesis) window.speechSynthesis.onvoiceschanged = () => {}
+await loadLatest()
+await loadHistory()
+updateCountdown()
+setInterval(updateCountdown, 30000)
+setInterval(async () => { await loadLatest(); await loadHistory() }, 60000)
+</script>
+</body>
+</html>
