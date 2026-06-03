@@ -149,7 +149,7 @@ body{background:var(--bg0);color:var(--text);font-family:'Inter',sans-serif;font
   <div class="status-pill"><span class="sdot" id="sdot"></span><span id="slabel">Loading...</span></div>
   <div class="topbar-right">
     <button class="btn" onclick="openReport()" id="reportBtn" disabled>Report</button>
-    <button class="btn" onclick="location.href='/mit/admin.html'" id="adminBtn" style="display:none">Admin</button>
+    <button class="btn" onclick="location.href='/admin.html'" id="adminBtn" style="display:none">Admin</button>
     <button class="btn btn-green" onclick="triggerScan()" id="scanBtn">⚡ Scan</button>
     <button class="btn" onclick="signOut()">Sign out</button>
   </div>
@@ -225,18 +225,18 @@ body{background:var(--bg0);color:var(--text);font-family:'Inter',sans-serif;font
 
 <script>
 const SB_URL = 'https://xglnoorboeuiozwhdhde.supabase.co'
-const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhnbG5vb3Jib2V1aW96d2hkaGRlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MTAwNjIsImV4cCI6MjA5NjA4NjA2Mn0.TdK2R3wjp9mfmbE593uXJ6MJ0VvWyuzrAEFOQSlAUCI'
+const SB_KEY = 'REPLACE_ANON_KEY'
 const sb = window.supabase.createClient(SB_URL, SB_KEY)
 
 let allEvents = [], activeFilter = 'all', sortMode = 'time', lastReport = '', currentUtterance = null, apiKey = ''
 
 async function init() {
   const { data: { user } } = await sb.auth.getUser()
-  if (!user) { location.href = '/mit/login.html'; return }
+  if (!user) { location.href = '/login.html'; return }
   const { data: p } = await sb.from('profiles').select('*').eq('id', user.id).single()
-  if (!p) { location.href = '/mit/login.html'; return }
-  if (p.status === 'pending') { location.href = '/mit/pending.html'; return }
-  if (p.status === 'rejected') { location.href = '/mit/login.html?rejected=1'; return }
+  if (!p) { location.href = '/login.html'; return }
+  if (p.status === 'pending') { location.href = '/pending.html'; return }
+  if (p.status === 'rejected') { location.href = '/login.html?rejected=1'; return }
   if (p.is_admin) document.getElementById('adminBtn').style.display = 'inline-flex'
   apiKey = localStorage.getItem('mit_api_key') || ''
   await loadLatest()
@@ -450,7 +450,7 @@ function showToast(text) {
   setTimeout(()=>document.getElementById('toast').style.display='none',12000)
 }
 
-async function signOut() { await sb.auth.signOut(); window.location.href = '/mit/login.html'; }
+async function signOut() { await sb.auth.signOut(); location.href='/login.html' }
 
 if(window.speechSynthesis)window.speechSynthesis.onvoiceschanged=()=>{}
 init()
