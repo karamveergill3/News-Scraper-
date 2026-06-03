@@ -6,16 +6,15 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0d0d0d">
 <title>MarketIntel</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-:root{--bg0:#0d0d0d;--bg1:#111;--bg2:#1a1a1a;--bg3:#212121;--bg4:#2a2a2a;--border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);--text:#f2f0eb;--text2:#9a9890;--text3:#5a5855;--green:#22c77a;--green2:rgba(34,199,122,0.12);--red:#f04444;--red2:rgba(240,68,68,0.12);--amber:#f0a832;--amber2:rgba(240,168,50,0.12);--blue:#4488f0;--blue2:rgba(68,136,240,0.12);--purple:#a066f0;--purple2:rgba(160,102,240,0.12);--gold:#d4a843;--gold2:rgba(212,168,67,0.12);--r:8px;--r2:12px}
+:root{--bg0:#0d0d0d;--bg1:#111;--bg2:#1a1a1a;--bg3:#212121;--bg4:#2a2a2a;--border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);--text:#f2f0eb;--text2:#9a9890;--text3:#5a5855;--green:#22c77a;--green2:rgba(34,199,122,0.12);--red:#f04444;--red2:rgba(240,68,68,0.12);--amber:#f0a832;--amber2:rgba(240,168,50,0.12);--blue:#4488f0;--blue2:rgba(68,136,240,0.12);--purple:#a066f0;--gold:#d4a843;--gold2:rgba(212,168,67,0.12);--r:8px;--r2:12px}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{background:var(--bg0);color:var(--text);font-family:'Inter',sans-serif;font-size:14px;min-height:100vh;overflow-x:hidden}
 .topbar{position:sticky;top:0;z-index:100;background:rgba(13,13,13,0.96);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 20px;height:52px;gap:12px}
-.logo{font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;letter-spacing:-0.5px;white-space:nowrap;cursor:pointer}
+.logo{font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;letter-spacing:-0.5px;white-space:nowrap}
 .logo span{color:var(--green)}
-.topbar-center{display:flex;align-items:center;gap:8px;flex:1;justify-content:center}
 .status-pill{display:flex;align-items:center;gap:5px;padding:4px 11px;background:var(--bg2);border:1px solid var(--border);border-radius:999px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text3);white-space:nowrap}
 .sdot{width:6px;height:6px;border-radius:50%;background:var(--text3);flex-shrink:0}
 .sdot.live{background:var(--green);animation:blink 2s ease-in-out infinite}
@@ -51,7 +50,7 @@ body{background:var(--bg0);color:var(--text);font-family:'Inter',sans-serif;font
 .hc{font-family:'JetBrains Mono',monospace;color:var(--text3)}
 .feed{background:var(--bg0);overflow-y:auto;display:flex;flex-direction:column}
 .feed-head{position:sticky;top:0;background:rgba(13,13,13,0.96);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);padding:10px 18px;display:flex;align-items:center;justify-content:space-between;gap:10px;z-index:10;flex-shrink:0}
-.feed-title{font-size:13px;font-weight:600;letter-spacing:-0.2px}
+.feed-title{font-size:13px;font-weight:600}
 .chips{display:flex;gap:5px;flex-wrap:wrap}
 .chip{font-size:11px;padding:4px 10px;border-radius:999px;border:1px solid var(--border);color:var(--text3);cursor:pointer;background:transparent;font-family:'Inter',sans-serif;transition:all 0.12s;white-space:nowrap}
 .chip:hover{border-color:var(--border2);color:var(--text2)}
@@ -70,9 +69,9 @@ body{background:var(--bg0);color:var(--text);font-family:'Inter',sans-serif;font
 .tag-geo{background:var(--amber2);color:var(--amber)}
 .tag-cb{background:var(--blue2);color:var(--blue)}
 .tag-eco{background:var(--red2);color:var(--red)}
-.tag-eq{background:var(--purple2);color:var(--purple)}
+.tag-eq{background:rgba(160,102,240,0.12);color:var(--purple)}
 .tag-com{background:var(--gold2);color:var(--gold)}
-.tag-cry{background:var(--purple2);color:var(--purple)}
+.tag-cry{background:rgba(160,102,240,0.12);color:var(--purple)}
 .tag-high{background:var(--red2);color:var(--red)}
 .tag-med{background:var(--amber2);color:var(--amber)}
 .tag-low{background:var(--bg3);color:var(--text3)}
@@ -114,7 +113,6 @@ body{background:var(--bg0);color:var(--text);font-family:'Inter',sans-serif;font
 .rightpanel{background:var(--bg1);border-left:1px solid var(--border);padding:14px;overflow-y:auto;position:sticky;top:52px;height:calc(100vh - 52px);display:flex;flex-direction:column;gap:18px}
 .rp-title{font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--text3);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border)}
 .alert-card{padding:8px 10px;background:var(--bg2);border:1px solid var(--border);border-left:2px solid var(--red);border-radius:var(--r);margin-bottom:5px}
-.alert-card.amber{border-left-color:var(--amber)}
 .alert-h{font-size:12px;font-weight:500;color:var(--text);margin-bottom:2px;line-height:1.35}
 .alert-m{font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace}
 .sent-row{display:flex;align-items:center;gap:7px;margin-bottom:5px}
@@ -129,47 +127,33 @@ body{background:var(--bg0);color:var(--text);font-family:'Inter',sans-serif;font
 .modal-overlay.open{display:flex}
 .modal{background:var(--bg1);border:1px solid var(--border2);border-radius:var(--r2);width:100%;max-width:720px;margin:auto;overflow:hidden}
 .modal-head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border)}
-.modal-title{font-size:14px;font-weight:600;letter-spacing:-0.2px;padding-right:16px;line-height:1.4}
+.modal-title{font-size:14px;font-weight:600;padding-right:16px;line-height:1.4}
 .modal-body{padding:18px;max-height:72vh;overflow-y:auto}
 .modal-text{font-size:13px;line-height:1.75;color:var(--text2)}
 .modal-loading{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--amber);display:flex;align-items:center;gap:8px}
 .spinner{width:13px;height:13px;border:2px solid var(--amber2);border-top-color:var(--amber);border-radius:50%;animation:spin 0.7s linear infinite;flex-shrink:0}
 @keyframes spin{to{transform:rotate(360deg)}}
-.toast{position:fixed;bottom:20px;right:20px;z-index:300;background:var(--bg2);border:1px solid rgba(240,68,68,0.4);border-radius:var(--r2);padding:13px 15px;max-width:300px;animation:slideup 0.3s ease}
+.toast{position:fixed;bottom:20px;right:20px;z-index:300;background:var(--bg2);border:1px solid rgba(240,68,68,0.4);border-radius:var(--r2);padding:13px 15px;max-width:300px;animation:slideup 0.3s ease;display:none}
 @keyframes slideup{from{transform:translateY(12px);opacity:0}to{transform:translateY(0);opacity:1}}
-.toast-label{font-size:10px;font-weight:700;letter-spacing:0.08em;color:var(--red);text-transform:uppercase;font-family:'JetBrains Mono',monospace;margin-bottom:5px;display:flex;align-items:center;gap:5px}
+.toast-label{font-size:10px;font-weight:700;letter-spacing:0.08em;color:var(--red);text-transform:uppercase;font-family:'JetBrains Mono',monospace;margin-bottom:5px}
 .toast-text{font-size:12px;color:var(--text);line-height:1.4;margin-bottom:9px}
 .toast-close{font-size:11px;color:var(--text3);cursor:pointer;border:1px solid var(--border);background:transparent;padding:3px 9px;border-radius:5px;font-family:'Inter',sans-serif}
-.mobile-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:rgba(17,17,17,0.97);backdrop-filter:blur(12px);border-top:1px solid var(--border);padding:8px 16px;padding-bottom:max(8px,env(safe-area-inset-bottom));z-index:100;gap:4px}
-@media(max-width:1080px){.mobile-nav{display:flex}}
-.mn-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 4px;border-radius:var(--r);cursor:pointer;color:var(--text3);border:none;background:transparent;transition:all 0.12s;font-family:'Inter',sans-serif}
-.mn-item:hover,.mn-item.active{color:var(--green);background:var(--green2)}
-.mn-icon{font-size:17px;line-height:1}
-.mn-label{font-size:9px;font-weight:500;letter-spacing:0.05em;text-transform:uppercase}
-@media(max-width:1080px){body{padding-bottom:68px}}
 ::-webkit-scrollbar{width:3px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:2px}
 </style>
 </head>
 <body>
-
 <div class="topbar">
-  <div class="logo" onclick="window.location.href='/index.html'">Market<span>Intel</span></div>
-  <div class="topbar-center">
-    <div class="status-pill">
-      <span class="sdot" id="sdot"></span>
-      <span id="slabel">Loading...</span>
-    </div>
-  </div>
+  <div class="logo">Market<span>Intel</span></div>
+  <div class="status-pill"><span class="sdot" id="sdot"></span><span id="slabel">Loading...</span></div>
   <div class="topbar-right">
     <button class="btn" onclick="openReport()" id="reportBtn" disabled>Report</button>
-    <button class="btn" onclick="window.location.href='/admin.html'" id="adminBtn" style="display:none">Admin</button>
+    <button class="btn" onclick="location.href='/mit/admin.html'" id="adminBtn" style="display:none">Admin</button>
     <button class="btn btn-green" onclick="triggerScan()" id="scanBtn">⚡ Scan</button>
     <button class="btn" onclick="signOut()">Sign out</button>
   </div>
 </div>
-
 <div class="layout">
   <div class="sidebar">
     <div style="margin-bottom:14px">
@@ -186,13 +170,7 @@ body{background:var(--bg0);color:var(--text);font-family:'Inter',sans-serif;font
     <div class="sb-divider"></div>
     <div style="margin:14px 0">
       <div class="sb-label">Next Scan</div>
-      <div style="padding:0 10px">
-        <div class="next-box">
-          <div class="next-label">Scheduled</div>
-          <div class="next-time" id="nextTime">--:--</div>
-          <div class="next-cd" id="nextCd">calculating...</div>
-        </div>
-      </div>
+      <div style="padding:0 10px"><div class="next-box"><div class="next-label">Scheduled</div><div class="next-time" id="nextTime">--:--</div><div class="next-cd" id="nextCd">calculating...</div></div></div>
     </div>
     <div class="sb-divider"></div>
     <div style="margin:14px 0">
@@ -207,7 +185,6 @@ body{background:var(--bg0);color:var(--text);font-family:'Inter',sans-serif;font
       <div id="historyList"><div style="padding:6px 14px;font-size:11px;color:var(--text3)">No scans yet</div></div>
     </div>
   </div>
-
   <div class="feed">
     <div class="feed-head">
       <div class="feed-title" id="feedTitle">All Intel</div>
@@ -218,130 +195,89 @@ body{background:var(--bg0);color:var(--text);font-family:'Inter',sans-serif;font
       </div>
     </div>
     <div class="feed-body" id="feedBody">
-      <div class="empty">
-        <span class="empty-icon">📡</span>
-        <h3>Terminal ready</h3>
-        <p>Hit <strong style="color:var(--text)">⚡ Scan</strong> to pull live intel across Trump posts, Forex Factory red events, geopolitics, central banks, equities, commodities and crypto — with pair-by-pair analysis and trader signals.</p>
-      </div>
+      <div class="empty"><span class="empty-icon">📡</span><h3>Terminal ready</h3><p>Hit <strong style="color:var(--text)">⚡ Scan</strong> to pull live intel across Trump posts, Forex Factory red events, geopolitics, central banks, equities, commodities and crypto.</p></div>
     </div>
   </div>
-
   <div class="rightpanel">
-    <div>
-      <div class="rp-title">Urgent Alerts</div>
-      <div id="urgentList"><div style="font-size:11px;color:var(--text3)">No urgent alerts</div></div>
-    </div>
-    <div>
-      <div class="rp-title">Asset Sentiment</div>
-      <div id="sentPanel"><div style="font-size:11px;color:var(--text3)">Run a scan to generate</div></div>
-    </div>
-    <div>
-      <div class="rp-title">Trade Setups</div>
-      <div id="setupPanel"><div style="font-size:11px;color:var(--text3)">Setups appear after scanning</div></div>
-    </div>
+    <div><div class="rp-title">Urgent Alerts</div><div id="urgentList"><div style="font-size:11px;color:var(--text3)">No urgent alerts</div></div></div>
+    <div><div class="rp-title">Asset Sentiment</div><div id="sentPanel"><div style="font-size:11px;color:var(--text3)">Run a scan to generate</div></div></div>
+    <div><div class="rp-title">Trade Setups</div><div id="setupPanel"><div style="font-size:11px;color:var(--text3)">Setups appear after scanning</div></div></div>
   </div>
-</div>
-
-<div class="mobile-nav">
-  <button class="mn-item active" onclick="mobileTab(this)"><span class="mn-icon">📰</span><span class="mn-label">Feed</span></button>
-  <button class="mn-item" onclick="mobileTab(this)"><span class="mn-icon">⚡</span><span class="mn-label">Alerts</span></button>
-  <button class="mn-item" onclick="triggerScan()"><span class="mn-icon">🔄</span><span class="mn-label">Scan</span></button>
-  <button class="mn-item" onclick="mobileTab(this)"><span class="mn-icon">📊</span><span class="mn-label">Sentiment</span></button>
-  <button class="mn-item" onclick="openReport()"><span class="mn-icon">📋</span><span class="mn-label">Report</span></button>
 </div>
 
 <div class="modal-overlay" id="diveModal">
   <div class="modal">
-    <div class="modal-head">
-      <div class="modal-title" id="diveTitle">Deep Dive Analysis</div>
-      <button class="btn" style="flex-shrink:0" onclick="document.getElementById('diveModal').classList.remove('open')">✕</button>
-    </div>
-    <div class="modal-body"><div class="modal-text" id="diveBody"></div></div>
+    <div class="modal-head"><div class="modal-title" id="diveTitle">Deep Dive</div><button class="btn" onclick="document.getElementById('diveModal').classList.remove('open')">✕</button></div>
+    <div class="modal-body"><div id="diveBody"></div></div>
   </div>
 </div>
-
 <div class="modal-overlay" id="reportModal">
   <div class="modal">
-    <div class="modal-head">
-      <div>
-        <div class="modal-title">Comprehensive Market Brief</div>
-        <div style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-top:2px" id="reportDate"></div>
-      </div>
-      <button class="btn" style="flex-shrink:0" onclick="document.getElementById('reportModal').classList.remove('open')">✕</button>
-    </div>
+    <div class="modal-head"><div><div class="modal-title">Comprehensive Market Brief</div><div style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-top:2px" id="reportDate"></div></div><button class="btn" onclick="document.getElementById('reportModal').classList.remove('open')">✕</button></div>
     <div class="modal-body"><div class="modal-text" id="reportBody"></div></div>
   </div>
 </div>
-
-<div id="toast" style="display:none" class="toast">
-  <div class="toast-label"><span style="animation:blink 0.5s ease-in-out infinite">▲</span>Urgent Event</div>
+<div id="toast" class="toast">
+  <div class="toast-label">⚡ Urgent Event</div>
   <div class="toast-text" id="toastText"></div>
   <button class="toast-close" onclick="document.getElementById('toast').style.display='none'">Dismiss</button>
 </div>
 
-<script type="module">
-import { supabase, requireApproved } from './lib/supabase.js'
+<script>
+const SB_URL = 'https://xglnoorboeuiozwhdhde.supabase.co'
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhnbG5vb3Jib2V1aW96d2hkaGRlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MTAwNjIsImV4cCI6MjA5NjA4NjA2Mn0.TdK2R3wjp9mfmbE593uXJ6MJ0VvWyuzrAEFOQSlAUCI'
+const sb = window.supabase.createClient(SB_URL, SB_KEY)
 
-const profile = await requireApproved()
-if (!profile) { /* redirected */ }
+let allEvents = [], activeFilter = 'all', sortMode = 'time', lastReport = '', currentUtterance = null, apiKey = ''
 
-if (profile.is_admin) document.getElementById('adminBtn').style.display = 'inline-flex'
-
-let allEvents = [], activeFilter = 'all', sortMode = 'time', lastReport = '', currentUtterance = null
-
-window.signOut = async () => { await supabase.auth.signOut(); window.location.href = '/login.html' }
+async function init() {
+  const { data: { user } } = await sb.auth.getUser()
+  if (!user) { location.href = '/mit/login.html'; return }
+  const { data: p } = await sb.from('profiles').select('*').eq('id', user.id).single()
+  if (!p) { location.href = '/mit/login.html'; return }
+  if (p.status === 'pending') { location.href = '/mit/pending.html'; return }
+  if (p.status === 'rejected') { location.href = '/mit/login.html?rejected=1'; return }
+  if (p.is_admin) document.getElementById('adminBtn').style.display = 'inline-flex'
+  apiKey = localStorage.getItem('mit_api_key') || ''
+  await loadLatest()
+  await loadHistory()
+  updateCountdown()
+  setInterval(updateCountdown, 30000)
+  setInterval(async () => { await loadLatest(); await loadHistory() }, 60000)
+}
 
 async function loadLatest() {
-  const { data, error } = await supabase
-    .from('scans')
-    .select('*')
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .single()
-  if (error || !data) return
+  const { data } = await sb.from('scans').select('*').order('created_at', { ascending: false }).limit(1).single()
+  if (!data) return
   allEvents = data.events || []
-  renderFeed()
-  renderSentiment(data.sentiment || {})
-  renderSetups(data.setups || [])
-  renderUrgent(data.urgent_alerts || [])
-  updateCounts()
-  if (data.market_summary) {
-    lastReport = data.market_summary
-    document.getElementById('reportBtn').disabled = false
-    document.getElementById('reportDate').textContent = (data.scan_date || '') + ' · ' + (data.scan_time || '')
-  }
+  renderFeed(); renderSentiment(data.sentiment || {}); renderSetups(data.setups || []); renderUrgent(data.urgent_alerts || []); updateCounts()
+  if (data.market_summary) { lastReport = data.market_summary; document.getElementById('reportBtn').disabled = false; document.getElementById('reportDate').textContent = (data.scan_date||'') + ' · ' + (data.scan_time||'') }
   setStatus('live', 'Updated ' + (data.scan_time || ''))
 }
 
 async function loadHistory() {
-  const { data } = await supabase.from('scans').select('scan_time,scan_date,event_count,created_at').order('created_at', { ascending: false }).limit(6)
+  const { data } = await sb.from('scans').select('scan_time,event_count,created_at').order('created_at', { ascending: false }).limit(6)
   if (!data?.length) return
-  document.getElementById('historyList').innerHTML = data.map(s =>
-    `<div class="history-row"><span class="ht">${s.scan_time || '--:--'}</span><span class="hc">${s.event_count || 0} events</span></div>`
-  ).join('')
+  document.getElementById('historyList').innerHTML = data.map(s => `<div class="history-row"><span class="ht">${s.scan_time||'--:--'}</span><span class="hc">${s.event_count||0} events</span></div>`).join('')
 }
 
-window.triggerScan = async () => {
+async function triggerScan() {
   const btn = document.getElementById('scanBtn')
-  btn.disabled = true
-  setStatus('scanning', 'Scanning...')
-  renderShimmers()
-  const apiKey = localStorage.getItem('mit_api_key')
   if (!apiKey) {
-    const key = prompt('Enter your Anthropic API key (sk-ant-...):')
-    if (!key) { btn.disabled = false; setStatus('', 'Ready'); return }
-    localStorage.setItem('mit_api_key', key)
+    const k = prompt('Enter your Anthropic API key (sk-ant-...):')
+    if (!k) return
+    apiKey = k; localStorage.setItem('mit_api_key', k)
   }
-  await runScan(localStorage.getItem('mit_api_key'))
+  btn.disabled = true; setStatus('scanning', 'Scanning...'); renderShimmers()
+  await runScan()
   btn.disabled = false
 }
 
-async function runScan(apiKey) {
+async function runScan() {
   const now = new Date()
   const dateStr = now.toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long', year:'numeric' })
   const timeStr = now.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' })
-  const prompt = `You are a senior multi-asset macro analyst. Today is ${dateStr} at ${timeStr} UK time. Search the web for current breaking financial and geopolitical news. Cover: Trump Truth Social posts about markets/tariffs/trade, Forex Factory red events today, active geopolitical conflicts, central bank decisions and speeches, major equity moves, commodity shifts, crypto. For every event give detailed FX pair impact analysis with specific price levels. Return ONLY valid JSON: {"scan_time":"${timeStr}","scan_date":"${dateStr}","events":[{"id":"unique","type":"trump|geopolitical|central-bank|economic|equities|commodities|crypto","urgent":bool,"impact":"HIGH|MEDIUM|LOW","source":"string","headline":"string max 15 words","context":"2-3 sentences with numbers","time":"HH:MM or relative","pairs":[{"pair":"EUR/USD","direction":"bullish|bearish|neutral","strength":0-100,"analysis":"one sentence with price levels"}],"overall":"bullish|bearish|neutral|mixed","signal":"actionable trader signal with levels"}],"urgent_alerts":["string"],"sentiment":{"USD":0,"EUR":0,"GBP":0,"JPY":0,"CHF":0,"AUD":0,"CAD":0,"Gold":0,"Oil":0,"BTC":0},"setups":["Setup with pair entry target stop"],"market_summary":"4 paragraph brief"}`
-
+  const prompt = `You are a senior multi-asset macro analyst. Today is ${dateStr} at ${timeStr} UK time. Search the web for current breaking financial and geopolitical news. Cover: Trump Truth Social posts about markets/tariffs/trade, Forex Factory red events today, active geopolitical conflicts, central bank decisions and speeches, major equity moves, commodity shifts, crypto. For every event give detailed FX pair impact analysis with specific price levels. Return ONLY valid JSON with no markdown: {"scan_time":"${timeStr}","scan_date":"${dateStr}","events":[{"id":"unique","type":"trump|geopolitical|central-bank|economic|equities|commodities|crypto","urgent":false,"impact":"HIGH|MEDIUM|LOW","source":"string","headline":"max 15 words","context":"2-3 sentences","time":"HH:MM","pairs":[{"pair":"EUR/USD","direction":"bullish|bearish|neutral","strength":75,"analysis":"one sentence with price levels"}],"overall":"bullish|bearish|neutral|mixed","signal":"actionable signal with levels"}],"urgent_alerts":["string"],"sentiment":{"USD":0,"EUR":0,"GBP":0,"JPY":0,"CHF":0,"AUD":0,"CAD":0,"Gold":0,"Oil":0,"BTC":0},"setups":["setup with pair entry target stop"],"market_summary":"4 paragraph brief"}`
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -352,77 +288,60 @@ async function runScan(apiKey) {
     const data = await res.json()
     let raw = data.content.filter(b => b.type === 'text').map(b => b.text).join('').trim().replace(/```json|```/g, '').trim()
     const s = raw.indexOf('{'), e = raw.lastIndexOf('}')
-    if (s === -1) throw new Error('No JSON')
+    if (s === -1) throw new Error('No JSON returned')
     const result = JSON.parse(raw.slice(s, e + 1))
     result.event_count = (result.events || []).length
-
-    await supabase.from('scans').insert([result])
-
+    await sb.from('scans').insert([result])
     allEvents = result.events || []
-    renderFeed()
-    renderSentiment(result.sentiment || {})
-    renderSetups(result.setups || [])
-    renderUrgent(result.urgent_alerts || [])
-    updateCounts()
-    loadHistory()
+    renderFeed(); renderSentiment(result.sentiment || {}); renderSetups(result.setups || []); renderUrgent(result.urgent_alerts || []); updateCounts(); loadHistory()
     if (result.market_summary) { lastReport = result.market_summary; document.getElementById('reportBtn').disabled = false; document.getElementById('reportDate').textContent = result.scan_date + ' · ' + result.scan_time }
     const urgents = allEvents.filter(e => e.urgent || e.impact === 'HIGH')
     if (urgents.length) showToast(urgents[0].headline)
     setStatus('live', 'Updated ' + result.scan_time)
   } catch (err) {
-    setStatus('', 'Scan failed — ' + err.message)
-    document.getElementById('feedBody').innerHTML = `<div class="empty"><span class="empty-icon">⚠</span><h3>Scan failed</h3><p>${err.message}</p></div>`
+    setStatus('', 'Scan failed'); document.getElementById('feedBody').innerHTML = `<div class="empty"><span class="empty-icon">⚠</span><h3>Scan failed</h3><p>${err.message}</p></div>`
   }
 }
 
 function setStatus(state, label) {
-  document.getElementById('sdot').className = 'sdot' + (state === 'live' ? ' live' : state === 'scanning' ? ' scanning' : '')
+  document.getElementById('sdot').className = 'sdot' + (state==='live'?' live':state==='scanning'?' scanning':'')
   document.getElementById('slabel').textContent = label
 }
 
 function renderShimmers() {
-  document.getElementById('feedBody').innerHTML = Array(4).fill(0).map(() => `
-    <div class="shim-card">
-      <div class="shim" style="width:32%;height:10px;margin-bottom:12px"></div>
-      <div class="shim" style="width:78%;height:14px;margin-bottom:8px"></div>
-      <div class="shim" style="width:100%;height:10px;margin-bottom:5px"></div>
-      <div class="shim" style="width:65%;height:10px;margin-bottom:16px"></div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-        <div class="shim" style="height:54px"></div><div class="shim" style="height:54px"></div>
-      </div>
-    </div>`).join('')
+  document.getElementById('feedBody').innerHTML = Array(4).fill(0).map(() => `<div class="shim-card"><div class="shim" style="width:32%;height:10px;margin-bottom:12px"></div><div class="shim" style="width:78%;height:14px;margin-bottom:8px"></div><div class="shim" style="width:100%;height:10px;margin-bottom:5px"></div><div class="shim" style="width:65%;height:10px;margin-bottom:16px"></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px"><div class="shim" style="height:54px"></div><div class="shim" style="height:54px"></div></div></div>`).join('')
 }
 
 function renderFeed() {
   let events = activeFilter === 'all' ? [...allEvents] : allEvents.filter(e => e.type === activeFilter)
-  if (sortMode === 'impact') { const o = { HIGH: 0, MEDIUM: 1, LOW: 2 }; events.sort((a, b) => (o[a.impact] || 2) - (o[b.impact] || 2)) }
+  if (sortMode === 'impact') { const o={HIGH:0,MEDIUM:1,LOW:2}; events.sort((a,b)=>(o[a.impact]||2)-(o[b.impact]||2)) }
   if (sortMode === 'urgent') events = events.filter(e => e.urgent || e.impact === 'HIGH')
   if (!events.length) { document.getElementById('feedBody').innerHTML = `<div class="empty"><span class="empty-icon">🔍</span><h3>No events</h3><p>No events match this filter.</p></div>`; return }
   document.getElementById('feedBody').innerHTML = events.map(buildCard).join('')
 }
 
 function buildCard(ev) {
-  const tm = { trump: 'tag-trump', geopolitical: 'tag-geo', 'central-bank': 'tag-cb', economic: 'tag-eco', equities: 'tag-eq', commodities: 'tag-com', crypto: 'tag-cry' }
-  const tl = { trump: 'Trump', geopolitical: 'Geopolitical', 'central-bank': 'Central Bank', economic: 'Forex Factory', equities: 'Equities', commodities: 'Commodities', crypto: 'Crypto' }
-  const sc = { trump: '#f06432', geopolitical: 'var(--amber)', 'central-bank': 'var(--blue)', economic: 'var(--red)', equities: 'var(--purple)', commodities: 'var(--gold)', crypto: 'var(--purple)' }
-  const it = ev.impact === 'HIGH' ? 'tag-high' : ev.impact === 'MEDIUM' ? 'tag-med' : 'tag-low'
-  const sgc = ev.overall === 'bullish' ? 'sig-bull' : ev.overall === 'bearish' ? 'sig-bear' : ev.overall === 'mixed' ? 'sig-mixed' : 'sig-neut'
-  const sgi = ev.overall === 'bullish' ? 'var(--green)' : ev.overall === 'bearish' ? 'var(--red)' : 'var(--amber)'
-  const sgt = ev.overall === 'bullish' ? '▲' : ev.overall === 'bearish' ? '▼' : ev.overall === 'mixed' ? '◆' : '–'
-  const pairs = (ev.pairs || []).map(p => {
-    const dc = p.direction === 'bullish' ? 'bull' : p.direction === 'bearish' ? 'bear' : 'neut'
-    const bc = p.direction === 'bullish' ? 'b-bull' : p.direction === 'bearish' ? 'b-bear' : 'b-neut'
-    const dl = p.direction === 'bullish' ? '↑ Long' : p.direction === 'bearish' ? '↓ Short' : '→ Watch'
+  const tm={trump:'tag-trump',geopolitical:'tag-geo','central-bank':'tag-cb',economic:'tag-eco',equities:'tag-eq',commodities:'tag-com',crypto:'tag-cry'}
+  const tl={trump:'Trump',geopolitical:'Geopolitical','central-bank':'Central Bank',economic:'Forex Factory',equities:'Equities',commodities:'Commodities',crypto:'Crypto'}
+  const sc={trump:'#f06432',geopolitical:'var(--amber)','central-bank':'var(--blue)',economic:'var(--red)',equities:'var(--purple)',commodities:'var(--gold)',crypto:'var(--purple)'}
+  const it=ev.impact==='HIGH'?'tag-high':ev.impact==='MEDIUM'?'tag-med':'tag-low'
+  const sgc=ev.overall==='bullish'?'sig-bull':ev.overall==='bearish'?'sig-bear':ev.overall==='mixed'?'sig-mixed':'sig-neut'
+  const sgi=ev.overall==='bullish'?'var(--green)':ev.overall==='bearish'?'var(--red)':'var(--amber)'
+  const sgt=ev.overall==='bullish'?'▲':ev.overall==='bearish'?'▼':ev.overall==='mixed'?'◆':'–'
+  const pairs=(ev.pairs||[]).map(p=>{
+    const dc=p.direction==='bullish'?'bull':p.direction==='bearish'?'bear':'neut'
+    const bc=p.direction==='bullish'?'b-bull':p.direction==='bearish'?'b-bear':'b-neut'
+    const dl=p.direction==='bullish'?'↑ Long':p.direction==='bearish'?'↓ Short':'→ Watch'
     return `<div class="pair-card"><div class="pair-top"><span class="pair-name">${p.pair}</span><span class="pair-dir ${dc}">${dl}</span></div><div class="bar-wrap"><div class="bar ${bc}" style="width:${p.strength||65}%"></div></div><div class="pair-analysis">${p.analysis}</div></div>`
   }).join('')
-  return `<div class="card${ev.urgent ? ' urgent' : ''}" id="ev-${ev.id}">
-    <div class="card-stripe" style="background:${sc[ev.type] || 'var(--blue)'}"></div>
+  return `<div class="card${ev.urgent?' urgent':''}" id="ev-${ev.id}">
+    <div class="card-stripe" style="background:${sc[ev.type]||'var(--blue)'}"></div>
     <div class="card-inner">
       <div class="card-top">
-        <div class="card-tags">${ev.urgent ? '<span class="tag tag-urg">⚡ Urgent</span>' : ''}<span class="tag ${tm[ev.type] || 'tag-cb'}">${tl[ev.type] || ev.type}</span><span class="tag ${it}">${ev.impact || 'LOW'}</span></div>
-        <span class="card-time">${ev.time || ''}</span>
+        <div class="card-tags">${ev.urgent?'<span class="tag tag-urg">⚡ Urgent</span>':''}<span class="tag ${tm[ev.type]||'tag-cb'}">${tl[ev.type]||ev.type}</span><span class="tag ${it}">${ev.impact||'LOW'}</span></div>
+        <span class="card-time">${ev.time||''}</span>
       </div>
-      <div class="card-source">${ev.source || ''}</div>
+      <div class="card-source">${ev.source||''}</div>
       <div class="card-headline">${ev.headline}</div>
       <div class="card-context">${ev.context}</div>
       <div class="pairs-head">Pair impact</div>
@@ -437,118 +356,104 @@ function buildCard(ev) {
 }
 
 function updateCounts() {
-  const c = { all: allEvents.length, trump: 0, geopolitical: 0, 'central-bank': 0, economic: 0, equities: 0, commodities: 0, crypto: 0 }
-  allEvents.forEach(e => { if (c[e.type] !== undefined) c[e.type]++ })
-  Object.entries(c).forEach(([k, v]) => { const el = document.getElementById('c-' + (k === 'central-bank' ? 'cb' : k === 'geopolitical' ? 'geo' : k === 'economic' ? 'eco' : k === 'equities' ? 'eq' : k === 'commodities' ? 'com' : k === 'crypto' ? 'cry' : k)); if (el) el.textContent = v })
-  const u = allEvents.filter(e => e.urgent).length
-  document.getElementById('c-all').classList.toggle('hot', u > 0)
+  const c={all:allEvents.length,trump:0,geopolitical:0,'central-bank':0,economic:0,equities:0,commodities:0,crypto:0}
+  allEvents.forEach(e=>{if(c[e.type]!==undefined)c[e.type]++})
+  const map={all:'all',trump:'trump',geopolitical:'geo','central-bank':'cb',economic:'eco',equities:'eq',commodities:'com',crypto:'cry'}
+  Object.entries(map).forEach(([k,v])=>{const el=document.getElementById('c-'+v);if(el)el.textContent=c[k]||0})
+  document.getElementById('c-all').classList.toggle('hot', allEvents.filter(e=>e.urgent).length>0)
 }
 
-window.setFilter = (f, el) => {
+function setFilter(f, el) {
   activeFilter = f
-  document.querySelectorAll('.sb-item').forEach(i => i.classList.remove('active'))
-  el.classList.add('active')
-  const labels = { all: 'All Intel', trump: 'Trump', geopolitical: 'Geopolitical', 'central-bank': 'Central Banks', economic: 'Forex Factory Red', equities: 'Equities', commodities: 'Commodities', crypto: 'Crypto' }
-  document.getElementById('feedTitle').textContent = labels[f] || f
+  document.querySelectorAll('.sb-item').forEach(i=>i.classList.remove('active')); el.classList.add('active')
+  const labels={all:'All Intel',trump:'Trump',geopolitical:'Geopolitical','central-bank':'Central Banks',economic:'Forex Factory Red',equities:'Equities',commodities:'Commodities',crypto:'Crypto'}
+  document.getElementById('feedTitle').textContent = labels[f]||f
   renderFeed()
 }
 
-window.setSort = (s, el) => {
+function setSort(s, el) {
   sortMode = s
-  document.querySelectorAll('.chip').forEach(c => c.classList.remove('on', 'on-red'))
-  el.classList.add(s === 'urgent' ? 'on-red' : 'on')
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on','on-red'))
+  el.classList.add(s==='urgent'?'on-red':'on')
   renderFeed()
 }
 
 function renderSentiment(s) {
-  document.getElementById('sentPanel').innerHTML = Object.entries(s).map(([n, v]) => {
-    const pct = Math.min(100, Math.abs(v))
-    const cls = v > 10 ? 'b-bull' : v < -10 ? 'b-bear' : 'b-neut'
-    const vc = v > 10 ? 'var(--green)' : v < -10 ? 'var(--red)' : 'var(--text3)'
-    return `<div class="sent-row"><span class="sent-n">${n}</span><div class="sent-bw"><div class="sent-b ${cls}" style="width:${pct}%"></div></div><span class="sent-v" style="color:${vc}">${v > 0 ? '+' : ''}${Math.round(v)}</span></div>`
-  }).join('') || '<div style="font-size:11px;color:var(--text3)">No data</div>'
+  document.getElementById('sentPanel').innerHTML = Object.entries(s).map(([n,v])=>{
+    const pct=Math.min(100,Math.abs(v))
+    const cls=v>10?'b-bull':v<-10?'b-bear':'b-neut'
+    const vc=v>10?'var(--green)':v<-10?'var(--red)':'var(--text3)'
+    return `<div class="sent-row"><span class="sent-n">${n}</span><div class="sent-bw"><div class="sent-b ${cls}" style="width:${pct}%"></div></div><span class="sent-v" style="color:${vc}">${v>0?'+':''}${Math.round(v)}</span></div>`
+  }).join('')||'<div style="font-size:11px;color:var(--text3)">No data</div>'
 }
 
 function renderSetups(setups) {
   if (!setups.length) return
-  document.getElementById('setupPanel').innerHTML = setups.map((s, i) => `<div class="setup-card"><div class="setup-n">Setup ${i + 1}</div><div class="setup-t">${s}</div></div>`).join('')
+  document.getElementById('setupPanel').innerHTML = setups.map((s,i)=>`<div class="setup-card"><div class="setup-n">Setup ${i+1}</div><div class="setup-t">${s}</div></div>`).join('')
 }
 
 function renderUrgent(alerts) {
   document.getElementById('urgentList').innerHTML = alerts.length
-    ? alerts.map(a => `<div class="alert-card"><div class="alert-h">${a}</div><div class="alert-m">⚡ High priority</div></div>`).join('')
+    ? alerts.map(a=>`<div class="alert-card"><div class="alert-h">${a}</div><div class="alert-m">⚡ High priority</div></div>`).join('')
     : '<div style="font-size:11px;color:var(--text3)">No urgent alerts</div>'
 }
 
 function updateCountdown() {
-  const times = ['07:00', '15:00', '23:00']
-  const now = new Date()
-  const nowM = now.getHours() * 60 + now.getMinutes()
-  let next = times.find(t => { const [h, m] = t.split(':').map(Number); return h * 60 + m > nowM }) || times[0]
-  document.getElementById('nextTime').textContent = next
-  const [h, m] = next.split(':').map(Number)
-  let target = new Date(); target.setHours(h, m, 0, 0)
-  if (target <= now) target.setDate(target.getDate() + 1)
-  const diff = target - now
-  document.getElementById('nextCd').textContent = `in ${Math.floor(diff / 3600000)}h ${Math.floor((diff % 3600000) / 60000)}m`
+  const times=['07:00','15:00','23:00'], now=new Date(), nowM=now.getHours()*60+now.getMinutes()
+  let next=times.find(t=>{const[h,m]=t.split(':').map(Number);return h*60+m>nowM})||times[0]
+  document.getElementById('nextTime').textContent=next
+  const[h,m]=next.split(':').map(Number); let target=new Date(); target.setHours(h,m,0,0)
+  if(target<=now)target.setDate(target.getDate()+1)
+  const diff=target-now
+  document.getElementById('nextCd').textContent=`in ${Math.floor(diff/3600000)}h ${Math.floor((diff%3600000)/60000)}m`
 }
 
 function getAmericanVoice() {
-  const voices = window.speechSynthesis?.getVoices() || []
-  return ['Samantha', 'Ava', 'Susan', 'Karen', 'Allison'].map(n => voices.find(v => v.name.includes(n))).find(Boolean) || voices.find(v => v.lang?.startsWith('en-US')) || voices[0]
+  const voices=window.speechSynthesis?.getVoices()||[]
+  return ['Samantha','Ava','Susan','Karen','Allison'].map(n=>voices.find(v=>v.name.includes(n))).find(Boolean)||voices.find(v=>v.lang?.startsWith('en-US'))||voices[0]
 }
 
-window.readCard = (id) => {
-  const ev = allEvents.find(e => e.id === id)
-  if (!ev) return
-  const btn = document.getElementById('pb-' + id)
-  if (currentUtterance) { window.speechSynthesis.cancel(); document.querySelectorAll('.card-btn.playing').forEach(b => { b.textContent = '▶ Read'; b.classList.remove('playing') }); currentUtterance = null; return }
-  const text = `${ev.source}. ${ev.headline}. ${ev.context} ${(ev.pairs || []).map(p => `${p.pair}: ${p.direction}. ${p.analysis}`).join('. ')} Signal: ${ev.signal}`
-  const u = new SpeechSynthesisUtterance(text)
-  const v = getAmericanVoice(); if (v) u.voice = v
-  u.lang = 'en-US'; u.rate = 0.94; u.pitch = 1.05
-  if (btn) { btn.textContent = '■ Stop'; btn.classList.add('playing') }
-  u.onend = () => { if (btn) { btn.textContent = '▶ Read'; btn.classList.remove('playing') }; currentUtterance = null }
-  currentUtterance = u; window.speechSynthesis.speak(u)
+function readCard(id) {
+  const ev=allEvents.find(e=>e.id===id); if(!ev)return
+  const btn=document.getElementById('pb-'+id)
+  if(currentUtterance){window.speechSynthesis.cancel();document.querySelectorAll('.card-btn.playing').forEach(b=>{b.textContent='▶ Read';b.classList.remove('playing')});currentUtterance=null;return}
+  const text=`${ev.source}. ${ev.headline}. ${ev.context} ${(ev.pairs||[]).map(p=>`${p.pair}: ${p.direction}. ${p.analysis}`).join('. ')} Signal: ${ev.signal}`
+  const u=new SpeechSynthesisUtterance(text); const v=getAmericanVoice(); if(v)u.voice=v
+  u.lang='en-US';u.rate=0.94;u.pitch=1.05
+  if(btn){btn.textContent='■ Stop';btn.classList.add('playing')}
+  u.onend=()=>{if(btn){btn.textContent='▶ Read';btn.classList.remove('playing')};currentUtterance=null}
+  currentUtterance=u; window.speechSynthesis.speak(u)
 }
 
-window.deepDive = async (id) => {
-  const ev = allEvents.find(e => e.id === id); if (!ev) return
-  document.getElementById('diveTitle').textContent = ev.headline
-  document.getElementById('diveBody').innerHTML = '<div class="modal-loading"><div class="spinner"></div>Generating deep-dive analysis...</div>'
+async function deepDive(id) {
+  const ev=allEvents.find(e=>e.id===id); if(!ev)return
+  document.getElementById('diveTitle').textContent=ev.headline
+  document.getElementById('diveBody').innerHTML='<div class="modal-loading"><div class="spinner"></div>Generating deep-dive analysis...</div>'
   document.getElementById('diveModal').classList.add('open')
-  const apiKey = localStorage.getItem('mit_api_key'); if (!apiKey) return
+  if(!apiKey)return
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1500, messages: [{ role: 'user', content: `Deep dive FX analysis for experienced trader. Event: ${ev.headline}. Context: ${ev.context}. Cover: macro context, pair-by-pair entry/stop/target/RR, correlated assets, risk events next 48h, intraday + swing + positional ideas. Be specific with price levels.` }] })
-    })
-    const d = await res.json()
-    const text = d.content.filter(b => b.type === 'text').map(b => b.text).join('')
-    document.getElementById('diveBody').innerHTML = `<div class="modal-text">${text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>')}</div>`
-  } catch (e) { document.getElementById('diveBody').innerHTML = `<div style="color:var(--red);font-size:13px">Failed: ${e.message}</div>` }
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1500,messages:[{role:'user',content:`Deep dive FX analysis for experienced trader. Event: ${ev.headline}. Context: ${ev.context}. Cover: macro context, pair-by-pair entry/stop/target/RR, correlated assets, risk events next 48h, intraday and swing trade ideas with specific price levels.`}]})})
+    const d=await res.json()
+    const text=d.content.filter(b=>b.type==='text').map(b=>b.text).join('')
+    document.getElementById('diveBody').innerHTML=`<div class="modal-text">${text.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>')}</div>`
+  } catch(e){document.getElementById('diveBody').innerHTML=`<div style="color:var(--red);font-size:13px">Failed: ${e.message}</div>`}
 }
 
-window.openReport = () => {
-  document.getElementById('reportBody').innerHTML = `<div class="modal-text">${lastReport.replace(/\n/g, '<br>')}</div>`
+function openReport() {
+  document.getElementById('reportBody').innerHTML=lastReport.replace(/\n/g,'<br>')
   document.getElementById('reportModal').classList.add('open')
 }
 
 function showToast(text) {
-  document.getElementById('toastText').textContent = text
-  const t = document.getElementById('toast'); t.style.display = 'block'
-  setTimeout(() => t.style.display = 'none', 12000)
+  document.getElementById('toastText').textContent=text
+  document.getElementById('toast').style.display='block'
+  setTimeout(()=>document.getElementById('toast').style.display='none',12000)
 }
 
-window.mobileTab = (el) => { document.querySelectorAll('.mn-item').forEach(i => i.classList.remove('active')); el.classList.add('active') }
+async function signOut() { await sb.auth.signOut(); location.href='/mit/login.html' }
 
-if (window.speechSynthesis) window.speechSynthesis.onvoiceschanged = () => {}
-await loadLatest()
-await loadHistory()
-updateCountdown()
-setInterval(updateCountdown, 30000)
-setInterval(async () => { await loadLatest(); await loadHistory() }, 60000)
+if(window.speechSynthesis)window.speechSynthesis.onvoiceschanged=()=>{}
+init()
 </script>
 </body>
 </html>
