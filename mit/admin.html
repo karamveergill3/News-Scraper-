@@ -48,7 +48,7 @@ h1{font-size:20px;font-weight:600;margin-bottom:6px}
     <span class="badge">Admin</span>
   </div>
   <div>
-    <button class="btn-sm" onclick="location.href='/mit/index.html'">← Dashboard</button>
+    <button class="btn-sm" onclick="location.href='/index.html'">← Dashboard</button>
     <button class="btn-sm" onclick="signOut()">Sign out</button>
   </div>
 </div>
@@ -67,14 +67,14 @@ h1{font-size:20px;font-weight:600;margin-bottom:6px}
 </div>
 <div class="toast" id="toast"></div>
 <script>
-const sb = window.supabase.createClient('https://xglnoorboeuiozwhdhde.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhnbG5vb3Jib2V1aW96d2hkaGRlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MTAwNjIsImV4cCI6MjA5NjA4NjA2Mn0.TdK2R3wjp9mfmbE593uXJ6MJ0VvWyuzrAEFOQSlAUCI')
+const sb = window.supabase.createClient('https://xglnoorboeuiozwhdhde.supabase.co','REPLACE_ANON_KEY')
 let adminId = null
 
 async function init() {
   const { data: { user } } = await sb.auth.getUser()
-  if (!user) { location.href = '/mit/login.html'; return }
+  if (!user) { location.href = '/login.html'; return }
   const { data: p } = await sb.from('profiles').select('*').eq('id', user.id).single()
-  if (!p?.is_admin) { location.href = '/mit/index.html'; return }
+  if (!p?.is_admin) { location.href = '/index.html'; return }
   adminId = user.id
   loadUsers()
 }
@@ -116,7 +116,7 @@ async function reject(id) {
   showToast('User rejected'); loadUsers()
 }
 
-async function signOut() { await sb.auth.signOut(); location.href = '/mit/login.html' }
+async function signOut() { await sb.auth.signOut(); location.href = '/login.html' }
 
 function showToast(msg) {
   const t = document.getElementById('toast'); t.textContent = msg; t.style.display = 'block'
