@@ -34,10 +34,11 @@ p{font-size:13px;color:#6a6a68;line-height:1.65;margin-bottom:16px}
 const sb = window.supabase.createClient('https://xglnoorboeuiozwhdhde.supabase.co','REPLACE_ANON_KEY')
 async function init() {
   const { data: { user } } = await sb.auth.getUser()
-  if (!user) {  = '/login.html'; return }
+  if (!user) { window.location.replace('/login.html'); return }
   document.getElementById('userEmail').textContent = user.email
-  const { data: p } = await sb.from('profiles').select('status').eq('id', user.id).single()
-  if (p?.status === 'approved') window.location.replace.href = '/index.html'
+  const { data: p } = await sb.from('profiles').select('*').eq('id', user.id).single()
+  if (p?.status === 'approved' || p?.is_admin) { window.location.replace('/index.html'); return }
+}
 }
 init()
 async function signOut() { await sb.auth.signOut(); location.href = '/login.html' }
