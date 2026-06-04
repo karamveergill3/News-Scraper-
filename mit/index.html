@@ -232,11 +232,11 @@ let allEvents = [], activeFilter = 'all', sortMode = 'time', lastReport = '', cu
 
 async function init() {
   const { data: { user } } = await sb.auth.getUser()
-  if (!user) { location.href = '/login.html'; return }
+  if (!user) { window.location.replace('/login.html'); return }
   const { data: p } = await sb.from('profiles').select('*').eq('id', user.id).single()
-  if (!p) { location.href = '/login.html'; return }
-  if (p.status === 'pending') { location.href = '/pending.html'; return }
-  if (p.status === 'rejected') { location.href = '/login.html?rejected=1'; return }
+  if (!p) { window.location.replace('/login.html'); return }
+  if (p.status === 'pending') { window.location.replace('/pending.html'); return }
+  if (p.status === 'rejected') { window.location.replace('/login.html?rejected=1'); return }
   if (p.is_admin) document.getElementById('adminBtn').style.display = 'inline-flex'
   apiKey = localStorage.getItem('mit_api_key') || ''
   await loadLatest()
