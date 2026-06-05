@@ -5,126 +5,120 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MarketIntel — Admin</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:#0d0d0d;color:#f2f0eb;font-family:'Inter',sans-serif;min-height:100vh}
-.topbar{background:#111;border-bottom:1px solid rgba(255,255,255,0.07);display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:52px}
-.logo{font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;letter-spacing:-0.5px}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+body{background:#050505;color:#f2f0eb;font-family:'Inter',sans-serif;min-height:100vh}
+.topbar{background:rgba(5,5,5,0.95);backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:56px;position:sticky;top:0;z-index:100}
+.logo-row{display:flex;align-items:center;gap:10px}
+.logo{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#9a9890}
 .logo span{color:#22c77a}
-.badge{font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;background:rgba(240,168,50,0.15);color:#f0a832;padding:3px 10px;border-radius:6px;margin-left:8px}
-.btn-sm{padding:6px 14px;border-radius:7px;border:1px solid rgba(255,255,255,0.1);background:transparent;color:#6a6a68;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.15s;margin-left:8px}
-.btn-sm:hover{color:#f2f0eb}
-.content{max-width:900px;margin:0 auto;padding:32px 24px}
-h1{font-size:20px;font-weight:600;margin-bottom:6px}
-.subtitle{font-size:13px;color:#5a5a58;margin-bottom:28px}
-.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:28px}
-.stat{background:#141414;border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:14px 16px}
-.stat-label{font-size:11px;color:#5a5a58;margin-bottom:4px;font-family:'JetBrains Mono',monospace}
-.stat-val{font-size:22px;font-weight:600;font-family:'JetBrains Mono',monospace}
-.section{margin-bottom:32px}
-.section-title{font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#5a5a58;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,0.07)}
-.user-card{background:#141414;border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}
-.user-name{font-size:14px;font-weight:500;margin-bottom:2px}
-.user-email{font-size:12px;color:#5a5a58;font-family:'JetBrains Mono',monospace}
-.user-time{font-size:11px;color:#3a3a38;margin-top:3px}
+.admin-badge{font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;background:rgba(240,168,50,0.12);color:#f0a832;padding:4px 10px;border-radius:6px}
+.top-btns{display:flex;gap:8px}
+.btn-sm{padding:7px 16px;border-radius:8px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.03);color:#5a5a58;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.2s;font-weight:500}
+.btn-sm:hover{color:#f2f0eb;background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.12)}
+.content{max-width:960px;margin:0 auto;padding:36px 28px;animation:fadeUp 0.5s ease}
+h1{font-size:24px;font-weight:700;letter-spacing:-0.5px;margin-bottom:6px}
+.subtitle{font-size:14px;color:#3a3a38;margin-bottom:32px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:36px}
+.stat{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:18px 20px;transition:all 0.25s;position:relative;overflow:hidden}
+.stat:hover{border-color:rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);transform:translateY(-2px)}
+.stat-label{font-size:11px;color:#3a3a38;margin-bottom:6px;font-family:'JetBrains Mono',monospace;letter-spacing:0.1em;text-transform:uppercase}
+.stat-val{font-size:28px;font-weight:700;font-family:'JetBrains Mono',monospace;letter-spacing:-1px}
+.section{margin-bottom:36px;animation:fadeUp 0.5s ease}
+.section-title{font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#3a3a38;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,0.06)}
+.user-card{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:16px 18px;display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:8px;transition:all 0.25s}
+.user-card:hover{border-color:rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);transform:translateX(4px)}
+.user-name{font-size:14px;font-weight:600;margin-bottom:2px}
+.user-email{font-size:12px;color:#3a3a38;font-family:'JetBrains Mono',monospace}
+.user-time{font-size:11px;color:#2a2a2a;margin-top:3px}
 .user-actions{display:flex;gap:6px;flex-shrink:0}
-.btn-approve{padding:6px 14px;border-radius:7px;border:1px solid rgba(34,199,122,0.3);background:rgba(34,199,122,0.1);color:#22c77a;font-size:12px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif}
-.btn-approve:hover{background:rgba(34,199,122,0.2)}
-.btn-reject{padding:6px 14px;border-radius:7px;border:1px solid rgba(240,68,68,0.3);background:rgba(240,68,68,0.1);color:#f04444;font-size:12px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif}
-.btn-reject:hover{background:rgba(240,68,68,0.2)}
-.pill{font-size:10px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;padding:3px 9px;border-radius:6px}
-.pill-approved{background:rgba(34,199,122,0.12);color:#22c77a}
-.pill-rejected{background:rgba(240,68,68,0.12);color:#f04444}
-.pill-admin{background:rgba(68,136,240,0.12);color:#4488f0}
-.empty{font-size:13px;color:#3a3a38;padding:16px 0;font-style:italic}
-.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1a1a1a;border:1px solid rgba(34,199,122,0.3);color:#22c77a;padding:10px 20px;border-radius:8px;font-size:13px;display:none;z-index:100}
+.btn-approve{padding:7px 16px;border-radius:8px;border:1px solid rgba(34,199,122,0.3);background:rgba(34,199,122,0.08);color:#22c77a;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.2s}
+.btn-approve:hover{background:rgba(34,199,122,0.15);transform:scale(1.02)}
+.btn-reject{padding:7px 16px;border-radius:8px;border:1px solid rgba(240,68,68,0.3);background:rgba(240,68,68,0.08);color:#f04444;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.2s}
+.btn-reject:hover{background:rgba(240,68,68,0.15)}
+.pill{font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:4px 10px;border-radius:6px}
+.pill-approved{background:rgba(34,199,122,0.1);color:#22c77a}
+.pill-rejected{background:rgba(240,68,68,0.1);color:#f04444}
+.pill-admin{background:rgba(68,136,240,0.1);color:#4488f0}
+.empty{font-size:13px;color:#2a2a2a;padding:20px 0;font-style:italic}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:rgba(20,20,20,0.95);border:1px solid rgba(34,199,122,0.3);color:#22c77a;padding:12px 24px;border-radius:10px;font-size:13px;font-weight:500;display:none;z-index:200;backdrop-filter:blur(8px);animation:fadeUp 0.3s ease}
 </style>
 </head>
 <body>
 <div class="topbar">
-  <div style="display:flex;align-items:center">
+  <div class="logo-row">
     <div class="logo">Market<span>Intel</span></div>
-    <span class="badge">Admin</span>
+    <span class="admin-badge">Admin</span>
   </div>
-  <div>
+  <div class="top-btns">
     <button class="btn-sm" onclick="location.href='/index.html'">← Dashboard</button>
-    <button class="btn-sm" onclick="signOut()">Sign out</button>
+    <button class="btn-sm" onclick="doSignOut()">Sign out</button>
   </div>
 </div>
 <div class="content">
   <h1>User Management</h1>
-  <div class="subtitle">Approve or reject access requests.</div>
+  <div class="subtitle">Approve or reject access requests</div>
   <div class="stats">
-    <div class="stat"><div class="stat-label">PENDING</div><div class="stat-val" style="color:#f0a832" id="cPending">–</div></div>
-    <div class="stat"><div class="stat-label">APPROVED</div><div class="stat-val" style="color:#22c77a" id="cApproved">–</div></div>
-    <div class="stat"><div class="stat-label">REJECTED</div><div class="stat-val" style="color:#f04444" id="cRejected">–</div></div>
-    <div class="stat"><div class="stat-label">TOTAL</div><div class="stat-val" id="cTotal">–</div></div>
+    <div class="stat"><div class="stat-label">Pending</div><div class="stat-val" style="color:#f0a832" id="cPending">–</div></div>
+    <div class="stat"><div class="stat-label">Approved</div><div class="stat-val" style="color:#22c77a" id="cApproved">–</div></div>
+    <div class="stat"><div class="stat-label">Rejected</div><div class="stat-val" style="color:#f04444" id="cRejected">–</div></div>
+    <div class="stat"><div class="stat-label">Total</div><div class="stat-val" id="cTotal">–</div></div>
   </div>
   <div class="section"><div class="section-title">Pending Approval</div><div id="pendingList"><div class="empty">Loading...</div></div></div>
-  <div class="section"><div class="section-title">Approved Users</div><div id="approvedList"><div class="empty">Loading...</div></div></div>
+  <div class="section"><div class="section-title">Approved</div><div id="approvedList"><div class="empty">Loading...</div></div></div>
   <div class="section"><div class="section-title">Rejected</div><div id="rejectedList"><div class="empty">Loading...</div></div></div>
 </div>
 <div class="toast" id="toast"></div>
 <script>
-const sb = window.supabase.createClient('https://xglnoorboeuiozwhdhde.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhnbG5vb3Jib2V1aW96d2hkaGRlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MTAwNjIsImV4cCI6MjA5NjA4NjA2Mn0.TdK2R3wjp9mfmbE593uXJ6MJ0VvWyuzrAEFOQSlAUCI')
-let adminId = null
+const sb=window.supabase.createClient('https://xglnoorboeuiozwhdhde.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhnbG5vb3Jib2V1aW96d2hkaGRlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MTAwNjIsImV4cCI6MjA5NjA4NjA2Mn0.TdK2R3wjp9mfmbE593uXJ6MJ0VvWyuzrAEFOQSlAUCI')
+let adminId=null
 
-async function init() {
-  const { data: { user } } = await sb.auth.getUser()
-  if (!user) { location.href = '/login.html'; return }
-  const { data: p } = await sb.from('profiles').select('*').eq('id', user.id).single()
-  if (!p?.is_admin) { location.href = '/index.html'; return }
-  adminId = user.id
-  loadUsers()
+async function init(){
+  const{data:{user}}=await sb.auth.getUser()
+  if(!user){location.href='/login.html';return}
+  const{data:p}=await sb.from('profiles').select('*').eq('id',user.id).single()
+  if(!p||!p.is_admin){location.href='/index.html';return}
+  adminId=user.id;loadUsers()
 }
 
-async function loadUsers() {
-  const { data: users } = await sb.from('profiles').select('*').order('created_at', { ascending: false })
-  if (!users) return
-  const pending = users.filter(u => u.status === 'pending' && !u.is_admin)
-  const approved = users.filter(u => u.status === 'approved' || u.is_admin)
-  const rejected = users.filter(u => u.status === 'rejected')
-  document.getElementById('cPending').textContent = pending.length
-  document.getElementById('cApproved').textContent = approved.length
-  document.getElementById('cRejected').textContent = rejected.length
-  document.getElementById('cTotal').textContent = users.length
-  renderList('pendingList', pending, true)
-  renderList('approvedList', approved, false)
-  renderList('rejectedList', rejected, false)
+async function loadUsers(){
+  const{data:users}=await sb.from('profiles').select('*').order('created_at',{ascending:false})
+  if(!users)return
+  const pending=users.filter(u=>u.status==='pending'&&!u.is_admin)
+  const approved=users.filter(u=>u.status==='approved'||u.is_admin)
+  const rejected=users.filter(u=>u.status==='rejected')
+  document.getElementById('cPending').textContent=pending.length
+  document.getElementById('cApproved').textContent=approved.length
+  document.getElementById('cRejected').textContent=rejected.length
+  document.getElementById('cTotal').textContent=users.length
+  renderList('pendingList',pending,true)
+  renderList('approvedList',approved,false)
+  renderList('rejectedList',rejected,false)
 }
 
-function renderList(id, users, showActions) {
-  const el = document.getElementById(id)
-  if (!users.length) { el.innerHTML = '<div class="empty">None</div>'; return }
-  el.innerHTML = users.map(u => {
-    const date = new Date(u.created_at).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' })
-    const actions = showActions
-      ? `<button class="btn-approve" onclick="approve('${u.id}','${u.email}')">Approve</button><button class="btn-reject" onclick="reject('${u.id}')">Reject</button>`
-      : `<span class="pill ${u.is_admin ? 'pill-admin' : u.status === 'approved' ? 'pill-approved' : 'pill-rejected'}">${u.is_admin ? 'Admin' : u.status}</span>`
-    return `<div class="user-card"><div style="flex:1;min-width:0"><div class="user-name">${u.full_name || 'No name'}</div><div class="user-email">${u.email}</div><div class="user-time">Signed up ${date}</div></div><div class="user-actions">${actions}</div></div>`
+function renderList(id,users,showActions){
+  const el=document.getElementById(id)
+  if(!users.length){el.innerHTML='<div class="empty">None</div>';return}
+  el.innerHTML=users.map(u=>{
+    const date=new Date(u.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})
+    const actions=showActions?'<button class="btn-approve" onclick="approve(\''+u.id+'\',\''+u.email+'\')">Approve</button><button class="btn-reject" onclick="reject(\''+u.id+'\')">Reject</button>':'<span class="pill '+(u.is_admin?'pill-admin':u.status==='approved'?'pill-approved':'pill-rejected')+'">'+(u.is_admin?'Admin':u.status)+'</span>'
+    return '<div class="user-card"><div style="flex:1;min-width:0"><div class="user-name">'+(u.full_name||'No name')+'</div><div class="user-email">'+u.email+'</div><div class="user-time">Signed up '+date+'</div></div><div class="user-actions">'+actions+'</div></div>'
   }).join('')
 }
 
-async function approve(id, email) {
-  await sb.from('profiles').update({ status: 'approved', approved_at: new Date().toISOString(), approved_by: adminId }).eq('id', id)
-  showToast('✓ Approved ' + email); loadUsers()
+async function approve(id,email){
+  await sb.from('profiles').update({status:'approved',approved_at:new Date().toISOString(),approved_by:adminId}).eq('id',id)
+  showToast('✓ Approved '+email);loadUsers()
 }
-
-async function reject(id) {
-  await sb.from('profiles').update({ status: 'rejected' }).eq('id', id)
-  showToast('User rejected'); loadUsers()
+async function reject(id){
+  await sb.from('profiles').update({status:'rejected'}).eq('id',id)
+  showToast('User rejected');loadUsers()
 }
-
-async function signOut() { await sb.auth.signOut(); location.href = '/login.html' }
-
-function showToast(msg) {
-  const t = document.getElementById('toast'); t.textContent = msg; t.style.display = 'block'
-  setTimeout(() => t.style.display = 'none', 3000)
-}
-
-init()
-setInterval(loadUsers, 30000)
+async function doSignOut(){await sb.auth.signOut();location.href='/login.html'}
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.style.display='block';setTimeout(()=>t.style.display='none',3000)}
+init();setInterval(loadUsers,30000)
 </script>
 </body>
 </html>
