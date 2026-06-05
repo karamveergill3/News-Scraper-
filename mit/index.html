@@ -6,8 +6,20 @@
 <meta name="theme-color" content="#050505">
 <title>MarketIntel</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
+/* ── KJC INTRO ── */
+#kjcIntro{position:fixed;inset:0;z-index:10000;background:#000;overflow:hidden;pointer-events:all}
+#kjcIntro canvas{position:absolute;top:0;left:0;width:100%!important;height:100%!important;display:block}
+#kjcVignette{position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 30%,rgba(0,0,0,.82) 100%);z-index:1;pointer-events:none}
+#kjcLogo{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(1.05);text-align:center;opacity:0;z-index:2;pointer-events:none;will-change:opacity,transform}
+.kjc-letters{font-family:Georgia,'Times New Roman',serif;font-size:clamp(68px,13vw,148px);font-weight:900;background:linear-gradient(180deg,#f8e080 0%,#d4a843 40%,#b8902a 78%,#7a5a10 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:0.14em;line-height:1}
+.kjc-rule{width:min(310px,52vw);height:1px;background:linear-gradient(90deg,transparent,#d4a843 28%,#f0c050 50%,#d4a843 72%,transparent);margin:11px auto}
+.kjc-cap{font-family:Georgia,'Times New Roman',serif;font-size:clamp(12px,2vw,23px);letter-spacing:0.52em;color:rgba(212,168,67,0.58);font-weight:300;text-transform:uppercase}
+.kjc-fleur{font-size:clamp(20px,3.5vw,38px);color:#d4a843;display:block;margin-top:10px;filter:drop-shadow(0 0 12px rgba(212,168,67,0.8));transition:filter 0.1s}
+#kjcSweep{position:absolute;top:0;left:-300px;width:130px;height:100%;background:linear-gradient(90deg,transparent,rgba(248,210,80,.36),transparent);z-index:3;pointer-events:none;opacity:0}
+#kjcFade{position:absolute;inset:0;background:#000;opacity:1;z-index:4;pointer-events:none}
 /* ── CRITICAL: hide everything until auth confirms ── */
 #app{display:none}
 #authLoading{position:fixed;inset:0;background:#050505;display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column;gap:16px}
@@ -15,7 +27,6 @@
 .auth-logo{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#3a3a38}
 .auth-logo span{color:#22c77a}
 @keyframes spin{to{transform:rotate(360deg)}}
-
 :root{--bg0:#050505;--bg1:#0a0a0a;--bg2:#111;--bg3:#1a1a1a;--bg4:#222;--border:rgba(255,255,255,0.05);--border2:rgba(255,255,255,0.1);--text:#f2f0eb;--text2:#8a8880;--text3:#4a4a48;--green:#22c77a;--green2:rgba(34,199,122,0.1);--red:#f04444;--red2:rgba(240,68,68,0.1);--amber:#f0a832;--amber2:rgba(240,168,50,0.1);--blue:#4488f0;--blue2:rgba(68,136,240,0.1);--purple:#a066f0;--gold:#d4a843;--gold2:rgba(212,168,67,0.1);--r:10px;--r2:14px;--glass:rgba(255,255,255,0.02);--glass-border:rgba(255,255,255,0.06)}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
@@ -146,7 +157,6 @@ body{background:var(--bg0);color:var(--text);font-family:'Inter',sans-serif;font
 .modal-text{font-size:13.5px;line-height:1.8;color:var(--text2)}
 .modal-loading{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--amber);display:flex;align-items:center;gap:10px}
 .spinner{width:14px;height:14px;border:2px solid rgba(240,168,50,0.2);border-top-color:var(--amber);border-radius:50%;animation:spin 0.6s linear infinite;flex-shrink:0}
-@keyframes spin{to{transform:rotate(360deg)}}
 .toast{position:fixed;bottom:24px;right:24px;z-index:300;background:rgba(10,10,10,0.95);border:1px solid rgba(240,68,68,0.3);border-radius:var(--r2);padding:14px 16px;max-width:320px;display:none;backdrop-filter:blur(12px);box-shadow:0 12px 40px rgba(0,0,0,0.4);animation:fadeUp 0.3s ease}
 .toast-label{font-size:10px;font-weight:700;letter-spacing:0.1em;color:var(--red);text-transform:uppercase;font-family:'JetBrains Mono',monospace;margin-bottom:6px}
 .toast-text{font-size:12px;color:var(--text);line-height:1.45;margin-bottom:10px}
@@ -158,13 +168,23 @@ body{background:var(--bg0);color:var(--text);font-family:'Inter',sans-serif;font
 </head>
 <body>
 
-<!-- Auth loading screen — shown until auth resolves -->
+<div id="kjcIntro">
+  <div id="kjcVignette"></div>
+  <div id="kjcLogo">
+    <div class="kjc-letters">KJC</div>
+    <div class="kjc-rule"></div>
+    <div class="kjc-cap">Capital</div>
+    <span class="kjc-fleur">⚜</span>
+  </div>
+  <div id="kjcSweep"></div>
+  <div id="kjcFade"></div>
+</div>
+
 <div id="authLoading">
   <div class="auth-spinner"></div>
   <div class="auth-logo">Market<span>Intel</span></div>
 </div>
 
-<!-- Main app — hidden until auth confirms -->
 <div id="app">
 <div class="topbar">
   <div class="logo"><span class="logo-dot"></span>Market<span>Intel</span></div>
@@ -233,16 +253,235 @@ body{background:var(--bg0);color:var(--text);font-family:'Inter',sans-serif;font
 <div id="toast" class="toast"><div class="toast-label">⚡ Urgent Event</div><div class="toast-text" id="toastText"></div><button class="toast-close" onclick="document.getElementById('toast').style.display='none'">Dismiss</button></div>
 
 <script>
+(function runKJCIntro() {
+  'use strict';
+  if (typeof THREE === 'undefined') { document.getElementById('kjcIntro').remove(); return; }
+  const introEl = document.getElementById('kjcIntro');
+  const fadeEl  = document.getElementById('kjcFade');
+  const logoEl  = document.getElementById('kjcLogo');
+  const sweepEl = document.getElementById('kjcSweep');
+  const T = { S2: 3.0, S3: 5.0, S4: 7.0, END: 8.5 };
+  const GOLD = 0xd4a843, GOLD2 = 0xf0c050;
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.35;
+  introEl.insertBefore(renderer.domElement, introEl.firstChild);
+  const scene  = new THREE.Scene();
+  scene.background = new THREE.Color(0x000000);
+  const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 800);
+  camera.position.set(0, 45, 1.2);
+  camera.lookAt(0, 0, 0);
+  scene.add(new THREE.AmbientLight(0x0d0d0d, 1));
+  const sun = new THREE.DirectionalLight(GOLD, 2.8); sun.position.set(8, 28, 12); scene.add(sun);
+  const rim = new THREE.DirectionalLight(GOLD2, 1.4); rim.position.set(-12, 18, -8); scene.add(rim);
+  const movLight = new THREE.PointLight(GOLD2, 6, 55); movLight.position.set(-90, 7, 0); scene.add(movLight);
+  function lerp(a,b,t){return a+(b-a)*t}
+  function clamp(v,lo,hi){return Math.max(lo,Math.min(hi,v))}
+  function map01(v,a,b){return clamp((v-a)/(b-a),0,1)}
+  function easeOut(t){return 1-Math.pow(1-t,3)}
+  function easeIn(t){return t*t*t}
+  function easeIO(t){return t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2}
+  function setFade(op){fadeEl.style.opacity=String(clamp(op,0,1))}
+  function mkBox(w,h,d,mat,x,y,z){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);m.position.set(x||0,y||0,z||0);return m}
+  function mkCyl(r,h,seg,mat,x,y,z){const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,seg),mat);m.position.set(x||0,y||0,z||0);return m}
+  const M={
+    road:new THREE.MeshStandardMaterial({color:0x080808,roughness:0.97}),
+    dash:new THREE.MeshStandardMaterial({color:0xeeeeee,emissive:0xeeeeee,emissiveIntensity:0.28}),
+    sline:new THREE.MeshStandardMaterial({color:GOLD,emissive:GOLD,emissiveIntensity:0.5}),
+    bull:new THREE.MeshStandardMaterial({color:GOLD,emissive:GOLD,emissiveIntensity:0.38,roughness:0.25}),
+    bear:new THREE.MeshStandardMaterial({color:0xbb2222,emissive:0x881111,emissiveIntensity:0.22,roughness:0.5}),
+    tkB:new THREE.MeshStandardMaterial({color:0x111111,roughness:0.88,metalness:0.12}),
+    tkG:new THREE.MeshStandardMaterial({color:GOLD,metalness:0.92,roughness:0.18,emissive:GOLD,emissiveIntensity:0.22}),
+    tkGb:new THREE.MeshStandardMaterial({color:GOLD2,metalness:0.95,roughness:0.1,emissive:GOLD2,emissiveIntensity:0.65}),
+    glass:new THREE.MeshStandardMaterial({color:0x1a2d3e,metalness:0.88,roughness:0.06,transparent:true,opacity:0.55}),
+    whl:new THREE.MeshStandardMaterial({color:0x0c0c0c,roughness:0.92}),
+    hl:new THREE.MeshStandardMaterial({color:0xfff5cc,emissive:0xfff5cc,emissiveIntensity:2.2}),
+    tl:new THREE.MeshStandardMaterial({color:0xff1100,emissive:0xff1100,emissiveIntensity:2.0}),
+    matte:new THREE.MeshStandardMaterial({color:0x060606,roughness:0.84,metalness:0.16}),
+    carb:new THREE.MeshStandardMaterial({color:0x0e0e0e,roughness:0.72,metalness:0.28}),
+    cal:new THREE.MeshStandardMaterial({color:GOLD,metalness:0.92,roughness:0.12,emissive:GOLD,emissiveIntensity:0.38}),
+    coin:new THREE.MeshStandardMaterial({color:GOLD2,metalness:0.92,roughness:0.12,emissive:GOLD2,emissiveIntensity:0.48}),
+  };
+  const roadGrp=new THREE.Group();scene.add(roadGrp);
+  roadGrp.add(mkBox(320,0.18,42,M.road,0,-0.09,0));
+  for(let x=-150;x<=150;x+=10)roadGrp.add(mkBox(4.5,0.2,0.22,M.dash,x,0,0));
+  roadGrp.add(mkBox(320,0.2,0.28,M.sline,0,0,-17));
+  roadGrp.add(mkBox(320,0.2,0.28,M.sline,0,0,17));
+  const chartGrp=new THREE.Group();scene.add(chartGrp);
+  const pd=[];let px=48;
+  for(let i=0;i<28;i++){const o=px,vol=2.8+Math.random()*5.5,c=o+(Math.random()-0.47)*vol,h=Math.max(o,c)+Math.random()*vol*0.38,l=Math.min(o,c)-Math.random()*vol*0.38;pd.push({o,c,h,l});px=c;}
+  const allPx=pd.flatMap(d=>[d.o,d.c,d.h,d.l]),pMin=Math.min(...allPx),pMax=Math.max(...allPx);
+  const pToZ=v=>lerp(-12,12,(v-pMin)/(pMax-pMin));
+  const candleGrps=[];
+  pd.forEach((d,i)=>{
+    const bull=d.c>=d.o,oZ=pToZ(d.o),cZ=pToZ(d.c),hZ=pToZ(d.h),lZ=pToZ(d.l);
+    const bD=Math.max(Math.abs(cZ-oZ),0.28),wD=Math.max(Math.abs(hZ-lZ),bD+0.18),cx=-44+i*3.25;
+    const mat=bull?M.bull:M.bear,cg=new THREE.Group();
+    cg.add(mkBox(1.45,0.13,bD,mat,cx,0.065,(oZ+cZ)/2));
+    cg.add(mkBox(0.2,0.15,wD,mat,cx,0.075,(hZ+lZ)/2));
+    cg.visible=false;chartGrp.add(cg);candleGrps.push({grp:cg,x:cx});
+  });
+  const tkGrp=new THREE.Group();scene.add(tkGrp);
+  tkGrp.add(mkBox(10.2,3.9,5.4,M.tkB,0.6,2.05,0));
+  tkGrp.add(mkBox(4.4,3.7,5.4,M.tkB,-6.8,2.15,0));
+  tkGrp.add(mkBox(3.5,0.4,4.5,M.tkB,-6.8,4.15,0));
+  tkGrp.add(mkBox(15,0.2,5.45,M.tkG,-0.8,0.95,0));
+  tkGrp.add(mkBox(0.38,1.15,5.5,M.tkG,-9.2,0.58,0));
+  tkGrp.add(mkBox(0.32,2.1,3.3,M.glass,-9.0,3.0,0));
+  [-6.6,-3.6,-0.6,2.4].forEach(xo=>tkGrp.add(mkBox(0.32,0.52,1.05,M.glass,xo,3.25,2.73)));
+  tkGrp.add(mkBox(0.32,3.5,5.3,M.tkB,5.75,2.05,0));
+  tkGrp.add(mkBox(0.45,0.17,0.72,M.tkGb,6.1,2.05,0.85));
+  tkGrp.add(mkBox(0.38,0.38,2.9,M.tkGb,1.2,3.4,2.74));
+  tkGrp.add(mkBox(0.35,0.56,0.68,M.hl,-9.38,2.15,1.72));
+  tkGrp.add(mkBox(0.35,0.56,0.68,M.hl,-9.38,2.15,-1.72));
+  tkGrp.add(mkBox(0.35,0.68,1.15,M.tl,5.88,2.25,1.62));
+  tkGrp.add(mkBox(0.35,0.68,1.15,M.tl,5.88,2.25,-1.62));
+  const exh=mkCyl(0.17,2.4,8,M.tkB,4.9,0.42,-2.75);exh.rotation.z=Math.PI/2;tkGrp.add(exh);
+  const tkWheels=[];
+  [-5.6,-0.6,4.3].forEach(ax=>[-3.0,3.0].forEach(az=>{
+    const w=mkCyl(1.12,0.88,18,M.whl,ax,0.95,az);w.rotation.x=Math.PI/2;tkGrp.add(w);tkWheels.push(w);
+    const hub=mkCyl(0.56,0.91,8,M.tkG,ax,0.95,az);hub.rotation.x=Math.PI/2;tkGrp.add(hub);
+  }));
+  tkGrp.position.set(-90,0,0);
+  const partGrp=new THREE.Group();scene.add(partGrp);
+  const liveParts=[];let spawnTimer=0;
+  function spawnParticle(tx){
+    const isCoin=Math.random()>0.42;let mesh;
+    if(isCoin){mesh=new THREE.Mesh(new THREE.TorusGeometry(0.4,0.11,8,16),M.coin);}
+    else{const bm=new THREE.MeshStandardMaterial({color:0x1a5a1a,transparent:true,opacity:1,roughness:0.85});mesh=new THREE.Mesh(new THREE.BoxGeometry(1.55,0.055,0.82),bm);}
+    mesh.position.set(tx+4.5+Math.random()*2.5,1.6,(Math.random()-0.5)*3.5);
+    const p={mesh,isCoin,vx:(Math.random()-0.35)*7,vy:7.5+Math.random()*5.5,vz:(Math.random()-0.5)*5.5,rx:(Math.random()-0.5)*0.16,ry:(Math.random()-0.5)*0.16,rz:(Math.random()-0.5)*0.16,life:0,maxLife:1.6+Math.random()*1.3};
+    partGrp.add(mesh);liveParts.push(p);
+  }
+  function updateParticles(dt,tx){
+    spawnTimer+=dt;
+    if(spawnTimer>0.042&&tx>-55&&tx<52&&liveParts.length<88){spawnTimer=0;spawnParticle(tx);}
+    for(let i=liveParts.length-1;i>=0;i--){
+      const p=liveParts[i];p.life+=dt;
+      if(p.life>p.maxLife){partGrp.remove(p.mesh);liveParts.splice(i,1);continue;}
+      p.vy-=20*dt;p.mesh.position.x+=p.vx*dt;p.mesh.position.y+=p.vy*dt;p.mesh.position.z+=p.vz*dt;
+      p.mesh.rotation.x+=p.rx;p.mesh.rotation.y+=p.ry;p.mesh.rotation.z+=p.rz;
+      if(p.mesh.material.transparent)p.mesh.material.opacity=Math.max(0,1-map01(p.life,p.maxLife*0.62,p.maxLife));
+    }
+  }
+  const lbGrp=new THREE.Group();scene.add(lbGrp);lbGrp.visible=false;
+  const lbGlass=new THREE.MeshStandardMaterial({color:0x0e2030,metalness:0.9,roughness:0.05,transparent:true,opacity:0.62});
+  const lbRim=new THREE.MeshStandardMaterial({color:0x181818,metalness:0.72,roughness:0.28});
+  lbGrp.add(mkBox(9.6,0.52,5.4,M.carb,0,0.36,0));
+  lbGrp.add(mkBox(9.6,0.92,4.7,M.matte,0,0.78,0));
+  lbGrp.add(mkBox(3.4,1.5,4.9,M.matte,3.6,0.82,0));
+  const lbNose=mkBox(2.9,0.58,3.9,M.matte,-4.3,0.44,0);lbNose.rotation.z=0.24;lbGrp.add(lbNose);
+  lbGrp.add(mkBox(4.3,0.88,3.15,M.matte,-0.2,1.78,0));
+  lbGrp.add(mkBox(1.85,0.78,2.95,lbGlass,-2.05,1.8,0));
+  lbGrp.add(mkBox(1.25,0.62,2.5,lbGlass,1.85,1.74,0));
+  lbGrp.add(mkBox(4.4,0.16,5.15,M.carb,3.9,2.56,0));
+  lbGrp.add(mkBox(0.24,0.98,0.24,M.carb,3.65,2.08,2.0));
+  lbGrp.add(mkBox(0.24,0.98,0.24,M.carb,3.65,2.08,-2.0));
+  lbGrp.add(mkBox(1.85,0.11,4.9,M.carb,-5.3,0.07,0));
+  lbGrp.add(mkBox(2.3,0.42,4.55,M.carb,4.9,0.24,0));
+  lbGrp.add(mkBox(0.16,0.17,1.85,M.hl,-4.85,0.92,0));
+  lbGrp.add(mkBox(0.16,0.13,0.72,M.hl,-4.75,0.76,0.88));
+  lbGrp.add(mkBox(0.16,0.13,0.72,M.hl,-4.75,0.76,-0.88));
+  lbGrp.add(mkBox(0.16,0.28,3.9,M.tl,4.85,1.12,0));
+  lbGrp.add(mkBox(0.16,0.11,4.74,M.cal,-4.82,0.56,0));
+  lbGrp.add(mkBox(9.6,0.055,4.74,M.cal,0,0.22,0));
+  const lbWheels=[];
+  [[-3.3,2.9],[-3.3,-2.9],[2.9,2.9],[2.9,-2.9]].forEach(([wx,wz])=>{
+    const ty=mkCyl(0.96,0.94,20,M.whl,wx,0.88,wz);ty.rotation.x=Math.PI/2;lbGrp.add(ty);lbWheels.push(ty);
+    const ri=mkCyl(0.66,0.97,10,lbRim,wx,0.88,wz);ri.rotation.x=Math.PI/2;lbGrp.add(ri);
+    lbGrp.add(mkBox(0.32,0.38,0.32,M.cal,wx+(wx>0?0.24:-0.24),0.88,wz));
+  });
+  const smokeGrp=new THREE.Group();scene.add(smokeGrp);const smokeList=[];
+  function spawnSmoke(x,z){
+    const r=0.7+Math.random()*1.6;
+    const sm=new THREE.Mesh(new THREE.SphereGeometry(r,6,5),new THREE.MeshBasicMaterial({color:0x888888,transparent:true,opacity:0.1+Math.random()*0.1}));
+    sm.position.set(x,0.55,z);smokeGrp.add(sm);smokeList.push({mesh:sm,life:0,maxLife:0.65});
+  }
+  const camTarget=new THREE.Vector3(),camTargetGoal=new THREE.Vector3();
+  function s1(t){
+    const p=t/T.S2;
+    camera.position.set(lerp(0,-10,p),lerp(45,74,easeIO(p)),lerp(1.2,5,p));
+    camTargetGoal.set(lerp(0,10,p),0,lerp(0,-2,p));
+    setFade(1-easeOut(map01(t,0,0.55)));
+    const tx=lerp(-90,56,easeIO(p*0.98));
+    tkGrp.position.x=tx;tkWheels.forEach(w=>{w.rotation.z=-tx*0.14;});movLight.position.set(tx,7,0);
+    const scanX=lerp(-50,50,map01(t,0,2.5));
+    candleGrps.forEach(c=>{c.grp.visible=c.x<=scanX;});
+  }
+  function s2(t){
+    const p=map01(t,T.S2,T.S3),ep=easeIn(p);
+    const tx=lerp(56,130,map01(t,T.S2,T.S3));
+    tkGrp.position.x=tx;tkWheels.forEach(w=>{w.rotation.z=-tx*0.14;});movLight.position.set(tx,7,0);
+    candleGrps.forEach(c=>{c.grp.visible=true;});
+    camera.position.set(lerp(-10,tx-8,ep),lerp(74,4.5,ep),lerp(5,24,ep));
+    camTargetGoal.set(lerp(10,tx,ep),lerp(0,3,ep),0);
+    setFade(easeIn(map01(p,0.68,1.0)));
+  }
+  let sweepFired=false;
+  function s3(t){
+    setFade(1-easeOut(map01(t,T.S3,T.S3+0.28)));
+    const lp=easeOut(map01(t,T.S3+0.18,T.S3+0.95));
+    logoEl.style.opacity=String(lp);
+    logoEl.style.transform='translate(-50%,-50%) scale('+lerp(1.06,1.0,lp)+')';
+    if(t>T.S3+1.0&&!sweepFired){
+      sweepFired=true;sweepEl.style.opacity='1';sweepEl.style.left='-300px';sweepEl.style.transition='none';
+      requestAnimationFrame(function(){
+        sweepEl.style.transition='left 0.78s cubic-bezier(0.22,0.44,0.45,0.94)';
+        sweepEl.style.left='calc(100% + 300px)';
+        setTimeout(function(){sweepEl.style.opacity='0';},820);
+      });
+    }
+    const fleur=logoEl.querySelector('.kjc-fleur');
+    if(fleur&&lp>0.25)fleur.style.filter='drop-shadow(0 0 '+(10+Math.sin(t*3.8)*6)+'px rgba(212,168,67,0.9))';
+    camera.position.set(0,2.5,18);camTargetGoal.set(0,1.8,0);
+  }
+  let lbWheelA=0;
+  function s4(t,dt){
+    const p=map01(t,T.S4,T.END);
+    lbGrp.visible=true;setFade(0);
+    const lx=lerp(78,-135,easeIn(p));
+    lbGrp.position.set(lx,1.0,0);lbGrp.rotation.y=Math.PI/2;
+    lbWheelA+=0.55;lbWheels.forEach(w=>{w.rotation.z=lbWheelA;});
+    if(p<0.9&&Math.random()>0.28)spawnSmoke(lx+(Math.random()-0.5)*5,(Math.random()-0.5)*2.8);
+    for(let i=smokeList.length-1;i>=0;i--){
+      const s=smokeList[i];s.life+=dt;s.mesh.position.x-=14*dt;s.mesh.position.y+=1.8*dt;s.mesh.material.opacity*=0.91;
+      if(s.life>s.maxLife){smokeGrp.remove(s.mesh);smokeList.splice(i,1);}
+    }
+    logoEl.style.clipPath='inset(0 '+(easeIn(map01(t,T.S4+0.08,T.S4+1.1))*100)+'% 0 0)';
+    movLight.position.set(lx,3,0);movLight.color.set(0xff7700);
+    camera.position.set(0,3.5,22);camTargetGoal.set(lx*0.04,1.5,0);
+    if(p>0.8)setFade(easeIn(map01(p,0.8,1.0)));
+    if(p>=0.99&&!_done){_done=true;setFade(1);window.onKJCIntroComplete();}
+  }
+  const clock=new THREE.Clock();let elapsed=0,_done=false;
+  function animate(){
+    if(_done)return;requestAnimationFrame(animate);
+    const dt=Math.min(clock.getDelta(),0.05);elapsed+=dt;
+    if(elapsed<T.S2){s1(elapsed);updateParticles(dt,tkGrp.position.x);}
+    else if(elapsed<T.S3){s2(elapsed);updateParticles(dt,tkGrp.position.x);}
+    else if(elapsed<T.S4){s3(elapsed);}
+    else{s4(elapsed,dt);}
+    camTarget.lerp(camTargetGoal,0.09);camera.lookAt(camTarget);
+    renderer.render(scene,camera);
+  }
+  clock.start();animate();
+  window.addEventListener('resize',function(){camera.aspect=window.innerWidth/window.innerHeight;camera.updateProjectionMatrix();renderer.setSize(window.innerWidth,window.innerHeight);},{passive:true});
+  window.onKJCIntroComplete=function(){
+    var el=document.getElementById('kjcIntro');if(!el)return;
+    el.style.transition='opacity 0.45s ease';el.style.opacity='0';
+    setTimeout(function(){el.remove();},460);
+  };
+})();
+</script>
+
+<script>
 const SB_URL='https://xglnoorboeuiozwhdhde.supabase.co'
 const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhnbG5vb3Jib2V1aW96d2hkaGRlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MTAwNjIsImV4cCI6MjA5NjA4NjA2Mn0.TdK2R3wjp9mfmbE593uXJ6MJ0VvWyuzrAEFOQSlAUCI'
 const sb=window.supabase.createClient(SB_URL,SB_KEY)
 let allEvents=[],activeFilter='all',sortMode='time',lastReport='',currentUtterance=null,apiKey=''
-
-function showApp(){
-  document.getElementById('authLoading').style.display='none'
-  document.getElementById('app').style.display='block'
-}
-
+function showApp(){document.getElementById('authLoading').style.display='none';document.getElementById('app').style.display='block'}
 async function init(){
   try{
     const{data:{user}}=await sb.auth.getUser()
@@ -252,15 +491,10 @@ async function init(){
     if(p.status!=='approved'&&!p.is_admin){window.location.replace('/pending.html');return}
     if(p.is_admin)document.getElementById('adminBtn').style.display='inline-flex'
     apiKey=localStorage.getItem('mit_api_key')||''
-    showApp()
-    await loadLatest()
-    await loadHistory()
-    updateCountdown()
-    setInterval(updateCountdown,30000)
-    setInterval(async()=>{await loadLatest();await loadHistory()},60000)
+    showApp();await loadLatest();await loadHistory();updateCountdown()
+    setInterval(updateCountdown,30000);setInterval(async()=>{await loadLatest();await loadHistory()},60000)
   }catch(e){console.error(e);window.location.replace('/login.html')}
 }
-
 async function loadLatest(){
   try{
     const{data}=await sb.from('scans').select('*').order('created_at',{ascending:false}).limit(1).single()
@@ -271,7 +505,6 @@ async function loadLatest(){
     setStatus('live','Updated '+(data.scan_time||''))
   }catch(e){}
 }
-
 async function loadHistory(){
   try{
     const{data}=await sb.from('scans').select('scan_time,event_count,created_at').order('created_at',{ascending:false}).limit(6)
@@ -279,18 +512,13 @@ async function loadHistory(){
     document.getElementById('historyList').innerHTML=data.map(s=>'<div class="history-row"><span class="ht">'+(s.scan_time||'--:--')+'</span><span class="hc">'+(s.event_count||0)+' events</span></div>').join('')
   }catch(e){}
 }
-
 async function triggerScan(){
   const btn=document.getElementById('scanBtn')
   if(!apiKey){const k=prompt('Enter your Anthropic API key (sk-ant-...):');if(!k)return;apiKey=k;localStorage.setItem('mit_api_key',k)}
-  btn.disabled=true;setStatus('scanning','Scanning...');renderShimmers()
-  await runScan();btn.disabled=false
+  btn.disabled=true;setStatus('scanning','Scanning...');renderShimmers();await runScan();btn.disabled=false
 }
-
 async function runScan(){
-  const now=new Date()
-  const dateStr=now.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'})
-  const timeStr=now.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})
+  const now=new Date(),dateStr=now.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'}),timeStr=now.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})
   const prompt=`You are a senior multi-asset macro analyst. Today is ${dateStr} at ${timeStr} UK time. Search the web for current breaking financial and geopolitical news. Cover: Trump Truth Social posts about markets/tariffs/trade, Forex Factory red events today, active geopolitical conflicts, central bank decisions and speeches, major equity moves, commodity shifts, crypto. For every event give detailed FX pair impact analysis with specific price levels. Return ONLY valid JSON with no markdown: {"scan_time":"${timeStr}","scan_date":"${dateStr}","events":[{"id":"unique","type":"trump|geopolitical|central-bank|economic|equities|commodities|crypto","urgent":false,"impact":"HIGH|MEDIUM|LOW","source":"string","headline":"max 15 words","context":"2-3 sentences","time":"HH:MM","pairs":[{"pair":"EUR/USD","direction":"bullish|bearish|neutral","strength":75,"analysis":"one sentence with price levels"}],"overall":"bullish|bearish|neutral|mixed","signal":"actionable signal with levels"}],"urgent_alerts":["string"],"sentiment":{"USD":0,"EUR":0,"GBP":0,"JPY":0,"CHF":0,"AUD":0,"CAD":0,"Gold":0,"Oil":0,"BTC":0},"setups":["setup with pair entry target stop"],"market_summary":"4 paragraph brief"}`
   try{
     const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:4000,tools:[{type:'web_search_20250305',name:'web_search'}],messages:[{role:'user',content:prompt}]})})
@@ -310,10 +538,8 @@ async function runScan(){
     setStatus('live','Updated '+result.scan_time)
   }catch(err){setStatus('','Scan failed');document.getElementById('feedBody').innerHTML='<div class="empty"><span class="empty-icon">⚠</span><h3>Scan failed</h3><p>'+err.message+'</p></div>'}
 }
-
 function setStatus(state,label){document.getElementById('sdot').className='sdot'+(state==='live'?' live':state==='scanning'?' scanning':'');document.getElementById('slabel').textContent=label}
 function renderShimmers(){document.getElementById('feedBody').innerHTML=Array(4).fill(0).map((_,i)=>'<div class="shim-card" style="animation-delay:'+(i*0.1)+'s"><div class="shim" style="width:30%;height:10px;margin-bottom:14px"></div><div class="shim" style="width:75%;height:15px;margin-bottom:10px"></div><div class="shim" style="width:100%;height:10px;margin-bottom:5px"></div><div class="shim" style="width:60%;height:10px;margin-bottom:18px"></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px"><div class="shim" style="height:58px"></div><div class="shim" style="height:58px"></div></div></div>').join('')}
-
 function renderFeed(){
   let events=activeFilter==='all'?[...allEvents]:allEvents.filter(e=>e.type===activeFilter)
   if(sortMode==='impact'){const o={HIGH:0,MEDIUM:1,LOW:2};events.sort((a,b)=>(o[a.impact]||2)-(o[b.impact]||2))}
@@ -321,7 +547,6 @@ function renderFeed(){
   if(!events.length){document.getElementById('feedBody').innerHTML='<div class="empty"><span class="empty-icon">🔍</span><h3>No events</h3><p>No events match this filter.</p></div>';return}
   document.getElementById('feedBody').innerHTML=events.map((ev,i)=>buildCard(ev,i)).join('')
 }
-
 function buildCard(ev,i){
   const tm={trump:'tag-trump',geopolitical:'tag-geo','central-bank':'tag-cb',economic:'tag-eco',equities:'tag-eq',commodities:'tag-com',crypto:'tag-cry'}
   const tl={trump:'Trump',geopolitical:'Geopolitical','central-bank':'Central Bank',economic:'Forex Factory',equities:'Equities',commodities:'Commodities',crypto:'Crypto'}
@@ -330,15 +555,9 @@ function buildCard(ev,i){
   const sgc=ev.overall==='bullish'?'sig-bull':ev.overall==='bearish'?'sig-bear':ev.overall==='mixed'?'sig-mixed':'sig-neut'
   const sgi=ev.overall==='bullish'?'var(--green)':ev.overall==='bearish'?'var(--red)':'var(--amber)'
   const sgt=ev.overall==='bullish'?'▲':ev.overall==='bearish'?'▼':ev.overall==='mixed'?'◆':'–'
-  const pairs=(ev.pairs||[]).map(p=>{
-    const dc=p.direction==='bullish'?'bull':p.direction==='bearish'?'bear':'neut'
-    const bc=p.direction==='bullish'?'b-bull':p.direction==='bearish'?'b-bear':'b-neut'
-    const dl=p.direction==='bullish'?'↑ Long':p.direction==='bearish'?'↓ Short':'→ Watch'
-    return '<div class="pair-card"><div class="pair-top"><span class="pair-name">'+p.pair+'</span><span class="pair-dir '+dc+'">'+dl+'</span></div><div class="bar-wrap"><div class="bar '+bc+'" style="width:'+(p.strength||65)+'%"></div></div><div class="pair-analysis">'+p.analysis+'</div></div>'
-  }).join('')
-  return '<div class="card'+(ev.urgent?' urgent':'')+'" style="animation-delay:'+(i*0.06)+'s"><div class="card-stripe" style="background:'+(sc[ev.type]||'var(--blue)')+'"></div><div class="card-inner"><div class="card-top"><div class="card-tags">'+(ev.urgent?'<span class="tag tag-urg">⚡ Urgent</span>':'')+'<span class="tag '+(tm[ev.type]||'tag-cb')+'">'+(tl[ev.type]||ev.type)+'</span><span class="tag '+it+'">'+(ev.impact||'LOW')+'</span></div><span class="card-time">'+(ev.time||'')+'</span></div><div class="card-source">'+(ev.source||'')+'</div><div class="card-headline">'+ev.headline+'</div><div class="card-context">'+ev.context+'</div><div class="pairs-head">Pair impact</div><div class="pairs-grid">'+pairs+'</div><div class="signal-box '+sgc+'"><span class="sig-icon" style="color:'+sgi+'">'+sgt+'</span><span class="sig-text">'+ev.signal+'</span></div><div class="card-footer"><button class="card-btn" onclick="readCard(\''+ev.id+'\')" id="pb-'+ev.id+'">▶ Read</button><button class="card-btn" onclick="deepDive(\''+ev.id+'\')">Deep Dive →</button></div></div></div>'
+  const pairs=(ev.pairs||[]).map(p=>{const dc=p.direction==='bullish'?'bull':p.direction==='bearish'?'bear':'neut',bc=p.direction==='bullish'?'b-bull':p.direction==='bearish'?'b-bear':'b-neut',dl=p.direction==='bullish'?'↑ Long':p.direction==='bearish'?'↓ Short':'→ Watch';return'<div class="pair-card"><div class="pair-top"><span class="pair-name">'+p.pair+'</span><span class="pair-dir '+dc+'">'+dl+'</span></div><div class="bar-wrap"><div class="bar '+bc+'" style="width:'+(p.strength||65)+'%"></div></div><div class="pair-analysis">'+p.analysis+'</div></div>'}).join('')
+  return'<div class="card'+(ev.urgent?' urgent':'')+'" style="animation-delay:'+(i*0.06)+'s"><div class="card-stripe" style="background:'+(sc[ev.type]||'var(--blue)')+'"></div><div class="card-inner"><div class="card-top"><div class="card-tags">'+(ev.urgent?'<span class="tag tag-urg">⚡ Urgent</span>':'')+'<span class="tag '+(tm[ev.type]||'tag-cb')+'">'+(tl[ev.type]||ev.type)+'</span><span class="tag '+it+'">'+(ev.impact||'LOW')+'</span></div><span class="card-time">'+(ev.time||'')+'</span></div><div class="card-source">'+(ev.source||'')+'</div><div class="card-headline">'+ev.headline+'</div><div class="card-context">'+ev.context+'</div><div class="pairs-head">Pair impact</div><div class="pairs-grid">'+pairs+'</div><div class="signal-box '+sgc+'"><span class="sig-icon" style="color:'+sgi+'">'+sgt+'</span><span class="sig-text">'+ev.signal+'</span></div><div class="card-footer"><button class="card-btn" onclick="readCard(\''+ev.id+'\')" id="pb-'+ev.id+'">▶ Read</button><button class="card-btn" onclick="deepDive(\''+ev.id+'\')">Deep Dive →</button></div></div></div>'
 }
-
 function updateCounts(){
   const c={all:allEvents.length,trump:0,geopolitical:0,'central-bank':0,economic:0,equities:0,commodities:0,crypto:0}
   allEvents.forEach(e=>{if(c[e.type]!==undefined)c[e.type]++})
@@ -348,7 +567,7 @@ function updateCounts(){
 }
 function setFilter(f,el){activeFilter=f;document.querySelectorAll('.sb-item').forEach(i=>i.classList.remove('active'));el.classList.add('active');const labels={all:'All Intel',trump:'Trump',geopolitical:'Geopolitical','central-bank':'Central Banks',economic:'Forex Factory Red',equities:'Equities',commodities:'Commodities',crypto:'Crypto'};document.getElementById('feedTitle').textContent=labels[f]||f;renderFeed()}
 function setSort(s,el){sortMode=s;document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on','on-red'));el.classList.add(s==='urgent'?'on-red':'on');renderFeed()}
-function renderSentiment(s){document.getElementById('sentPanel').innerHTML=Object.entries(s).map(([n,v])=>{const pct=Math.min(100,Math.abs(v));const cls=v>10?'b-bull':v<-10?'b-bear':'b-neut';const vc=v>10?'var(--green)':v<-10?'var(--red)':'var(--text3)';return '<div class="sent-row"><span class="sent-n">'+n+'</span><div class="sent-bw"><div class="sent-b '+cls+'" style="width:'+pct+'%"></div></div><span class="sent-v" style="color:'+vc+'">'+(v>0?'+':'')+Math.round(v)+'</span></div>'}).join('')||'<div style="font-size:11px;color:var(--text3)">No data</div>'}
+function renderSentiment(s){document.getElementById('sentPanel').innerHTML=Object.entries(s).map(([n,v])=>{const pct=Math.min(100,Math.abs(v)),cls=v>10?'b-bull':v<-10?'b-bear':'b-neut',vc=v>10?'var(--green)':v<-10?'var(--red)':'var(--text3)';return'<div class="sent-row"><span class="sent-n">'+n+'</span><div class="sent-bw"><div class="sent-b '+cls+'" style="width:'+pct+'%"></div></div><span class="sent-v" style="color:'+vc+'">'+(v>0?'+':'')+Math.round(v)+'</span></div>'}).join('')||'<div style="font-size:11px;color:var(--text3)">No data</div>'}
 function renderSetups(setups){if(!setups.length)return;document.getElementById('setupPanel').innerHTML=setups.map((s,i)=>'<div class="setup-card"><div class="setup-n">Setup '+(i+1)+'</div><div class="setup-t">'+s+'</div></div>').join('')}
 function renderUrgent(alerts){document.getElementById('urgentList').innerHTML=alerts.length?alerts.map(a=>'<div class="alert-card"><div class="alert-h">'+a+'</div><div class="alert-m">⚡ High priority</div></div>').join(''):'<div style="font-size:11px;color:var(--text3)">No urgent alerts</div>'}
 function updateCountdown(){const times=['07:00','15:00','23:00'],now=new Date(),nowM=now.getHours()*60+now.getMinutes();let next=times.find(t=>{const[h,m]=t.split(':').map(Number);return h*60+m>nowM})||times[0];document.getElementById('nextTime').textContent=next;const[h,m]=next.split(':').map(Number);let target=new Date();target.setHours(h,m,0,0);if(target<=now)target.setDate(target.getDate()+1);const diff=target-now;document.getElementById('nextCd').textContent='in '+Math.floor(diff/3600000)+'h '+Math.floor((diff%3600000)/60000)+'m'}
