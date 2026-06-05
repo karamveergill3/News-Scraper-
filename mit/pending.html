@@ -5,47 +5,62 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MarketIntel — Pending</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:#0d0d0d;color:#f2f0eb;font-family:'Inter',sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
-.box{width:100%;max-width:400px;text-align:center}
-.logo{font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;letter-spacing:-1px;margin-bottom:32px}
-.logo span{color:#22c77a}
-.icon{width:64px;height:64px;background:rgba(240,168,50,0.12);border:1px solid rgba(240,168,50,0.25);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 20px}
-h2{font-size:18px;font-weight:600;margin-bottom:10px}
-p{font-size:13px;color:#6a6a68;line-height:1.65;margin-bottom:16px}
-.email{background:#141414;border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:12px 16px;font-size:13px;color:#9a9890;margin-bottom:24px}
-.btn{display:inline-flex;padding:10px 20px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:transparent;color:#6a6a68;font-size:13px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.15s}
-.btn:hover{color:#f2f0eb;border-color:rgba(255,255,255,0.2)}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes spin-slow{to{transform:rotate(360deg)}}
+@keyframes pulse-border{0%,100%{border-color:rgba(240,168,50,0.15)}50%{border-color:rgba(240,168,50,0.4)}}
+body{background:#050505;color:#f2f0eb;font-family:'Inter',sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.box{width:100%;max-width:440px;text-align:center;animation:fadeUp 0.6s ease}
+.logo{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:rgba(34,199,122,0.5);margin-bottom:40px}
+.icon-wrap{width:80px;height:80px;margin:0 auto 24px;border-radius:50%;background:rgba(240,168,50,0.08);border:1px solid rgba(240,168,50,0.2);display:flex;align-items:center;justify-content:center;font-size:34px;animation:pulse-border 3s ease infinite;position:relative}
+.icon-ring{position:absolute;inset:-8px;border-radius:50%;border:1px dashed rgba(240,168,50,0.15);animation:spin-slow 20s linear infinite}
+h2{font-size:22px;font-weight:600;letter-spacing:-0.5px;margin-bottom:10px}
+.desc{font-size:14px;color:#5a5a58;line-height:1.65;margin-bottom:24px;max-width:340px;margin-left:auto;margin-right:auto}
+.email-box{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:13px 18px;font-size:14px;color:#9a9890;font-family:'JetBrains Mono',monospace;margin-bottom:28px}
+.status-row{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:28px;padding:10px 16px;background:rgba(240,168,50,0.06);border:1px solid rgba(240,168,50,0.12);border-radius:10px}
+.status-dot{width:8px;height:8px;border-radius:50%;background:#f0a832;animation:pulse-border 1.5s ease infinite}
+.status-text{font-size:12px;color:#f0a832;font-family:'JetBrains Mono',monospace;letter-spacing:0.05em}
+.time-note{font-size:12px;color:#2a2a2a;margin-bottom:24px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:10px 24px;border-radius:10px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.03);color:#5a5a58;font-size:13px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.25s ease;backdrop-filter:blur(4px)}
+.btn:hover{color:#f2f0eb;border-color:rgba(255,255,255,0.15);background:rgba(255,255,255,0.05);transform:translateY(-1px)}
 </style>
 </head>
 <body>
 <div class="box">
-  <div class="logo">Market<span>Intel</span></div>
-  <div class="icon">⏳</div>
+  <div class="logo">MarketIntel</div>
+  <div class="icon-wrap">
+    <div class="icon-ring"></div>
+    ⏳
+  </div>
   <h2>Access request submitted</h2>
-  <p>Your request is being reviewed by the administrator. You'll receive an email once approved.</p>
-  <div class="email" id="userEmail">Loading...</div>
-  <p style="font-size:12px;color:#3a3a38;margin-bottom:20px">This usually takes less than 24 hours</p>
-  <button class="btn" onclick="signOut()">Sign out</button>
+  <div class="desc">Your request is being reviewed by the administrator. You'll be notified by email once approved.</div>
+  <div class="email-box" id="userEmail">Loading...</div>
+  <div class="status-row"><span class="status-dot"></span><span class="status-text">PENDING REVIEW</span></div>
+  <div class="time-note">This usually takes less than 24 hours</div>
+  <button class="btn" onclick="doSignOut()">← Sign out</button>
 </div>
 <script>
-const sb = window.supabase.createClient('https://xglnoorboeuiozwhdhde.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhnbG5vb3Jib2V1aW96d2hkaGRlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MTAwNjIsImV4cCI6MjA5NjA4NjA2Mn0.TdK2R3wjp9mfmbE593uXJ6MJ0VvWyuzrAEFOQSlAUCI')
+const sb=window.supabase.createClient('https://xglnoorboeuiozwhdhde.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhnbG5vb3Jib2V1aW96d2hkaGRlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MTAwNjIsImV4cCI6MjA5NjA4NjA2Mn0.TdK2R3wjp9mfmbE593uXJ6MJ0VvWyuzrAEFOQSlAUCI')
 
-async function init() {
-  const { data: { user } } = await sb.auth.getUser()
-  if (!user) { window.location.replace('/login.html'); return }
-  document.getElementById('userEmail').textContent = user.email
-  const { data: p } = await sb.from('profiles').select('status, is_admin').eq('id', user.id).single()
-  if (!p) return
-  if (p.is_admin === true || p.status === 'approved') {
-    window.location.replace('/index.html')
-    return
-  }
+async function init(){
+  try{
+    const{data:{user}}=await sb.auth.getUser()
+    if(!user){window.location.replace('/login.html');return}
+    document.getElementById('userEmail').textContent=user.email
+    const{data:p,error}=await sb.from('profiles').select('status,is_admin').eq('id',user.id).single()
+    console.log('Profile check:',p,error)
+    if(p&&(p.is_admin===true||p.status==='approved')){
+      console.log('User is approved, redirecting to dashboard')
+      window.location.replace('/index.html')
+      return
+    }
+    console.log('User is still pending')
+  }catch(e){console.error('Init error:',e)}
 }
 
-async function signOut() {
+async function doSignOut(){
   await sb.auth.signOut()
   window.location.replace('/login.html')
 }
