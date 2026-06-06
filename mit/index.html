@@ -255,7 +255,8 @@ body{background:var(--bg0);color:var(--text);font-family:'Inter',sans-serif;font
 <script>
 (function runKJCIntro() {
   'use strict';
-  if (sessionStorage.getItem('kjc_intro_done')) { document.getElementById('kjcIntro').remove(); return; }
+  if (!sessionStorage.getItem('kjc_play_intro')) { document.getElementById('kjcIntro').remove(); return; }
+sessionStorage.removeItem('kjc_play_intro');
   if (typeof THREE === 'undefined') { document.getElementById('kjcIntro').remove(); return; }
   const introEl = document.getElementById('kjcIntro');
   const fadeEl  = document.getElementById('kjcFade');
