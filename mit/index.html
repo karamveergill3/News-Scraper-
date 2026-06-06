@@ -201,6 +201,52 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;fo
 ::-webkit-scrollbar{width:2px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:rgba(212,168,67,0.18);border-radius:2px}
+
+/* Trade Ideas Panel */
+.trade-panel{position:fixed;right:0;top:54px;width:280px;height:calc(100vh - 54px);background:linear-gradient(180deg,#080808,#050505);border-left:1px solid var(--border);z-index:50;display:flex;flex-direction:column;transform:translateX(100%);transition:transform 0.35s cubic-bezier(0.16,1,0.3,1)}
+.trade-panel.open{transform:translateX(0)}
+.trade-panel-toggle{position:fixed;right:0;top:50%;transform:translateY(-50%);z-index:51;background:linear-gradient(135deg,#7a5a10,#d4a843);border:none;border-radius:8px 0 0 8px;padding:14px 8px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;transition:all 0.25s;box-shadow:-4px 0 20px rgba(212,168,67,0.2)}
+.trade-panel-toggle:hover{padding-right:12px;box-shadow:-6px 0 28px rgba(212,168,67,0.35)}
+.trade-panel-toggle.open{right:280px}
+.tpt-label{font-family:'DM Mono',monospace;font-size:8px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:#000;writing-mode:vertical-rl;text-orientation:mixed}
+.tpt-icon{font-size:14px}
+.trade-panel-head{padding:16px 16px 12px;border-bottom:1px solid var(--border);flex-shrink:0;position:relative}
+.trade-panel-head::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);opacity:0.4}
+.tp-title{font-family:'Playfair Display',serif;font-size:16px;font-weight:700;color:var(--white);margin-bottom:2px}
+.tp-subtitle{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.1em;color:rgba(212,168,67,0.4);text-transform:uppercase}
+.tp-scan-time{font-family:'DM Mono',monospace;font-size:9px;color:rgba(255,255,255,0.2);margin-top:4px}
+.trade-list{flex:1;overflow-y:auto;padding:12px}
+.trade-list::-webkit-scrollbar{width:2px}
+.trade-list::-webkit-scrollbar-thumb{background:var(--border)}
+.trade-card{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-radius:10px;padding:12px 13px;margin-bottom:10px;transition:all 0.25s;position:relative;overflow:hidden}
+.trade-card::before{content:'';position:absolute;top:0;left:0;bottom:0;width:2px}
+.trade-card.long::before{background:var(--green)}
+.trade-card.short::before{background:var(--red)}
+.trade-card:hover{border-color:var(--border2);transform:translateX(-3px);box-shadow:4px 4px 20px rgba(0,0,0,0.4)}
+.tc-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.tc-pair{font-family:'DM Mono',monospace;font-size:13px;font-weight:600;color:var(--white)}
+.tc-dir{font-family:'DM Mono',monospace;font-size:10px;font-weight:700;padding:3px 10px;border-radius:5px;letter-spacing:0.06em;text-transform:uppercase}
+.tc-dir.long{background:rgba(34,199,122,0.12);color:var(--green);border:1px solid rgba(34,199,122,0.2)}
+.tc-dir.short{background:rgba(240,68,68,0.12);color:var(--red);border:1px solid rgba(240,68,68,0.2)}
+.tc-levels{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px}
+.tc-level{background:rgba(255,255,255,0.03);border-radius:6px;padding:6px 8px;text-align:center}
+.tc-level-label{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.2);margin-bottom:3px}
+.tc-level-val{font-family:'DM Mono',monospace;font-size:11px;font-weight:600}
+.tc-entry .tc-level-val{color:var(--gold)}
+.tc-sl .tc-level-val{color:var(--red)}
+.tc-tp .tc-level-val{color:var(--green)}
+.tc-rr{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px}
+.tc-rr-label{font-family:'DM Mono',monospace;font-size:9px;color:rgba(255,255,255,0.2);letter-spacing:0.06em;text-transform:uppercase}
+.tc-rr-val{font-family:'DM Mono',monospace;font-size:11px;font-weight:600;color:var(--gold)}
+.tc-reason{font-size:11px;color:rgba(245,243,238,0.35);line-height:1.5;border-top:1px solid rgba(255,255,255,0.04);padding-top:7px}
+.trade-empty{padding:32px 16px;text-align:center;color:rgba(255,255,255,0.2);font-size:12px;line-height:1.7}
+.trade-empty-icon{font-size:28px;display:block;margin-bottom:10px;opacity:0.3}
+
+/* Shift main content when panel opens */
+#mainContent{transition:padding-right 0.35s cubic-bezier(0.16,1,0.3,1)}
+#mainContent.shifted{padding-right:280px}
+
+@media(max-width:768px){.trade-panel{width:100%;top:auto;bottom:0;height:60vh;transform:translateY(100%);border-left:none;border-top:1px solid var(--border)}.trade-panel.open{transform:translateY(0)}.trade-panel-toggle{top:auto;bottom:80px;right:16px;transform:none;border-radius:50%;width:48px;height:48px;padding:0;justify-content:center}.trade-panel-toggle.open{bottom:calc(60vh + 16px);right:16px}}
 </style>
 </head>
 <body>
@@ -233,6 +279,7 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;fo
 </div>
 
 <!-- Ticker -->
+<div id="mainContent">
 <div class="ticker-wrap">
   <div class="ticker-label"><span class="ticker-dot"></span><span class="ticker-label-text">Live</span></div>
   <div class="ticker-track" id="tickerTrack">
@@ -298,10 +345,30 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;fo
 </div>
 
 <div id="masonryGrid" class="masonry-wrap"></div>
+</div><!-- end mainContent -->
 <div id="emptyState" class="empty-state">
   <span class="empty-icon">📰</span>
   <div class="empty-h">No stories yet</div>
   <div class="empty-p">Hit <strong style="color:var(--gold)">⚡ Scan Now</strong> to pull live market intelligence across Trump, Forex Factory, geopolitics, central banks, equities, commodities and crypto.</div>
+</div>
+
+
+<!-- Trade Ideas Panel Toggle -->
+<button class="trade-panel-toggle" id="tradePanelToggle" onclick="toggleTradePanel()">
+  <span class="tpt-icon">📊</span>
+  <span class="tpt-label">Trades</span>
+</button>
+
+<!-- Trade Ideas Panel -->
+<div class="trade-panel" id="tradePanel">
+  <div class="trade-panel-head">
+    <div class="tp-title">Trade Ideas</div>
+    <div class="tp-subtitle">Entry · SL · TP · R:R</div>
+    <div class="tp-scan-time" id="tpScanTime"></div>
+  </div>
+  <div class="trade-list" id="tradeList">
+    <div class="trade-empty"><span class="trade-empty-icon">📈</span>Run a scan to generate trade setups</div>
+  </div>
 </div>
 
 </div><!-- end #app -->
@@ -338,7 +405,7 @@ async function loadLatest(){
     if(!data)return
     allEvents=data.events||[]
     if(data.market_summary){lastReport=data.market_summary;document.getElementById('reportBtn').disabled=false;document.getElementById('reportDate').textContent=(data.scan_date||'')+' · '+(data.scan_time||'')}
-    renderAll();setStatus('live','Updated '+(data.scan_time||''));buildTicker(allEvents)
+    renderAll();renderTrades(data.setups,data.scan_time);setStatus('live','Updated '+(data.scan_time||''));buildTicker(allEvents)
   }catch(e){}
 }
 
@@ -448,7 +515,7 @@ async function triggerScan(){
 
 async function runScan(){
   const now=new Date(),dateStr=now.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'}),timeStr=now.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})
-  const prompt=`You are a senior multi-asset macro analyst. Today is ${dateStr} at ${timeStr} UK time. Use maximum 3 web searches total — make them count. Search for breaking financial news. Cover: Trump posts on tariffs/trade/Fed, Forex Factory red events, geopolitical risks, central bank news, major equity/commodity/crypto moves. Return ONLY valid compact JSON, no markdown, max 8 events, max 3 pairs per event: {"scan_time":"${timeStr}","scan_date":"${dateStr}","events":[{"id":"e1","type":"trump|geopolitical|central-bank|economic|equities|commodities|crypto","urgent":false,"impact":"HIGH|MEDIUM|LOW","source":"string","headline":"max 12 words","context":"one sentence only","time":"HH:MM","pairs":[{"pair":"EUR/USD","direction":"bullish|bearish|neutral","strength":75,"analysis":"brief with one price level"}],"overall":"bullish|bearish|neutral|mixed","signal":"entry zone, target, stop"}],"urgent_alerts":["string"],"sentiment":{"USD":0,"EUR":0,"GBP":0,"JPY":0,"CHF":0,"AUD":0,"CAD":0,"Gold":0,"Oil":0,"BTC":0},"setups":["pair entry target stop"],"market_summary":"2 sentence brief"}`
+  const prompt=`You are a senior multi-asset macro analyst. Today is ${dateStr} at ${timeStr} UK time. Use maximum 3 web searches total — make them count. Search for breaking financial news. Cover: Trump posts on tariffs/trade/Fed, Forex Factory red events, geopolitical risks, central bank news, major equity/commodity/crypto moves. Return ONLY valid compact JSON, no markdown, max 8 events, max 3 pairs per event: {"scan_time":"${timeStr}","scan_date":"${dateStr}","events":[{"id":"e1","type":"trump|geopolitical|central-bank|economic|equities|commodities|crypto","urgent":false,"impact":"HIGH|MEDIUM|LOW","source":"string","headline":"max 12 words","context":"one sentence only","time":"HH:MM","pairs":[{"pair":"EUR/USD","direction":"bullish|bearish|neutral","strength":75,"analysis":"brief with one price level"}],"overall":"bullish|bearish|neutral|mixed","signal":"entry zone, target, stop"}],"urgent_alerts":["string"],"sentiment":{"USD":0,"EUR":0,"GBP":0,"JPY":0,"CHF":0,"AUD":0,"CAD":0,"Gold":0,"Oil":0,"BTC":0},"setups":[{"pair":"EUR/USD","direction":"long|short","entry":"1.0820","sl":"1.0780","tp":"1.0900","rr":"2.0","reason":"one sentence"}],"market_summary":"2 sentence brief"}`
   try{
     const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:8000,tools:[{type:'web_search_20250305',name:'web_search',max_uses:3}],messages:[{role:'user',content:prompt}]})})
     if(!res.ok)throw new Error('API error '+res.status)
@@ -459,31 +526,111 @@ async function runScan(){
     await sb.from('scans').insert([result]);allEvents=result.events||[]
     if(result.market_summary){lastReport=result.market_summary;document.getElementById('reportBtn').disabled=false;document.getElementById('reportDate').textContent=result.scan_date+' · '+result.scan_time}
     const urgents=allEvents.filter(e=>e.urgent||e.impact==='HIGH');if(urgents.length)showToast(urgents[0].headline)
-    renderAll();buildTicker(allEvents);setStatus('live','Updated '+result.scan_time)
+    renderAll();buildTicker(allEvents);renderTrades(result.setups,result.scan_time);setStatus('live','Updated '+result.scan_time)
   }catch(err){setStatus('','Scan failed');document.getElementById('masonryGrid').innerHTML='<div class="empty-state"><span class="empty-icon">⚠</span><div class="empty-h">Scan Failed</div><div class="empty-p">'+err.message+'</div></div>'}
 }
 
-function getVoice(){const v=window.speechSynthesis?.getVoices()||[];return['Samantha','Ava','Susan'].map(n=>v.find(x=>x.name.includes(n))).find(Boolean)||v.find(x=>x.lang?.startsWith('en-US'))||v[0]}
+// ── Voice Engine ─────────────────────────────────────────────────────────
+let cachedVoice = null
 
-function readFeature(){
-  if(!featureEvent)return
-  const btn=document.getElementById('featReadBtn')
-  if(currentUtterance){window.speechSynthesis.cancel();btn.textContent='▶ Read';currentUtterance=null;return}
-  const text=featureEvent.source+'. '+featureEvent.headline+'. '+featureEvent.context+' Signal: '+featureEvent.signal
-  const u=new SpeechSynthesisUtterance(text);const v=getVoice();if(v)u.voice=v;u.lang='en-US';u.rate=0.94
-  btn.textContent='■ Stop';u.onend=()=>{btn.textContent='▶ Read';currentUtterance=null}
-  currentUtterance=u;window.speechSynthesis.speak(u)
+function loadVoices(){
+  return new Promise(resolve => {
+    const voices = window.speechSynthesis.getVoices()
+    if(voices.length > 0){ resolve(voices); return }
+    window.speechSynthesis.onvoiceschanged = () => resolve(window.speechSynthesis.getVoices())
+    setTimeout(() => resolve(window.speechSynthesis.getVoices()), 1500)
+  })
 }
 
-function readCard(id){
-  const ev=allEvents.find(e=>e.id===id);if(!ev)return
-  const btn=document.getElementById('pb-'+id)
-  if(currentUtterance){window.speechSynthesis.cancel();document.querySelectorAll('.nc-btn.playing').forEach(b=>{b.textContent='▶ Read';b.classList.remove('playing')});currentUtterance=null;return}
-  const text=ev.source+'. '+ev.headline+'. '+ev.context+' Signal: '+ev.signal
-  const u=new SpeechSynthesisUtterance(text);const v=getVoice();if(v)u.voice=v;u.lang='en-US';u.rate=0.94
-  if(btn){btn.textContent='■ Stop';btn.classList.add('playing')}
-  u.onend=()=>{if(btn){btn.textContent='▶ Read';btn.classList.remove('playing')};currentUtterance=null}
-  currentUtterance=u;window.speechSynthesis.speak(u)
+async function getVoice(){
+  if(cachedVoice) return cachedVoice
+  const voices = await loadVoices()
+  const preferred = ['Samantha','Ava','Susan','Zira','Jenny','Aria']
+  for(const name of preferred){
+    const v = voices.find(x => x.name.includes(name))
+    if(v){ cachedVoice = v; return v }
+  }
+  cachedVoice = voices.find(x => x.lang === 'en-US') || voices[0]
+  return cachedVoice
+}
+
+function getCallout(ev){
+  if(!ev) return ''
+  const dir = ev.overall
+  const topPair = (ev.pairs||[])[0]?.pair || ''
+  const p = topPair ? ' on ' + topPair : ''
+  const longPhrases = [
+    'Better go long boys' + p + '.',
+    'Bulls are in control' + p + '. Get those longs on boys.',
+    'Time to buy boys' + (topPair ? ' — ' + topPair + ' is your play.' : '.'),
+    'Load up on the longs boys' + (topPair ? ', ' + topPair + ' looking strong.' : '.'),
+    'Long and strong boys' + p + '. Do not miss this one.'
+  ]
+  const shortPhrases = [
+    'Better go short boys' + p + '.',
+    'Bears are taking over' + p + '. Get those shorts on boys.',
+    'Time to sell boys' + (topPair ? ' — ' + topPair + ' is your play.' : '.'),
+    'Short and tight boys' + (topPair ? ', ' + topPair + ' heading lower.' : '.'),
+    'Flip to the short side boys' + p + '. Bears in charge.'
+  ]
+  const mixedPhrases = [
+    'Trade carefully boys — mixed signals on this one.',
+    'It is a bit of a mixed bag boys. Watch your risk.',
+    'Stay sharp boys — no clear direction here.'
+  ]
+  const neutralPhrases = [
+    'Sit on your hands boys — nothing clear here.',
+    'No trade boys. Wait for a cleaner setup.',
+    'Patience boys — this one is not worth the risk.'
+  ]
+  const pick = arr => arr[Math.floor(Math.random() * arr.length)]
+  if(dir === 'bullish') return pick(longPhrases)
+  if(dir === 'bearish') return pick(shortPhrases)
+  if(dir === 'mixed') return pick(mixedPhrases)
+  return pick(neutralPhrases)
+}
+
+function stopReading(){
+  window.speechSynthesis.cancel()
+  document.querySelectorAll('.nc-btn.playing').forEach(b=>{b.textContent='▶ Read';b.classList.remove('playing')})
+  const fb = document.getElementById('featReadBtn')
+  if(fb) fb.textContent = '▶ Read'
+  currentUtterance = null
+}
+
+async function speakText(text, onEnd){
+  window.speechSynthesis.cancel()
+  await new Promise(r => setTimeout(r, 180))
+  const voice = await getVoice()
+  const u = new SpeechSynthesisUtterance(text)
+  if(voice) u.voice = voice
+  u.lang = 'en-US'; u.rate = 0.94; u.pitch = 1.05; u.volume = 1.0
+  u.onend = onEnd; u.onerror = onEnd
+  currentUtterance = u
+  window.speechSynthesis.speak(u)
+  setTimeout(() => { if(window.speechSynthesis.paused) window.speechSynthesis.resume() }, 500)
+}
+
+async function readFeature(){
+  if(!featureEvent) return
+  const btn = document.getElementById('featReadBtn')
+  if(currentUtterance){ stopReading(); return }
+  btn.textContent = '■ Stop'
+  const text = featureEvent.source + '. ' + featureEvent.headline + '. ' + featureEvent.context + ' Signal: ' + featureEvent.signal + '. ' + getCallout(featureEvent)
+  await speakText(text, () => { btn.textContent = '▶ Read'; currentUtterance = null })
+}
+
+async function readCard(id){
+  const ev = allEvents.find(e => e.id === id)
+  if(!ev) return
+  const btn = document.getElementById('pb-' + id)
+  if(currentUtterance){ stopReading(); return }
+  if(btn){ btn.textContent = '■ Stop'; btn.classList.add('playing') }
+  const text = ev.source + '. ' + ev.headline + '. ' + ev.context + ' Signal: ' + ev.signal + '. ' + getCallout(ev)
+  await speakText(text, () => {
+    if(btn){ btn.textContent = '▶ Read'; btn.classList.remove('playing') }
+    currentUtterance = null
+  })
 }
 
 async function deepDive(id){
@@ -501,8 +648,65 @@ async function deepDive(id){
 
 function openReport(){document.getElementById('reportBody').innerHTML=lastReport.replace(/\n/g,'<br>');document.getElementById('reportModal').classList.add('open')}
 function showToast(text){document.getElementById('toastText').textContent=text;document.getElementById('toast').style.display='block';setTimeout(()=>document.getElementById('toast').style.display='none',12000)}
+
+let tradePanelOpen = false
+
+function toggleTradePanel(){
+  tradePanelOpen = !tradePanelOpen
+  document.getElementById('tradePanel').classList.toggle('open', tradePanelOpen)
+  document.getElementById('tradePanelToggle').classList.toggle('open', tradePanelOpen)
+  if(window.innerWidth > 768){
+    document.getElementById('mainContent').classList.toggle('shifted', tradePanelOpen)
+  }
+}
+
+function renderTrades(setups, scanTime){
+  const list = document.getElementById('tradeList')
+  document.getElementById('tpScanTime').textContent = scanTime ? 'Last scan: ' + scanTime : ''
+  if(!setups || !setups.length){
+    list.innerHTML = '<div class="trade-empty"><span class="trade-empty-icon">📈</span>No trade setups in this scan</div>'
+    return
+  }
+  list.innerHTML = setups.map((s, i) => {
+    // Handle both object format and string format
+    let pair, dir, entry, sl, tp, rr, reason
+    if(typeof s === 'object'){
+      pair = s.pair || '—'
+      dir = (s.direction || 'long').toLowerCase()
+      entry = s.entry || '—'
+      sl = s.sl || '—'
+      tp = s.tp || '—'
+      rr = s.rr ? s.rr + ':1' : '—'
+      reason = s.reason || ''
+    } else {
+      // Parse string format "pair — direction — entry — target — stop — R:R"
+      const parts = s.split(/[—–-]/).map(p => p.trim())
+      pair = parts[0] || '—'
+      dir = (parts[1] || 'long').toLowerCase().includes('short') ? 'short' : 'long'
+      entry = parts[2] || '—'
+      tp = parts[3] || '—'
+      sl = parts[4] || '—'
+      rr = parts[5] || '—'
+      reason = parts[6] || s
+    }
+    return `<div class="trade-card ${dir}" style="animation-delay:${i*0.07}s">
+      <div class="tc-top">
+        <span class="tc-pair">${pair}</span>
+        <span class="tc-dir ${dir}">${dir === 'long' ? '↑ Long' : '↓ Short'}</span>
+      </div>
+      <div class="tc-levels">
+        <div class="tc-level tc-entry"><div class="tc-level-label">Entry</div><div class="tc-level-val">${entry}</div></div>
+        <div class="tc-level tc-sl"><div class="tc-level-label">Stop</div><div class="tc-level-val">${sl}</div></div>
+        <div class="tc-level tc-tp"><div class="tc-level-label">Target</div><div class="tc-level-val">${tp}</div></div>
+      </div>
+      <div class="tc-rr"><span class="tc-rr-label">Risk / Reward</span><span class="tc-rr-val">${rr}</span></div>
+      ${reason ? '<div class="tc-reason">' + reason + '</div>' : ''}
+    </div>`
+  }).join('')
+}
+
 async function doSignOut(){await sb.auth.signOut();window.location.replace('/login.html')}
-if(window.speechSynthesis)window.speechSynthesis.onvoiceschanged=()=>{}
+// voices loaded on demand
 init()
 </script>
 </body>
