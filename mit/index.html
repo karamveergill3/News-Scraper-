@@ -536,13 +536,94 @@ function loadVoices(){
 async function getVoice(){
   if(cachedVoice) return cachedVoice
   const voices = await loadVoices()
-  const preferred = ['Samantha','Ava','Susan','Zira','Jenny','Aria']
+  // Deep confident American female — closest to what we want
+  // Priority order: Aria (confident), Samantha (warm), Jenny, Ava, Susan, Zira
+  const preferred = ['Aria','Samantha','Jenny','Ava','Susan','Zira','Microsoft Aria','Google US English']
   for(const name of preferred){
-    const v = voices.find(x => x.name.includes(name))
+    const v = voices.find(x => x.name.toLowerCase().includes(name.toLowerCase()))
     if(v){ cachedVoice = v; return v }
   }
+  // Any en-US female voice
   cachedVoice = voices.find(x => x.lang === 'en-US') || voices[0]
   return cachedVoice
+}
+
+// ── Text Cleaner ──────────────────────────────────────────────────────────
+function cleanForSpeech(text){
+  if(!text) return ''
+  let t = text
+
+  // Currency amounts with suffixes — BEFORE general number handling
+  // $60K, $1.2B, $500M, $2.3T
+  t = t.replace(/\$(\d+\.?\d*)\s*T/gi, (_, n) => numToWords(parseFloat(n)) + ' trillion dollars')
+  t = t.replace(/\$(\d+\.?\d*)\s*B/gi, (_, n) => numToWords(parseFloat(n)) + ' billion dollars')
+  t = t.replace(/\$(\d+\.?\d*)\s*M/gi, (_, n) => numToWords(parseFloat(n)) + ' million dollars')
+  t = t.replace(/\$(\d+\.?\d*)\s*K/gi, (_, n) => numToWords(parseFloat(n) * 1000) + ' dollars')
+  t = t.replace(/\$(\d{1,3}(?:,\d{3})+(?:\.\d+)?)/g, (_, n) => numToWords(parseFloat(n.replace(/,/g,''))) + ' dollars')
+  t = t.replace(/\$(\d+\.?\d*)/g, (_, n) => numToWords(parseFloat(n)) + ' dollars')
+
+  // Percentages
+  t = t.replace(/(\d+\.?\d*)\s*%/g, (_, n) => numToWords(parseFloat(n)) + ' percent')
+
+  // Basis points
+  t = t.replace(/(\d+)\s*bps?/gi, (_, n) => n + ' basis points')
+
+  // Price levels like 1.0850 → one point zero eight fifty
+  t = t.replace(/(\d{1,2})\.(\d{4,5})/g, (_, a, b) => numToWords(parseInt(a)) + ' point ' + b.split('').join(' '))
+
+  // Large plain numbers with commas
+  t = t.replace(/(\d{1,3}(?:,\d{3})+)/g, (_, n) => numToWords(parseInt(n.replace(/,/g,''))))
+
+  // Currency pair names — say them naturally
+  const pairs = {
+    'EUR/USD':'Euro Dollar','GBP/USD':'Cable','USD/JPY':'Dollar Yen',
+    'USD/CHF':'Dollar Swiss','AUD/USD':'Aussie Dollar','USD/CAD':'Dollar Canada',
+    'NZD/USD':'Kiwi Dollar','EUR/GBP':'Euro Sterling','GBP/JPY':'Guppy',
+    'XAU/USD':'Gold','XAG/USD':'Silver','BTC/USD':'Bitcoin Dollar',
+    'WTI':'West Texas Oil','DXY':'Dollar Index'
+  }
+  for(const [sym, name] of Object.entries(pairs)){
+    t = t.replace(new RegExp(sym.replace('/','[/]'), 'gi'), name)
+  }
+
+  // Common financial abbreviations
+  t = t.replace(/Fed/g, 'Federal Reserve')
+  t = t.replace(/FOMC/g, 'F O M C')
+  t = t.replace(/CPI/g, 'C P I')
+  t = t.replace(/GDP/g, 'G D P')
+  t = t.replace(/NFP/g, 'Non Farm Payrolls')
+  t = t.replace(/S&P/gi, 'S and P')
+  t = t.replace(/Q([1-4])/g, 'Q $1')
+  t = t.replace(/YoY/gi, 'year on year')
+  t = t.replace(/MoM/gi, 'month on month')
+  t = t.replace(/R:R/gi, 'risk reward')
+  t = t.replace(/SL/g, 'stop loss')
+  t = t.replace(/TP/g, 'take profit')
+  t = t.replace(/H[1-4]/g, m => m[0] + ' ' + m[1])
+
+  // Remove all punctuation that sounds bad when read
+  t = t.replace(/[;:*#@\[\]{}|\^~`]/g, ' ')
+  t = t.replace(/[()]/g, ', ')
+  t = t.replace(/[—–]/g, ', ')
+  t = t.replace(/\.\.\./g, ', ')
+  t = t.replace(/\//g, ' ')
+
+  // Clean up multiple spaces and trailing punctuation
+  t = t.replace(/\s+/g, ' ').trim()
+  t = t.replace(/,\s*,/g, ',')
+  t = t.replace(/\s+\./g, '.')
+
+  return t
+}
+
+function numToWords(n){
+  if(isNaN(n)) return String(n)
+  if(n >= 1e12) return (n/1e12).toFixed(1).replace(/\.0$/,'') + ' trillion'
+  if(n >= 1e9)  return (n/1e9).toFixed(1).replace(/\.0$/,'') + ' billion'
+  if(n >= 1e6)  return (n/1e6).toFixed(1).replace(/\.0$/,'') + ' million'
+  if(n >= 1e3)  return (n/1e3).toFixed(1).replace(/\.0$/,'') + ' thousand'
+  if(Number.isInteger(n)) return n.toString()
+  return n.toFixed(2)
 }
 
 function getCallout(ev){
@@ -589,13 +670,17 @@ function stopReading(){
   currentUtterance = null
 }
 
-async function speakText(text, onEnd){
+async function speakText(rawText, onEnd){
   window.speechSynthesis.cancel()
   await new Promise(r => setTimeout(r, 180))
   const voice = await getVoice()
+  const text = cleanForSpeech(rawText)
   const u = new SpeechSynthesisUtterance(text)
   if(voice) u.voice = voice
-  u.lang = 'en-US'; u.rate = 0.94; u.pitch = 1.05; u.volume = 1.0
+  u.lang = 'en-US'
+  u.rate = 0.90   // slightly slower — confident, deliberate
+  u.pitch = 0.92  // slightly lower pitch — deeper, more authoritative
+  u.volume = 1.0
   u.onend = onEnd; u.onerror = onEnd
   currentUtterance = u
   window.speechSynthesis.speak(u)
