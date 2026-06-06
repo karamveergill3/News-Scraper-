@@ -159,7 +159,7 @@ async function signIn(){
   if(error){msg.textContent=error.message;msg.className='msg error';btn.disabled=false;btn.textContent='Sign In →';return}
   const{data:{user}}=await sb.auth.getUser()
   const{data:p}=await sb.from('profiles').select('status,is_admin').eq('id',user.id).single()
-  if(p&&(p.is_admin||p.status==='approved')) window.location.replace('/index.html')
+  if(p&&(p.is_admin||p.status==='approved')){sessionStorage.setItem('kjc_play_intro','1');window.location.replace('/index.html')}
   else window.location.replace('/pending.html')
 }
 
