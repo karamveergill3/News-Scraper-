@@ -203,13 +203,8 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;fo
 ::-webkit-scrollbar-thumb{background:rgba(212,168,67,0.18);border-radius:2px}
 
 /* Trade Ideas Panel */
-.trade-panel{position:fixed;right:0;top:54px;width:280px;height:calc(100vh - 54px);background:linear-gradient(180deg,#080808,#050505);border-left:1px solid var(--border);z-index:50;display:flex;flex-direction:column;transform:translateX(100%);transition:transform 0.35s cubic-bezier(0.16,1,0.3,1)}
-.trade-panel.open{transform:translateX(0)}
-.trade-panel-toggle{position:fixed;right:0;top:50%;transform:translateY(-50%);z-index:51;background:linear-gradient(135deg,#7a5a10,#d4a843);border:none;border-radius:8px 0 0 8px;padding:14px 8px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;transition:all 0.25s;box-shadow:-4px 0 20px rgba(212,168,67,0.2)}
-.trade-panel-toggle:hover{padding-right:12px;box-shadow:-6px 0 28px rgba(212,168,67,0.35)}
-.trade-panel-toggle.open{right:280px}
-.tpt-label{font-family:'DM Mono',monospace;font-size:8px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:#000;writing-mode:vertical-rl;text-orientation:mixed}
-.tpt-icon{font-size:14px}
+.trade-panel{position:fixed;right:0;top:54px;width:280px;height:calc(100vh - 54px);background:linear-gradient(180deg,#080808,#050505);border-left:1px solid var(--border);z-index:50;display:flex;flex-direction:column}
+.trade-panel-toggle{display:none}
 .trade-panel-head{padding:16px 16px 12px;border-bottom:1px solid var(--border);flex-shrink:0;position:relative}
 .trade-panel-head::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);opacity:0.4}
 .tp-title{font-family:'Playfair Display',serif;font-size:16px;font-weight:700;color:var(--white);margin-bottom:2px}
@@ -239,14 +234,16 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;fo
 .tc-rr-label{font-family:'DM Mono',monospace;font-size:9px;color:rgba(255,255,255,0.2);letter-spacing:0.06em;text-transform:uppercase}
 .tc-rr-val{font-family:'DM Mono',monospace;font-size:11px;font-weight:600;color:var(--gold)}
 .tc-reason{font-size:11px;color:rgba(245,243,238,0.35);line-height:1.5;border-top:1px solid rgba(255,255,255,0.04);padding-top:7px}
+.tc-footer{display:flex;align-items:center;justify-content:space-between;margin-top:8px;padding-top:7px;border-top:1px solid rgba(255,255,255,0.04)}
+.tc-time{font-family:'DM Mono',monospace;font-size:9px;color:rgba(212,168,67,0.35);letter-spacing:0.06em}
+.tc-expiry{font-family:'DM Mono',monospace;font-size:9px;color:rgba(255,255,255,0.2);letter-spacing:0.04em}
+.tc-expiry.expiring{color:var(--red);animation:blink 1.5s ease-in-out infinite}
 .trade-empty{padding:32px 16px;text-align:center;color:rgba(255,255,255,0.2);font-size:12px;line-height:1.7}
 .trade-empty-icon{font-size:28px;display:block;margin-bottom:10px;opacity:0.3}
 
-/* Shift main content when panel opens */
-#mainContent{transition:padding-right 0.35s cubic-bezier(0.16,1,0.3,1)}
-#mainContent.shifted{padding-right:280px}
-
-@media(max-width:768px){.trade-panel{width:100%;top:auto;bottom:0;height:60vh;transform:translateY(100%);border-left:none;border-top:1px solid var(--border)}.trade-panel.open{transform:translateY(0)}.trade-panel-toggle{top:auto;bottom:80px;right:16px;transform:none;border-radius:50%;width:48px;height:48px;padding:0;justify-content:center}.trade-panel-toggle.open{bottom:calc(60vh + 16px);right:16px}}
+/* Main content always offset for trade panel */
+#mainContent{padding-right:280px}
+@media(max-width:768px){#mainContent{padding-right:0}.trade-panel{position:fixed;right:0;bottom:0;width:100%;height:50vh;top:auto;border-left:none;border-top:1px solid var(--border)}}
 </style>
 </head>
 <body>
@@ -352,12 +349,6 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;fo
   <div class="empty-p">Hit <strong style="color:var(--gold)">⚡ Scan Now</strong> to pull live market intelligence across Trump, Forex Factory, geopolitics, central banks, equities, commodities and crypto.</div>
 </div>
 
-
-<!-- Trade Ideas Panel Toggle -->
-<button class="trade-panel-toggle" id="tradePanelToggle" onclick="toggleTradePanel()">
-  <span class="tpt-icon">📊</span>
-  <span class="tpt-label">Trades</span>
-</button>
 
 <!-- Trade Ideas Panel -->
 <div class="trade-panel" id="tradePanel">
@@ -649,60 +640,96 @@ async function deepDive(id){
 function openReport(){document.getElementById('reportBody').innerHTML=lastReport.replace(/\n/g,'<br>');document.getElementById('reportModal').classList.add('open')}
 function showToast(text){document.getElementById('toastText').textContent=text;document.getElementById('toast').style.display='block';setTimeout(()=>document.getElementById('toast').style.display='none',12000)}
 
-let tradePanelOpen = false
-
-function toggleTradePanel(){
-  tradePanelOpen = !tradePanelOpen
-  document.getElementById('tradePanel').classList.toggle('open', tradePanelOpen)
-  document.getElementById('tradePanelToggle').classList.toggle('open', tradePanelOpen)
-  if(window.innerWidth > 768){
-    document.getElementById('mainContent').classList.toggle('shifted', tradePanelOpen)
+function parseSetup(s){
+  // Parse string like "EUR/USD short 1.0050 target 0.9900 stop 1.0200"
+  if(typeof s === 'object') return s
+  const str = s.toString()
+  // Extract pair (e.g. EUR/USD, USD/JPY, XAU/USD, BTC/USD, WTI)
+  const pairMatch = str.match(/([A-Z]{2,6}\/[A-Z]{2,6}|XAU\/USD|BTC\/USD|WTI|GOLD|OIL)/i)
+  const pair = pairMatch ? pairMatch[0].toUpperCase() : str.split(' ')[0]
+  // Direction
+  const dir = /short/i.test(str) ? 'short' : 'long'
+  // Extract all numbers from string
+  const nums = str.match(/\d+\.?\d*/g) || []
+  // Entry: first number after pair/direction words
+  const entryMatch = str.match(/(?:entry|@|at)\s*([\d.]+)/i) || [null, nums[0] || '—']
+  const entry = entryMatch[1]
+  // Target/TP
+  const tpMatch = str.match(/(?:target|tp|take.profit)\s*([\d.]+)/i) || [null, nums[1] || '—']
+  const tp = tpMatch[1]
+  // Stop/SL
+  const slMatch = str.match(/(?:stop|sl|stop.loss)\s*([\d.]+)/i) || [null, nums[2] || '—']
+  const sl = slMatch[1]
+  // R:R
+  const rrMatch = str.match(/(\d+\.?\d*)\s*[:/]\s*\d+\s*R/i) || str.match(/R[:/]R\s*([\d.]+)/i)
+  let rr = '—'
+  if(entry !== '—' && tp !== '—' && sl !== '—'){
+    const entryN = parseFloat(entry), tpN = parseFloat(tp), slN = parseFloat(sl)
+    if(!isNaN(entryN) && !isNaN(tpN) && !isNaN(slN)){
+      const reward = Math.abs(tpN - entryN)
+      const risk = Math.abs(entryN - slN)
+      if(risk > 0) rr = (reward/risk).toFixed(1) + ':1'
+    }
   }
+  return {pair, direction: dir, entry, sl, tp, rr, reason: str}
+}
+
+function getExpiryLabel(scanTime){
+  if(!scanTime) return {label: '—', expiring: false}
+  // scanTime is like "07:22"
+  const [h, m] = scanTime.split(':').map(Number)
+  const now = new Date()
+  const scanDate = new Date()
+  scanDate.setHours(h, m, 0, 0)
+  // If scan was in the past but more than 12h ago, assume it's today
+  const diffMs = now - scanDate
+  if(diffMs < 0) scanDate.setDate(scanDate.getDate() - 1)
+  const diff = now - scanDate
+  const minsAgo = Math.floor(diff / 60000)
+  const minsLeft = 30 - minsAgo
+  if(minsLeft <= 0) return {label: 'Expired', expiring: true}
+  if(minsLeft <= 5) return {label: minsLeft + 'm left', expiring: true}
+  return {label: minsLeft + 'm left', expiring: false}
 }
 
 function renderTrades(setups, scanTime){
   const list = document.getElementById('tradeList')
-  document.getElementById('tpScanTime').textContent = scanTime ? 'Last scan: ' + scanTime : ''
+  document.getElementById('tpScanTime').textContent = scanTime ? 'Signal time: ' + scanTime : ''
   if(!setups || !setups.length){
-    list.innerHTML = '<div class="trade-empty"><span class="trade-empty-icon">📈</span>No trade setups in this scan</div>'
+    list.innerHTML = '<div class="trade-empty"><span class="trade-empty-icon">📈</span>No trade setups this scan</div>'
+    return
+  }
+  // Filter out expired setups (older than 30 mins)
+  const expiry = getExpiryLabel(scanTime)
+  if(expiry.label === 'Expired'){
+    list.innerHTML = '<div class="trade-empty"><span class="trade-empty-icon">⏰</span>Setups expired<br>Next scan will refresh</div>'
     return
   }
   list.innerHTML = setups.map((s, i) => {
-    // Handle both object format and string format
-    let pair, dir, entry, sl, tp, rr, reason
-    if(typeof s === 'object'){
-      pair = s.pair || '—'
-      dir = (s.direction || 'long').toLowerCase()
-      entry = s.entry || '—'
-      sl = s.sl || '—'
-      tp = s.tp || '—'
-      rr = s.rr ? s.rr + ':1' : '—'
-      reason = s.reason || ''
-    } else {
-      // Parse string format "pair — direction — entry — target — stop — R:R"
-      const parts = s.split(/[—–-]/).map(p => p.trim())
-      pair = parts[0] || '—'
-      dir = (parts[1] || 'long').toLowerCase().includes('short') ? 'short' : 'long'
-      entry = parts[2] || '—'
-      tp = parts[3] || '—'
-      sl = parts[4] || '—'
-      rr = parts[5] || '—'
-      reason = parts[6] || s
-    }
+    const t = parseSetup(s)
+    const dir = (t.direction || 'long').toLowerCase().includes('short') ? 'short' : 'long'
+    const exp = getExpiryLabel(scanTime)
     return `<div class="trade-card ${dir}" style="animation-delay:${i*0.07}s">
       <div class="tc-top">
-        <span class="tc-pair">${pair}</span>
+        <span class="tc-pair">${t.pair || '—'}</span>
         <span class="tc-dir ${dir}">${dir === 'long' ? '↑ Long' : '↓ Short'}</span>
       </div>
       <div class="tc-levels">
-        <div class="tc-level tc-entry"><div class="tc-level-label">Entry</div><div class="tc-level-val">${entry}</div></div>
-        <div class="tc-level tc-sl"><div class="tc-level-label">Stop</div><div class="tc-level-val">${sl}</div></div>
-        <div class="tc-level tc-tp"><div class="tc-level-label">Target</div><div class="tc-level-val">${tp}</div></div>
+        <div class="tc-level tc-entry"><div class="tc-level-label">Entry</div><div class="tc-level-val">${t.entry || '—'}</div></div>
+        <div class="tc-level tc-sl"><div class="tc-level-label">Stop</div><div class="tc-level-val">${t.sl || '—'}</div></div>
+        <div class="tc-level tc-tp"><div class="tc-level-label">Target</div><div class="tc-level-val">${t.tp || '—'}</div></div>
       </div>
-      <div class="tc-rr"><span class="tc-rr-label">Risk / Reward</span><span class="tc-rr-val">${rr}</span></div>
-      ${reason ? '<div class="tc-reason">' + reason + '</div>' : ''}
+      <div class="tc-rr"><span class="tc-rr-label">Risk / Reward</span><span class="tc-rr-val">${t.rr || '—'}</span></div>
+      <div class="tc-footer">
+        <span class="tc-time">📡 ${scanTime || '—'}</span>
+        <span class="tc-expiry${exp.expiring ? ' expiring' : ''}">${exp.label}</span>
+      </div>
     </div>`
   }).join('')
+
+  // Auto refresh expiry timers every minute
+  clearInterval(window._tradeTimer)
+  window._tradeTimer = setInterval(() => renderTrades(setups, scanTime), 60000)
 }
 
 async function doSignOut(){await sb.auth.signOut();window.location.replace('/login.html')}
