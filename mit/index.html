@@ -663,6 +663,7 @@ function getCallout(ev){
 }
 
 function stopReading(){
+  if(currentAudio){ currentAudio.pause(); currentAudio = null }
   window.speechSynthesis.cancel()
   document.querySelectorAll('.nc-btn.playing').forEach(b=>{b.textContent='▶ Read';b.classList.remove('playing')})
   const fb = document.getElementById('featReadBtn')
@@ -670,17 +671,75 @@ function stopReading(){
   currentUtterance = null
 }
 
+// ElevenLabs config
+const EL_VOICE_ID = 'yj30vwTGJxSHezdAGsv9'
+let elApiKey = localStorage.getItem('el_api_key') || ''
+let currentAudio = null
+
+function getELKey(){
+  if(elApiKey) return elApiKey
+  const k = prompt('Enter your ElevenLabs API key to enable premium voice:')
+  if(k){ elApiKey = k; localStorage.setItem('el_api_key', k) }
+  return elApiKey
+}
+
 async function speakText(rawText, onEnd){
+  // Stop any current playback
+  if(currentAudio){ currentAudio.pause(); currentAudio = null }
   window.speechSynthesis.cancel()
+
+  const text = cleanForSpeech(rawText)
+  const key = getELKey()
+
+  // Try ElevenLabs first
+  if(key){
+    try{
+      const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${EL_VOICE_ID}`, {
+        method: 'POST',
+        headers: {
+          'xi-api-key': key,
+          'Content-Type': 'application/json',
+          'Accept': 'audio/mpeg'
+        },
+        body: JSON.stringify({
+          text: text,
+          model_id: 'eleven_turbo_v2_5',
+          voice_settings: {
+            stability: 0.42,
+            similarity_boost: 0.82,
+            style: 0.35,
+            use_speaker_boost: true
+          }
+        })
+      })
+
+      if(res.ok){
+        const blob = await res.blob()
+        const url = URL.createObjectURL(blob)
+        const audio = new Audio(url)
+        currentAudio = audio
+        audio.onended = () => { URL.revokeObjectURL(url); currentAudio = null; onEnd && onEnd() }
+        audio.onerror = () => { currentAudio = null; onEnd && onEnd() }
+        audio.play()
+        return
+      } else if(res.status === 401){
+        // Bad key — clear it and fall through to browser voice
+        elApiKey = ''; localStorage.removeItem('el_api_key')
+        console.warn('ElevenLabs key invalid — falling back to browser voice')
+      } else {
+        console.warn('ElevenLabs error', res.status, '— falling back to browser voice')
+      }
+    } catch(err){
+      console.warn('ElevenLabs failed:', err.message, '— falling back to browser voice')
+    }
+  }
+
+  // Fallback: browser speech synthesis
   await new Promise(r => setTimeout(r, 180))
   const voice = await getVoice()
-  const text = cleanForSpeech(rawText)
   const u = new SpeechSynthesisUtterance(text)
   if(voice) u.voice = voice
-  u.lang = 'en-US'
-  u.rate = 0.90   // slightly slower — confident, deliberate
-  u.pitch = 0.92  // slightly lower pitch — deeper, more authoritative
-  u.volume = 1.0
+  u.lang = 'en-US'; u.rate = 0.90; u.pitch = 0.92; u.volume = 1.0
   u.onend = onEnd; u.onerror = onEnd
   currentUtterance = u
   window.speechSynthesis.speak(u)
