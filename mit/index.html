@@ -1078,6 +1078,37 @@ function numToWords(n){
   return n.toFixed(2)
 }
 
+// ── Office crew callouts ─────────────────────────────────────────────────
+const OFFICE_CREW = {
+  spartan: {
+    openers: [
+      "Spartan, you're 1 trade away from tinder maxxing get busy baby.",
+      "Spartan if you can crash a BMW 7 series you can crash the markets today with this.",
+      "Spartan baby please don't kill yourself today honey, there is money to be made and a trade you don't wanna miss.",
+      "Spartan how many times you absolute muppet, stop overdosing on caffeine and zyns its time to lock in."
+    ],
+    closer: "innit Spartan."
+  },
+  kilo: {
+    openers: [],
+    closer: "innit Kilo."
+  },
+  cailan: {
+    openers: [],
+    closer: "innit Cailan."
+  },
+  javier: {
+    openers: [
+      "Javier, wake your turkish ass up!",
+      "Javier, stop painting your nails and get to work.",
+      "Javier, stop saying As I Say!",
+      "Javier, you are five eleven.",
+      "Jaydo just lost aura!"
+    ],
+    closer: "innit Javier."
+  }
+}
+
 function buildSpeechScript(ev,isAuto){
   const topPair=(ev.pairs||[])[0]
   const pairName=topPair?.pair||''
@@ -1182,6 +1213,13 @@ function buildSpeechScript(ev,isAuto){
     else if(dir==='bearish')script+=pick(shortCalls)
     else if(dir==='mixed')script+=pick(mixedCalls)
     else script+=pick(neutralCalls)
+  }
+  // Randomly pick a crew member with defined prompts and wrap the script
+  const activeCrew = Object.entries(OFFICE_CREW).filter(([,v]) => v.openers.length > 0)
+  if(activeCrew.length > 0){
+    const [name, person] = activeCrew[Math.floor(Math.random() * activeCrew.length)]
+    const opener = person.openers[Math.floor(Math.random() * person.openers.length)]
+    script = opener + ' ' + script + ' ' + person.closer
   }
   return script
 }
