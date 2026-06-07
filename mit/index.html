@@ -177,9 +177,11 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;fo
 .empty-h{font-family:'Playfair Display',serif;font-size:24px;font-weight:700;color:var(--w2)}
 .empty-p{font-size:13px;line-height:1.75;color:var(--w3);max-width:420px}
 
-/* Modals */
-.modal-overlay{display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0.9);backdrop-filter:blur(14px);align-items:flex-start;justify-content:center;padding:24px;overflow-y:auto}
+/* Deep Dive Modal */
+.modal-overlay{display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0.92);backdrop-filter:blur(16px);align-items:center;justify-content:center;padding:20px;overflow-y:auto}
 .modal-overlay.open{display:flex;animation:fadeIn 0.22s ease}
+
+/* Report modal - keep simple */
 .modal{background:#0c0c0c;border:1px solid var(--border2);border-radius:16px;width:100%;max-width:760px;margin:auto;overflow:hidden;animation:fadeUp 0.28s ease;box-shadow:0 32px 80px rgba(0,0,0,0.7)}
 .modal::before{content:'';display:block;height:1px;background:linear-gradient(90deg,transparent,var(--gold),var(--gold-b),var(--gold),transparent);opacity:0.5}
 .modal-head{display:flex;align-items:center;justify-content:space-between;padding:16px 22px;border-bottom:1px solid var(--border)}
@@ -188,6 +190,52 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;fo
 .modal-body::-webkit-scrollbar{width:2px}
 .modal-body::-webkit-scrollbar-thumb{background:var(--border2)}
 .modal-text{font-size:13.5px;line-height:1.82;color:var(--w2)}
+
+/* Premium Deep Dive Modal */
+.dive-modal{background:linear-gradient(160deg,#0a0a0a 0%,#060606 100%);border:1px solid var(--border2);border-radius:20px;width:100%;max-width:820px;margin:auto;overflow:hidden;animation:fadeUp 0.3s ease;box-shadow:0 40px 100px rgba(0,0,0,0.8),0 0 0 1px rgba(212,168,67,0.06);position:relative}
+.dive-modal::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--gold),var(--gold-b),var(--gold),transparent)}
+.dive-header{display:flex;align-items:flex-start;justify-content:space-between;padding:24px 28px 20px;border-bottom:1px solid rgba(212,168,67,0.08);background:rgba(212,168,67,0.02)}
+.dive-header-left{flex:1;min-width:0;padding-right:20px}
+.dive-kicker{display:flex;align-items:center;gap:7px;margin-bottom:10px}
+.dive-kicker-dot{width:6px;height:6px;border-radius:50%;background:var(--gold);animation:livePulse 2s ease-in-out infinite}
+.dive-kicker-label{font-family:'DM Mono',monospace;font-size:9px;font-weight:600;letter-spacing:0.2em;text-transform:uppercase;color:rgba(212,168,67,0.5)}
+.dive-title{font-family:'Playfair Display',serif;font-size:22px;font-weight:800;line-height:1.25;color:var(--white);letter-spacing:-0.02em}
+.dive-meta{font-family:'DM Mono',monospace;font-size:10px;color:rgba(212,168,67,0.3);margin-top:6px;letter-spacing:0.04em}
+.dive-close{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:var(--w3);width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.2s;font-family:'DM Sans',sans-serif}
+.dive-close:hover{background:rgba(255,255,255,0.08);color:var(--white);border-color:var(--border2)}
+.dive-body{padding:0;max-height:72vh;overflow-y:auto}
+.dive-body::-webkit-scrollbar{width:2px}
+.dive-body::-webkit-scrollbar-thumb{background:var(--border2)}
+.dive-loading{display:flex;align-items:center;gap:12px;padding:40px 28px;font-family:'DM Mono',monospace;font-size:12px;color:rgba(212,168,67,0.5);letter-spacing:0.06em}
+.dive-spinner{width:16px;height:16px;border:2px solid rgba(212,168,67,0.1);border-top-color:var(--gold);border-radius:50%;animation:spin 0.7s linear infinite;flex-shrink:0}
+
+/* Deep dive content sections */
+.dive-section{padding:20px 28px;border-bottom:1px solid rgba(255,255,255,0.04)}
+.dive-section:last-child{border-bottom:none}
+.dive-section-label{font-family:'DM Mono',monospace;font-size:9px;font-weight:600;letter-spacing:0.2em;text-transform:uppercase;color:rgba(212,168,67,0.4);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.dive-section-label::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,rgba(212,168,67,0.1),transparent)}
+.dive-section-content{font-size:13.5px;line-height:1.82;color:var(--w2)}
+.dive-section-content strong{color:var(--gold);font-weight:600}
+.dive-section-content br{display:block;margin-bottom:4px}
+
+/* Trade table inside deep dive */
+.dive-trade-table{width:100%;border-collapse:collapse;margin-top:10px}
+.dive-trade-table th{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:rgba(212,168,67,0.3);padding:0 10px 8px;text-align:left;border-bottom:1px solid rgba(212,168,67,0.08)}
+.dive-trade-table td{padding:10px;border-bottom:1px solid rgba(255,255,255,0.03);font-size:12px;vertical-align:top}
+.dive-trade-table tr:last-child td{border-bottom:none}
+.dive-trade-table tr:hover td{background:rgba(212,168,67,0.02)}
+.dtt-pair{font-family:'DM Mono',monospace;font-size:12px;font-weight:600;color:var(--white)}
+.dtt-long{color:var(--green);font-family:'DM Mono',monospace;font-size:11px;font-weight:700}
+.dtt-short{color:var(--red);font-family:'DM Mono',monospace;font-size:11px;font-weight:700}
+.dtt-level{font-family:'DM Mono',monospace;font-size:11px;color:var(--w2)}
+.dtt-rr{font-family:'DM Mono',monospace;font-size:11px;color:var(--gold);font-weight:600}
+.dtt-note{font-size:11px;color:var(--w3);line-height:1.5}
+
+/* Risk pill */
+.dive-risk-pill{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;font-family:'DM Mono',monospace;font-size:10px;font-weight:600;letter-spacing:0.06em;margin:3px 3px 3px 0}
+.drp-high{background:rgba(240,68,68,0.1);color:var(--red);border:1px solid rgba(240,68,68,0.2)}
+.drp-med{background:rgba(240,168,50,0.1);color:var(--amber);border:1px solid rgba(240,168,50,0.2)}
+
 .modal-loading{font-family:'DM Mono',monospace;font-size:12px;color:var(--amber);display:flex;align-items:center;gap:10px}
 .spinner{width:14px;height:14px;border:2px solid rgba(240,168,50,0.15);border-top-color:var(--amber);border-radius:50%;animation:spin 0.7s linear infinite;flex-shrink:0}
 
@@ -370,7 +418,27 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;fo
 
 </div><!-- end #app -->
 
-<div class="modal-overlay" id="diveModal"><div class="modal"><div class="modal-head"><div class="modal-title" id="diveTitle">Deep Dive</div><button class="btn" onclick="document.getElementById('diveModal').classList.remove('open')">✕</button></div><div class="modal-body"><div id="diveBody"></div></div></div></div>
+<div class="modal-overlay" id="diveModal">
+  <div class="dive-modal">
+    <div class="dive-header">
+      <div class="dive-header-left">
+        <div class="dive-kicker">
+          <span class="dive-kicker-dot"></span>
+          <span class="dive-kicker-label">Deep Dive Analysis</span>
+        </div>
+        <div class="dive-title" id="diveTitle">—</div>
+        <div class="dive-meta" id="diveMeta"></div>
+      </div>
+      <button class="dive-close" onclick="document.getElementById('diveModal').classList.remove('open')">✕</button>
+    </div>
+    <div class="dive-body" id="diveBody">
+      <div class="dive-loading">
+        <div class="dive-spinner"></div>
+        <span>Generating analysis...</span>
+      </div>
+    </div>
+  </div>
+</div>
 <div class="modal-overlay" id="reportModal"><div class="modal"><div class="modal-head"><div><div class="modal-title">Market Intelligence Brief</div><div style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(212,168,67,0.4);margin-top:3px" id="reportDate"></div></div><button class="btn" onclick="document.getElementById('reportModal').classList.remove('open')">✕</button></div><div class="modal-body"><div class="modal-text" id="reportBody"></div></div></div></div>
 <div id="toast" class="toast"><div class="toast-label">▲ Urgent Event</div><div class="toast-text" id="toastText"></div><button class="toast-close" onclick="document.getElementById('toast').style.display='none'">Dismiss</button></div>
 
@@ -939,11 +1007,115 @@ async function readCard(id){
   })
 }
 
+
+// ── Format deep dive into premium sectioned layout ──────────────────────
+function formatDeepDive(raw, ev){
+  // Parse sections from markdown
+  const sections = []
+  const lines = raw.split('\n')
+  let currentSection = null
+  let currentContent = []
+
+  const sectionIcons = {
+    'why': '🔍',
+    'macro': '🌍',
+    'pair': '📊',
+    'trade': '⚡',
+    'risk': '⚠️',
+    'correl': '🔗',
+    'setup': '🎯',
+    'intraday': '⚡',
+    'swing': '📈',
+    'watch': '👁️'
+  }
+
+  function getSectionIcon(title){
+    const t = title.toLowerCase()
+    if(t.includes('why') || t.includes('happen') || t.includes('macro')) return '🔍'
+    if(t.includes('pair') || t.includes('analysis') || t.includes('fx')) return '📊'
+    if(t.includes('trade') || t.includes('setup') || t.includes('idea')) return '⚡'
+    if(t.includes('risk') || t.includes('event') || t.includes('watch')) return '⚠️'
+    if(t.includes('correl') || t.includes('asset')) return '🔗'
+    if(t.includes('intraday') || t.includes('scalp')) return '🎯'
+    if(t.includes('swing')) return '📈'
+    return '▸'
+  }
+
+  lines.forEach(line => {
+    const h2 = line.match(/^##\s+(.+)/)
+    const h3 = line.match(/^###\s+(.+)/)
+    const bold = line.match(/^\*\*(.+?)\*\*/)
+    const header = h2 || h3 || bold
+
+    if(header){
+      if(currentSection && currentContent.length){
+        sections.push({title: currentSection, content: currentContent.join('\n').trim()})
+      }
+      currentSection = (h2||h3||bold)[1].replace(/\*\*/g,'').trim()
+      currentContent = []
+    } else {
+      currentContent.push(line)
+    }
+  })
+  if(currentSection && currentContent.length){
+    sections.push({title: currentSection, content: currentContent.join('\n').trim()})
+  }
+
+  // If no sections parsed, just render as one block
+  if(!sections.length){
+    const cleaned = raw
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\n/g, '<br>')
+    return `<div class="dive-section">
+      <div class="dive-section-content">${cleaned}</div>
+    </div>`
+  }
+
+  // Build sectioned HTML
+  let html = ''
+
+  // Summary strip at top — impact + direction + top pair
+  const dir = ev.overall || 'neutral'
+  const topPair = (ev.pairs||[])[0]
+  const dirColor = dir==='bullish'?'var(--green)':dir==='bearish'?'var(--red)':'var(--amber)'
+  const dirLabel = dir==='bullish'?'↑ Bullish':dir==='bearish'?'↓ Bearish':'◆ Mixed'
+  html += `<div style="display:flex;align-items:center;gap:10px;padding:14px 28px;background:rgba(212,168,67,0.03);border-bottom:1px solid rgba(212,168,67,0.08);flex-wrap:wrap">
+    <span style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(212,168,67,0.4);letter-spacing:0.1em;text-transform:uppercase">Impact</span>
+    <span style="font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:${ev.impact==='HIGH'?'var(--red)':ev.impact==='MEDIUM'?'var(--amber)':'var(--w3)'}">${ev.impact||'—'}</span>
+    <span style="width:1px;height:14px;background:var(--border);display:inline-block"></span>
+    <span style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(212,168,67,0.4);letter-spacing:0.1em;text-transform:uppercase">Bias</span>
+    <span style="font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:${dirColor}">${dirLabel}</span>
+    ${topPair ? `<span style="width:1px;height:14px;background:var(--border);display:inline-block"></span>
+    <span style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(212,168,67,0.4);letter-spacing:0.1em;text-transform:uppercase">Top Pair</span>
+    <span style="font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:var(--white)">${topPair.pair}</span>` : ''}
+    <span style="width:1px;height:14px;background:var(--border);display:inline-block"></span>
+    <span style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(212,168,67,0.4);letter-spacing:0.1em;text-transform:uppercase">Source</span>
+    <span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--w2)">${ev.source||'—'}</span>
+  </div>`
+
+  // Sections
+  sections.forEach((sec, i) => {
+    const icon = getSectionIcon(sec.title)
+    const formattedContent = sec.content
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/^[-•]\s+/gm, '<span style="color:var(--gold);margin-right:6px">▸</span>')
+      .replace(/\n/g, '<br>')
+
+    html += `<div class="dive-section" style="animation-delay:${i*0.06}s">
+      <div class="dive-section-label">${icon} ${sec.title}</div>
+      <div class="dive-section-content">${formattedContent}</div>
+    </div>`
+  })
+
+  return html
+}
+
 async function deepDive(id){
   const ev=id==='__feature__'?featureEvent:allEvents.find(e=>e.id===id)
   if(!ev) return
-  document.getElementById('diveTitle').textContent=ev.headline
-  document.getElementById('diveBody').innerHTML='<div class="modal-loading"><div class="spinner"></div>Generating deep-dive analysis...</div>'
+  document.getElementById('diveTitle').textContent = ev.headline
+  document.getElementById('diveMeta').textContent = (ev.source||'') + (ev.time ? ' · ' + ev.time : '') + (ev.impact ? ' · ' + ev.impact + ' IMPACT' : '')
+  document.getElementById('diveBody').innerHTML = '<div class="dive-loading"><div class="dive-spinner"></div><span>Generating analysis...</span></div>'
   document.getElementById('diveModal').classList.add('open')
 
   // Check for API key
@@ -981,11 +1153,8 @@ async function deepDive(id){
     }
 
     const d = await res.json()
-    const text = d.content.filter(b => b.type === 'text').map(b => b.text).join('')
-    document.getElementById('diveBody').innerHTML = '<div class="modal-text">' +
-      text.replace(/\*\*(.*?)\*\*/g, '<strong style="color:var(--gold)">$1</strong>')
-          .replace(/#{1,3}\s*(.*?)\n/g, '<h3 style="color:var(--gold);margin:16px 0 8px;font-family:Playfair Display,serif">$1</h3>')
-          .replace(/\n/g, '<br>') + '</div>'
+    const raw = d.content.filter(b => b.type === 'text').map(b => b.text).join('')
+    document.getElementById('diveBody').innerHTML = formatDeepDive(raw, ev)
   } catch(e){
     document.getElementById('diveBody').innerHTML = '<div style="color:var(--red);padding:20px;text-align:center"><div style="font-size:18px;margin-bottom:8px">Analysis Failed</div><div style="font-size:13px;opacity:0.7">' + e.message + '</div></div>'
   }
