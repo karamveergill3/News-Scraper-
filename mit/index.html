@@ -343,6 +343,12 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;fo
 
 <div id="masonryGrid" class="masonry-wrap"></div>
 </div><!-- end mainContent -->
+<!-- Auto-read unlock banner -->
+<div id="autoReadBanner" style="display:none;background:rgba(212,168,67,0.08);border:1px solid rgba(212,168,67,0.25);border-radius:10px;margin:12px 28px;padding:12px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;animation:fadeUp 0.3s ease">
+  <span style="font-size:13px;color:rgba(212,168,67,0.8)">🔊 <strong style="color:var(--gold)">High impact news detected</strong> — click to enable auto-read</span>
+  <button onclick="unlockAutoRead()" style="background:linear-gradient(135deg,#7a5a10,#d4a843);border:none;color:#000;font-family:DM Mono,monospace;font-size:11px;font-weight:700;padding:7px 16px;border-radius:7px;cursor:pointer;letter-spacing:0.06em;text-transform:uppercase">Enable</button>
+</div>
+
 <div id="emptyState" class="empty-state">
   <span class="empty-icon">📰</span>
   <div class="empty-h">No stories yet</div>
@@ -517,12 +523,18 @@ async function runScan(){
     await sb.from('scans').insert([result]);allEvents=result.events||[]
     if(result.market_summary){lastReport=result.market_summary;document.getElementById('reportBtn').disabled=false;document.getElementById('reportDate').textContent=result.scan_date+' · '+result.scan_time}
     const urgents=allEvents.filter(e=>e.urgent||e.impact==='HIGH');if(urgents.length)showToast(urgents[0].headline)
-    renderAll();buildTicker(allEvents);renderTrades(result.setups,result.scan_time);setStatus('live','Updated '+result.scan_time)
+    renderAll();buildTicker(allEvents);renderTrades(result.setups,result.scan_time);setStatus('live','Updated '+result.scan_time);queueAutoRead(allEvents)
   }catch(err){setStatus('','Scan failed');document.getElementById('masonryGrid').innerHTML='<div class="empty-state"><span class="empty-icon">⚠</span><div class="empty-h">Scan Failed</div><div class="empty-p">'+err.message+'</div></div>'}
 }
 
 // ── Voice Engine ─────────────────────────────────────────────────────────
 let cachedVoice = null
+let currentAudio = null
+let isReading = false
+let autoReadQueue = []
+
+const EL_VOICE_ID = 'yj30vwTGJxSHezdAGsv9'
+let elApiKey = localStorage.getItem('el_api_key') || ''
 
 function loadVoices(){
   return new Promise(resolve => {
@@ -536,14 +548,11 @@ function loadVoices(){
 async function getVoice(){
   if(cachedVoice) return cachedVoice
   const voices = await loadVoices()
-  // Deep confident American female — closest to what we want
-  // Priority order: Aria (confident), Samantha (warm), Jenny, Ava, Susan, Zira
-  const preferred = ['Aria','Samantha','Jenny','Ava','Susan','Zira','Microsoft Aria','Google US English']
+  const preferred = ['Aria','Samantha','Jenny','Ava','Susan','Zira']
   for(const name of preferred){
     const v = voices.find(x => x.name.toLowerCase().includes(name.toLowerCase()))
     if(v){ cachedVoice = v; return v }
   }
-  // Any en-US female voice
   cachedVoice = voices.find(x => x.lang === 'en-US') || voices[0]
   return cachedVoice
 }
@@ -552,67 +561,44 @@ async function getVoice(){
 function cleanForSpeech(text){
   if(!text) return ''
   let t = text
-
-  // Currency amounts with suffixes — BEFORE general number handling
-  // $60K, $1.2B, $500M, $2.3T
   t = t.replace(/\$(\d+\.?\d*)\s*T/gi, (_, n) => numToWords(parseFloat(n)) + ' trillion dollars')
   t = t.replace(/\$(\d+\.?\d*)\s*B/gi, (_, n) => numToWords(parseFloat(n)) + ' billion dollars')
   t = t.replace(/\$(\d+\.?\d*)\s*M/gi, (_, n) => numToWords(parseFloat(n)) + ' million dollars')
   t = t.replace(/\$(\d+\.?\d*)\s*K/gi, (_, n) => numToWords(parseFloat(n) * 1000) + ' dollars')
   t = t.replace(/\$(\d{1,3}(?:,\d{3})+(?:\.\d+)?)/g, (_, n) => numToWords(parseFloat(n.replace(/,/g,''))) + ' dollars')
   t = t.replace(/\$(\d+\.?\d*)/g, (_, n) => numToWords(parseFloat(n)) + ' dollars')
-
-  // Percentages
   t = t.replace(/(\d+\.?\d*)\s*%/g, (_, n) => numToWords(parseFloat(n)) + ' percent')
-
-  // Basis points
   t = t.replace(/(\d+)\s*bps?/gi, (_, n) => n + ' basis points')
-
-  // Price levels like 1.0850 → one point zero eight fifty
-  t = t.replace(/(\d{1,2})\.(\d{4,5})/g, (_, a, b) => numToWords(parseInt(a)) + ' point ' + b.split('').join(' '))
-
-  // Large plain numbers with commas
-  t = t.replace(/(\d{1,3}(?:,\d{3})+)/g, (_, n) => numToWords(parseInt(n.replace(/,/g,''))))
-
-  // Currency pair names — say them naturally
+  t = t.replace(/\b(\d{1,2})\.(\d{4,5})\b/g, (_, a, b) => numToWords(parseInt(a)) + ' point ' + b.split('').join(' '))
+  t = t.replace(/\b(\d{1,3}(?:,\d{3})+)\b/g, (_, n) => numToWords(parseInt(n.replace(/,/g,''))))
   const pairs = {
     'EUR/USD':'Euro Dollar','GBP/USD':'Cable','USD/JPY':'Dollar Yen',
     'USD/CHF':'Dollar Swiss','AUD/USD':'Aussie Dollar','USD/CAD':'Dollar Canada',
     'NZD/USD':'Kiwi Dollar','EUR/GBP':'Euro Sterling','GBP/JPY':'Guppy',
-    'XAU/USD':'Gold','XAG/USD':'Silver','BTC/USD':'Bitcoin Dollar',
+    'XAU/USD':'Gold','XAG/USD':'Silver','BTC/USD':'Bitcoin',
     'WTI':'West Texas Oil','DXY':'Dollar Index'
   }
   for(const [sym, name] of Object.entries(pairs)){
     t = t.replace(new RegExp(sym.replace('/','[/]'), 'gi'), name)
   }
-
-  // Common financial abbreviations
-  t = t.replace(/Fed/g, 'Federal Reserve')
-  t = t.replace(/FOMC/g, 'F O M C')
-  t = t.replace(/CPI/g, 'C P I')
-  t = t.replace(/GDP/g, 'G D P')
-  t = t.replace(/NFP/g, 'Non Farm Payrolls')
-  t = t.replace(/S&P/gi, 'S and P')
-  t = t.replace(/Q([1-4])/g, 'Q $1')
-  t = t.replace(/YoY/gi, 'year on year')
-  t = t.replace(/MoM/gi, 'month on month')
-  t = t.replace(/R:R/gi, 'risk reward')
-  t = t.replace(/SL/g, 'stop loss')
-  t = t.replace(/TP/g, 'take profit')
-  t = t.replace(/H[1-4]/g, m => m[0] + ' ' + m[1])
-
-  // Remove all punctuation that sounds bad when read
-  t = t.replace(/[;:*#@\[\]{}|\^~`]/g, ' ')
+  t = t.replace(/\bFed\b/g, 'the Fed')
+  t = t.replace(/\bFOMC\b/g, 'the F O M C')
+  t = t.replace(/\bCPI\b/g, 'C P I')
+  t = t.replace(/\bGDP\b/g, 'G D P')
+  t = t.replace(/\bNFP\b/g, 'Non Farm Payrolls')
+  t = t.replace(/\bS&P\b/gi, 'S and P')
+  t = t.replace(/\bYoY\b/gi, 'year on year')
+  t = t.replace(/\bMoM\b/gi, 'month on month')
+  t = t.replace(/\bR:R\b/gi, 'risk to reward')
+  t = t.replace(/\bSL\b/g, 'stop loss')
+  t = t.replace(/\bTP\b/g, 'take profit')
+  t = t.replace(/[;:*#@\[\]{}|\\^~`]/g, ' ')
   t = t.replace(/[()]/g, ', ')
-  t = t.replace(/[—–]/g, ', ')
+  t = t.replace(/[\u2014\u2013]/g, ', ')
   t = t.replace(/\.\.\./g, ', ')
   t = t.replace(/\//g, ' ')
-
-  // Clean up multiple spaces and trailing punctuation
   t = t.replace(/\s+/g, ' ').trim()
   t = t.replace(/,\s*,/g, ',')
-  t = t.replace(/\s+\./g, '.')
-
   return t
 }
 
@@ -626,76 +612,129 @@ function numToWords(n){
   return n.toFixed(2)
 }
 
-function getCallout(ev){
-  if(!ev) return ''
+// ── Build natural speech script ───────────────────────────────────────────
+function buildSpeechScript(ev, isAuto){
+  const topPair = (ev.pairs||[])[0]
+  const pairName = topPair?.pair || ''
   const dir = ev.overall
-  const topPair = (ev.pairs||[])[0]?.pair || ''
-  const p = topPair ? ' on ' + topPair : ''
-  const longPhrases = [
-    'Better go long boys' + p + '.',
-    'Bulls are in control' + p + '. Get those longs on boys.',
-    'Time to buy boys' + (topPair ? ' — ' + topPair + ' is your play.' : '.'),
-    'Load up on the longs boys' + (topPair ? ', ' + topPair + ' looking strong.' : '.'),
-    'Long and strong boys' + p + '. Do not miss this one.'
+  const isHigh = ev.impact === 'HIGH' || ev.urgent
+
+  // Opening
+  let script = ''
+  if(isHigh){
+    script += 'Okay boys, high impact news has just hit. '
+  }
+
+  // Source and headline
+  if(ev.source) script += ev.source + ' is reporting that, '
+  script += ev.headline + '. '
+
+  // Context with natural flow
+  if(ev.context) script += ev.context + ' '
+
+  // Why this happened — based on event type
+  const whyMap = {
+    'trump': 'Now here is why this matters boys. When Trump makes moves like this it directly impacts trade flows, currency valuations and risk sentiment across the board. ',
+    'geopolitical': 'Here is the bigger picture boys. Geopolitical events like this trigger risk-off flows, safe haven buying and can move currency markets hard and fast. ',
+    'central-bank': 'Pay attention boys. Central bank decisions are the biggest market movers we have. Rate expectations shift currency pairs by hundreds of pips. ',
+    'economic': 'Here is the context boys. This data directly feeds into central bank decisions and changes market expectations for interest rates going forward. ',
+    'equities': 'Here is what is happening boys. Equity moves like this shift risk appetite across all asset classes including FX and commodities. ',
+    'commodities': 'Here is why you care about this boys. Commodity moves like this directly impact commodity currencies and inflation expectations globally. ',
+    'crypto': 'Here is the situation boys. Crypto moves like this affect overall risk sentiment and can spill into equities and high beta currencies. '
+  }
+  const whyText = whyMap[ev.type] || 'Here is why this matters boys. '
+  script += whyText
+
+  // Signal
+  if(ev.signal){
+    script += 'The trade signal is this. ' + ev.signal + '. '
+  }
+
+  // Pair analysis - mention top pairs naturally
+  if(ev.pairs && ev.pairs.length > 0){
+    const topPairs = ev.pairs.slice(0, 2)
+    topPairs.forEach(p => {
+      if(p.analysis) script += p.pair + ', ' + p.analysis + '. '
+    })
+  }
+
+  // Trading callout at the end
+  const longCallouts = [
+    'Load up ' + pairName + ' boys, time to go long.',
+    'Better go long boys on ' + pairName + '. Do not miss this one.',
+    'Bulls are running on ' + pairName + ' boys. Get those longs on.',
+    'Time to buy ' + pairName + ' boys. The setup is clean.',
+    pairName + ' is looking strong boys. Go long and hold tight.'
   ]
-  const shortPhrases = [
-    'Better go short boys' + p + '.',
-    'Bears are taking over' + p + '. Get those shorts on boys.',
-    'Time to sell boys' + (topPair ? ' — ' + topPair + ' is your play.' : '.'),
-    'Short and tight boys' + (topPair ? ', ' + topPair + ' heading lower.' : '.'),
-    'Flip to the short side boys' + p + '. Bears in charge.'
+  const shortCallouts = [
+    'Load up the shorts on ' + pairName + ' boys.',
+    'Better go short boys on ' + pairName + '. Bears are in control.',
+    'Time to sell ' + pairName + ' boys. This one is heading lower.',
+    'Get those shorts on ' + pairName + ' boys. Do not fight the trend.',
+    pairName + ' is tanking boys. Short it and ride it down.'
   ]
-  const mixedPhrases = [
-    'Trade carefully boys — mixed signals on this one.',
-    'It is a bit of a mixed bag boys. Watch your risk.',
-    'Stay sharp boys — no clear direction here.'
+  const mixedCallouts = [
+    'This is a tricky one boys. Mixed signals on ' + pairName + '. Trade with caution.',
+    'Be careful on this one boys. The market is undecided on ' + pairName + '.',
+    'Sit tight boys. ' + pairName + ' could go either way. Wait for confirmation.'
   ]
-  const neutralPhrases = [
-    'Sit on your hands boys — nothing clear here.',
-    'No trade boys. Wait for a cleaner setup.',
-    'Patience boys — this one is not worth the risk.'
+  const neutralCallouts = [
+    'No clear trade here boys. Sit on your hands and wait.',
+    'Nothing actionable yet boys. Patience pays.',
+    'Hold off on this one boys. Wait for a cleaner setup.'
   ]
+
   const pick = arr => arr[Math.floor(Math.random() * arr.length)]
-  if(dir === 'bullish') return pick(longPhrases)
-  if(dir === 'bearish') return pick(shortPhrases)
-  if(dir === 'mixed') return pick(mixedPhrases)
-  return pick(neutralPhrases)
+
+  if(pairName){
+    if(dir === 'bullish') script += pick(longCallouts)
+    else if(dir === 'bearish') script += pick(shortCallouts)
+    else if(dir === 'mixed') script += pick(mixedCallouts)
+    else script += pick(neutralCallouts)
+  }
+
+  return script
 }
 
+// ── Stop all audio ────────────────────────────────────────────────────────
 function stopReading(){
-  if(currentAudio){ currentAudio.pause(); currentAudio = null }
+  isReading = false
+  autoReadQueue = []
+  // Abort any in-progress ElevenLabs fetch
+  if(currentAbortController){ currentAbortController.abort(); currentAbortController = null }
+  if(currentAudio){
+    currentAudio.pause()
+    currentAudio.currentTime = 0
+    currentAudio = null
+  }
   window.speechSynthesis.cancel()
+  // Reset ALL read buttons
   document.querySelectorAll('.nc-btn.playing').forEach(b=>{b.textContent='▶ Read';b.classList.remove('playing')})
+  document.querySelectorAll('.feat-btn.playing, .feat-btn').forEach(b=>{b.textContent='▶ Read';b.classList.remove('playing')})
   const fb = document.getElementById('featReadBtn')
-  if(fb) fb.textContent = '▶ Read'
+  if(fb){ fb.textContent = '▶ Read'; fb.classList.remove('playing') }
   currentUtterance = null
 }
 
-// ElevenLabs config
-const EL_VOICE_ID = 'yj30vwTGJxSHezdAGsv9'
-let elApiKey = localStorage.getItem('el_api_key') || ''
-let currentAudio = null
-
-function getELKey(){
-  if(elApiKey) return elApiKey
-  const k = prompt('Enter your ElevenLabs API key to enable premium voice:')
-  if(k){ elApiKey = k; localStorage.setItem('el_api_key', k) }
-  return elApiKey
-}
+// ── Speak text via ElevenLabs or fallback ─────────────────────────────────
+let currentAbortController = null
 
 async function speakText(rawText, onEnd){
-  // Stop any current playback
-  if(currentAudio){ currentAudio.pause(); currentAudio = null }
-  window.speechSynthesis.cancel()
+  stopReading()
+  isReading = true
+  await new Promise(r => setTimeout(r, 200))
+  if(!isReading) return // was stopped during pause
 
   const text = cleanForSpeech(rawText)
-  const key = getELKey()
+  const key = elApiKey || localStorage.getItem('el_api_key') || ''
 
-  // Try ElevenLabs first
+  // Try ElevenLabs with abort support
   if(key){
     try{
-      const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${EL_VOICE_ID}`, {
+      currentAbortController = new AbortController()
+      const res = await fetch('https://api.elevenlabs.io/v1/text-to-speech/' + EL_VOICE_ID, {
         method: 'POST',
+        signal: currentAbortController.signal,
         headers: {
           'xi-api-key': key,
           'Content-Type': 'application/json',
@@ -713,72 +752,163 @@ async function speakText(rawText, onEnd){
         })
       })
 
+      if(!isReading) return // stopped while fetching
+
       if(res.ok){
         const blob = await res.blob()
+        if(!isReading) return // stopped while processing
         const url = URL.createObjectURL(blob)
         const audio = new Audio(url)
         currentAudio = audio
-        audio.onended = () => { URL.revokeObjectURL(url); currentAudio = null; onEnd && onEnd() }
-        audio.onerror = () => { currentAudio = null; onEnd && onEnd() }
+        audio.onended = () => {
+          URL.revokeObjectURL(url)
+          currentAudio = null
+          isReading = false
+          if(onEnd) onEnd()
+          processAutoReadQueue()
+        }
+        audio.onerror = () => {
+          currentAudio = null
+          isReading = false
+          if(onEnd) onEnd()
+        }
         audio.play()
         return
-      } else if(res.status === 401){
-        // Bad key — clear it and fall through to browser voice
-        elApiKey = ''; localStorage.removeItem('el_api_key')
-        console.warn('ElevenLabs key invalid — falling back to browser voice')
       } else {
-        console.warn('ElevenLabs error', res.status, '— falling back to browser voice')
+        console.warn('ElevenLabs error', res.status)
       }
     } catch(err){
-      console.warn('ElevenLabs failed:', err.message, '— falling back to browser voice')
+      if(err.name === 'AbortError'){ isReading = false; return }
+      console.warn('ElevenLabs failed:', err.message)
     }
   }
 
-  // Fallback: browser speech synthesis
-  await new Promise(r => setTimeout(r, 180))
+  // Fallback: browser voice
+  await new Promise(r => setTimeout(r, 100))
   const voice = await getVoice()
   const u = new SpeechSynthesisUtterance(text)
   if(voice) u.voice = voice
   u.lang = 'en-US'; u.rate = 0.90; u.pitch = 0.92; u.volume = 1.0
-  u.onend = onEnd; u.onerror = onEnd
+  u.onend = () => { isReading = false; currentUtterance = null; if(onEnd) onEnd(); processAutoReadQueue() }
+  u.onerror = () => { isReading = false; currentUtterance = null; if(onEnd) onEnd() }
   currentUtterance = u
   window.speechSynthesis.speak(u)
   setTimeout(() => { if(window.speechSynthesis.paused) window.speechSynthesis.resume() }, 500)
 }
 
+// ── Auto-read HIGH impact events ──────────────────────────────────────────
+let audioUnlocked = false
+
+function unlockAutoRead(){
+  audioUnlocked = true
+  const banner = document.getElementById('autoReadBanner')
+  if(banner) banner.style.display = 'none'
+  // Play a silent sound to unlock audio context
+  const ctx = new (window.AudioContext || window.webkitAudioContext)()
+  const buf = ctx.createBuffer(1,1,22050)
+  const src = ctx.createBufferSource()
+  src.buffer = buf; src.connect(ctx.destination); src.start(0)
+  ctx.close()
+  processAutoReadQueue()
+}
+
+function queueAutoRead(events){
+  const highEvents = (events || []).filter(e => e.impact === 'HIGH' || e.urgent)
+  if(!highEvents.length) return
+  autoReadQueue = [...highEvents]
+  if(audioUnlocked){
+    processAutoReadQueue()
+  } else {
+    // Show banner asking user to click to enable
+    const banner = document.getElementById('autoReadBanner')
+    if(banner) banner.style.display = 'flex'
+  }
+}
+
+function processAutoReadQueue(){
+  if(autoReadQueue.length === 0) return
+  if(isReading) return
+  const ev = autoReadQueue.shift()
+  const script = buildSpeechScript(ev, true)
+  speakText(script, () => {})
+}
+
+// ── Manual read ───────────────────────────────────────────────────────────
 async function readFeature(){
   if(!featureEvent) return
   const btn = document.getElementById('featReadBtn')
-  if(currentUtterance){ stopReading(); return }
-  btn.textContent = '■ Stop'
-  const text = featureEvent.source + '. ' + featureEvent.headline + '. ' + featureEvent.context + ' Signal: ' + featureEvent.signal + '. ' + getCallout(featureEvent)
-  await speakText(text, () => { btn.textContent = '▶ Read'; currentUtterance = null })
+  if(isReading || currentAudio || currentUtterance){ stopReading(); return }
+  btn.textContent = '\u25A0 Stop'
+  btn.classList.add('playing')
+  const script = buildSpeechScript(featureEvent, false)
+  await speakText(script, () => {
+    btn.textContent = '\u25B6 Read'
+    btn.classList.remove('playing')
+  })
 }
 
 async function readCard(id){
   const ev = allEvents.find(e => e.id === id)
   if(!ev) return
   const btn = document.getElementById('pb-' + id)
-  if(currentUtterance){ stopReading(); return }
-  if(btn){ btn.textContent = '■ Stop'; btn.classList.add('playing') }
-  const text = ev.source + '. ' + ev.headline + '. ' + ev.context + ' Signal: ' + ev.signal + '. ' + getCallout(ev)
-  await speakText(text, () => {
-    if(btn){ btn.textContent = '▶ Read'; btn.classList.remove('playing') }
-    currentUtterance = null
+  if(isReading || currentAudio || currentUtterance){ stopReading(); return }
+  if(btn){ btn.textContent = '\u25A0 Stop'; btn.classList.add('playing') }
+  const script = buildSpeechScript(ev, false)
+  await speakText(script, () => {
+    if(btn){ btn.textContent = '\u25B6 Read'; btn.classList.remove('playing') }
   })
 }
 
 async function deepDive(id){
-  const ev=id==='__feature__'?featureEvent:allEvents.find(e=>e.id===id);if(!ev)return
+  const ev=id==='__feature__'?featureEvent:allEvents.find(e=>e.id===id)
+  if(!ev) return
   document.getElementById('diveTitle').textContent=ev.headline
   document.getElementById('diveBody').innerHTML='<div class="modal-loading"><div class="spinner"></div>Generating deep-dive analysis...</div>'
   document.getElementById('diveModal').classList.add('open')
-  if(!apiKey)return
+
+  // Check for API key
+  if(!apiKey){
+    apiKey = localStorage.getItem('mit_api_key') || ''
+    if(!apiKey){
+      const k = prompt('Enter your Anthropic API key for Deep Dive:')
+      if(k){ apiKey = k; localStorage.setItem('mit_api_key', k) }
+      else{ document.getElementById('diveBody').innerHTML='<div style="color:var(--red)">API key required for Deep Dive</div>'; return }
+    }
+  }
+
   try{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1500,messages:[{role:'user',content:'Deep dive FX analysis for experienced trader. Event: '+ev.headline+'. Context: '+ev.context+'. Cover: macro context, pair-by-pair entry/stop/target/RR, correlated assets, risk events next 48h, intraday and swing trade ideas with specific price levels.'}]})})
-    const d=await res.json();const text=d.content.filter(b=>b.type==='text').map(b=>b.text).join('')
-    document.getElementById('diveBody').innerHTML='<div class="modal-text">'+text.replace(/\*\*(.*?)\*\*/g,'<strong style="color:var(--gold)">$1</strong>').replace(/\n/g,'<br>')+'</div>'
-  }catch(e){document.getElementById('diveBody').innerHTML='<div style="color:var(--red)">Failed: '+e.message+'</div>'}
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 2000,
+        messages: [{
+          role: 'user',
+          content: 'You are a senior FX trader at a hedge fund giving a briefing to junior traders. Deep dive on this event: ' + ev.headline + '. Context: ' + ev.context + '. Signal so far: ' + (ev.signal||'') + '. Write in clear sections with headers using **bold**: **Why This Happened** (macro context, root causes), **Pair Analysis** (each pair with exact entry/stop/target/RR), **Correlated Assets** (what else moves), **Risk Events Next 48h** (key events to watch), **Trade Ideas** (specific scalp and swing setups with price levels). Be specific with numbers. Write like you are talking to a trader not an academic.'
+        }]
+      })
+    })
+
+    if(!res.ok){
+      const errData = await res.json().catch(() => ({}))
+      throw new Error(errData.error?.message || 'API error ' + res.status)
+    }
+
+    const d = await res.json()
+    const text = d.content.filter(b => b.type === 'text').map(b => b.text).join('')
+    document.getElementById('diveBody').innerHTML = '<div class="modal-text">' +
+      text.replace(/\*\*(.*?)\*\*/g, '<strong style="color:var(--gold)">$1</strong>')
+          .replace(/#{1,3}\s*(.*?)\n/g, '<h3 style="color:var(--gold);margin:16px 0 8px;font-family:Playfair Display,serif">$1</h3>')
+          .replace(/\n/g, '<br>') + '</div>'
+  } catch(e){
+    document.getElementById('diveBody').innerHTML = '<div style="color:var(--red);padding:20px;text-align:center"><div style="font-size:18px;margin-bottom:8px">Analysis Failed</div><div style="font-size:13px;opacity:0.7">' + e.message + '</div></div>'
+  }
 }
 
 function openReport(){document.getElementById('reportBody').innerHTML=lastReport.replace(/\n/g,'<br>');document.getElementById('reportModal').classList.add('open')}
@@ -877,7 +1007,7 @@ function renderTrades(setups, scanTime){
 }
 
 async function doSignOut(){await sb.auth.signOut();window.location.replace('/login.html')}
-// voices loaded on demand
+
 init()
 </script>
 </body>
