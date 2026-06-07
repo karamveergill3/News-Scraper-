@@ -648,79 +648,121 @@ function buildSpeechScript(ev, isAuto){
   const pairName = topPair?.pair || ''
   const dir = ev.overall
   const isHigh = ev.impact === 'HIGH' || ev.urgent
-
-  // Opening
-  let script = ''
-  if(isHigh){
-    script += 'Okay boys, high impact news has just hit. '
-  }
-
-  // Source and headline
-  if(ev.source) script += ev.source + ' is reporting that, '
-  script += ev.headline + '. '
-
-  // Context with natural flow
-  if(ev.context) script += ev.context + ' '
-
-  // Why this happened — based on event type
-  const whyMap = {
-    'trump': 'Now here is why this matters boys. When Trump makes moves like this it directly impacts trade flows, currency valuations and risk sentiment across the board. ',
-    'geopolitical': 'Here is the bigger picture boys. Geopolitical events like this trigger risk-off flows, safe haven buying and can move currency markets hard and fast. ',
-    'central-bank': 'Pay attention boys. Central bank decisions are the biggest market movers we have. Rate expectations shift currency pairs by hundreds of pips. ',
-    'economic': 'Here is the context boys. This data directly feeds into central bank decisions and changes market expectations for interest rates going forward. ',
-    'equities': 'Here is what is happening boys. Equity moves like this shift risk appetite across all asset classes including FX and commodities. ',
-    'commodities': 'Here is why you care about this boys. Commodity moves like this directly impact commodity currencies and inflation expectations globally. ',
-    'crypto': 'Here is the situation boys. Crypto moves like this affect overall risk sentiment and can spill into equities and high beta currencies. '
-  }
-  const whyText = whyMap[ev.type] || 'Here is why this matters boys. '
-  script += whyText
-
-  // Signal
-  if(ev.signal){
-    script += 'The trade signal is this. ' + ev.signal + '. '
-  }
-
-  // Pair analysis - mention top pairs naturally
-  if(ev.pairs && ev.pairs.length > 0){
-    const topPairs = ev.pairs.slice(0, 2)
-    topPairs.forEach(p => {
-      if(p.analysis) script += p.pair + ', ' + p.analysis + '. '
-    })
-  }
-
-  // Trading callout at the end
-  const longCallouts = [
-    'Load up ' + pairName + ' boys, time to go long.',
-    'Better go long boys on ' + pairName + '. Do not miss this one.',
-    'Bulls are running on ' + pairName + ' boys. Get those longs on.',
-    'Time to buy ' + pairName + ' boys. The setup is clean.',
-    pairName + ' is looking strong boys. Go long and hold tight.'
-  ]
-  const shortCallouts = [
-    'Load up the shorts on ' + pairName + ' boys.',
-    'Better go short boys on ' + pairName + '. Bears are in control.',
-    'Time to sell ' + pairName + ' boys. This one is heading lower.',
-    'Get those shorts on ' + pairName + ' boys. Do not fight the trend.',
-    pairName + ' is tanking boys. Short it and ride it down.'
-  ]
-  const mixedCallouts = [
-    'This is a tricky one boys. Mixed signals on ' + pairName + '. Trade with caution.',
-    'Be careful on this one boys. The market is undecided on ' + pairName + '.',
-    'Sit tight boys. ' + pairName + ' could go either way. Wait for confirmation.'
-  ]
-  const neutralCallouts = [
-    'No clear trade here boys. Sit on your hands and wait.',
-    'Nothing actionable yet boys. Patience pays.',
-    'Hold off on this one boys. Wait for a cleaner setup.'
-  ]
-
   const pick = arr => arr[Math.floor(Math.random() * arr.length)]
 
+  // ── Opening hook ──────────────────────────────────────────────────────
+  const highOpeners = [
+    'Right boys, high impact. Listen up. ',
+    'Sharp move incoming. Pay attention. ',
+    'This one matters. High impact just dropped. ',
+    'Okay boys, big news just hit. Here it is. ',
+    'Stop what you are doing. High impact alert. '
+  ]
+  const medOpeners = [
+    'Quick update boys. ',
+    'Worth noting — ',
+    'Heads up on this one. ',
+    'Keep an eye on this. '
+  ]
+
+  let script = isHigh ? pick(highOpeners) : pick(medOpeners)
+
+  // ── Brief summary — NOT word for word ────────────────────────────────
+  // Build a punchy one-liner summary based on event type + direction
+  const summaries = {
+    trump: {
+      bullish: ['Trump just gave the dollar a boost. Markets are reacting fast. ', 'Trump move — dollar positive. Risk appetite is up. ', 'Trump just fired a bullish catalyst. Dollar is moving. '],
+      bearish: ['Trump just rattled the markets. Risk is off. ', 'Trump dropped something heavy. Dollar under pressure. ', 'Trump move — markets are shaking. Watch your risk. '],
+      mixed:   ['Trump just created uncertainty. Mixed reaction across the board. ', 'Tricky Trump headline — market is trying to figure this one out. '],
+      neutral: ['Trump headline — limited market impact for now. Monitor for follow through. ']
+    },
+    geopolitical: {
+      bullish: ['Geopolitical risk is easing. Safe havens pulling back. ', 'De-escalation on the geopolitical front. Risk is back on. '],
+      bearish: ['Geopolitical tension just spiked. Safe havens are bid. ', 'Risk off. Geopolitical fears are back on the table. ', 'Conflict escalation — yen and gold catching a bid. '],
+      mixed:   ['Geopolitical situation developing. Too early to call direction. '],
+      neutral: ['Geopolitical update — watching for follow through. ']
+    },
+    'central-bank': {
+      bullish: ['Central bank just turned hawkish. Currency catching a bid. ', 'Rate expectations just shifted higher. Watch the move. '],
+      bearish: ['Central bank just turned dovish. Currency under pressure. ', 'Rate cut signals coming through. Selling pressure building. '],
+      mixed:   ['Central bank sent mixed signals. Market repricing. '],
+      neutral: ['Central bank update — digesting the tone. ']
+    },
+    economic: {
+      bullish: ['Strong data just hit. Market reacting bullish. ', 'Beat on the numbers. Sentiment shifting positive. '],
+      bearish: ['Weak data just came in. Selling pressure building. ', 'Miss on the numbers. Bears stepping in. '],
+      mixed:   ['Mixed data — cross currents in play. '],
+      neutral: ['Data just released — measuring the impact. ']
+    },
+    equities: {
+      bullish: ['Equities are pushing higher. Risk on across the board. ', 'Stocks rallying. High beta currencies catching a bid. '],
+      bearish: ['Equities selling off. Risk off flows kicking in. ', 'Stock market under pressure. Watch safe havens. '],
+      mixed:   ['Choppy equity session. FX taking its cue. '],
+      neutral: ['Equity update — watching for direction. ']
+    },
+    commodities: {
+      bullish: ['Commodity prices moving higher. Commodity currencies in play. ', 'Oil and gold bid. Watch the commodity currencies. '],
+      bearish: ['Commodity prices dropping. Commodity currencies under pressure. '],
+      mixed:   ['Commodities mixed — cross currents developing. '],
+      neutral: ['Commodity update — monitoring price action. ']
+    },
+    crypto: {
+      bullish: ['Crypto catching a strong bid. Risk appetite improving. ', 'Bitcoin moving higher. Risk on across the board. '],
+      bearish: ['Crypto selling off hard. Risk sentiment deteriorating. ', 'Bitcoin dropping. Watch for risk off spillover. '],
+      mixed:   ['Crypto volatile. Wait for a clear direction. '],
+      neutral: ['Crypto update — limited broader market impact for now. ']
+    }
+  }
+
+  const typeSummaries = summaries[ev.type] || summaries.economic
+  const dirSummaries = typeSummaries[dir] || typeSummaries.neutral || ['Update just in. ']
+  script += pick(dirSummaries)
+
+  // ── Brief context — what is actually happening ───────────────────────
+  if(ev.context){
+    // Trim to first sentence only — punchy not wordy
+    const firstSentence = ev.context.split(/[.!?]/)[0].trim()
+    if(firstSentence.length > 10) script += firstSentence + '. '
+  }
+
+  // ── Why it matters ───────────────────────────────────────────────────
+  if(ev.signal){
+    // Take just the core signal, not the full verbose text
+    const sig = ev.signal.split('.')[0].trim()
+    if(sig.length > 10) script += sig + '. '
+  }
+
+  // ── Trade call ───────────────────────────────────────────────────────
   if(pairName){
-    if(dir === 'bullish') script += pick(longCallouts)
-    else if(dir === 'bearish') script += pick(shortCallouts)
-    else if(dir === 'mixed') script += pick(mixedCallouts)
-    else script += pick(neutralCallouts)
+    const longCalls = [
+      'Eyes on ' + pairName + '. Long is the play.',
+      pairName + ' — buy the dip, target higher.',
+      'Get long ' + pairName + '. Setup is there.',
+      pairName + ' looking bullish. Do not chase — wait for the entry.',
+      'Long ' + pairName + ' boys. Manage your risk.'
+    ]
+    const shortCalls = [
+      'Eyes on ' + pairName + '. Short is the play.',
+      pairName + ' — sell the rally, target lower.',
+      'Get short ' + pairName + '. Setup is there.',
+      pairName + ' looking bearish. Wait for confirmation before entry.',
+      'Short ' + pairName + ' boys. Tight stop, let it run.'
+    ]
+    const mixedCalls = [
+      pairName + ' — no clean direction yet. Wait for the dust to settle.',
+      'Hold off on ' + pairName + ' until the market picks a side.',
+      pairName + ' is choppy. Patience is a position boys.'
+    ]
+    const neutralCalls = [
+      'No clean setup on ' + pairName + ' right now. Watch and wait.',
+      'Sit on your hands boys. Let the setup come to you.',
+      'No trade yet. Patience pays.'
+    ]
+
+    if(dir === 'bullish') script += pick(longCalls)
+    else if(dir === 'bearish') script += pick(shortCalls)
+    else if(dir === 'mixed') script += pick(mixedCalls)
+    else script += pick(neutralCalls)
   }
 
   return script
