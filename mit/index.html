@@ -1090,7 +1090,10 @@ const OFFICE_CREW = {
     closer: "innit Spartan."
   },
   kilo: {
-    openers: [],
+    openers: [
+      "Karam. Stop coffeemaxxing for one second, there is new information hitting the streets. It is time to get money.",
+      "Karam I know you are off that ashwagandha right now but this ain't the time to be nonchalant. High impact news has just landed. Wake up and lock in."
+    ],
     closer: "innit Kilo."
   },
   cailan: {
@@ -1107,6 +1110,22 @@ const OFFICE_CREW = {
     ],
     closer: "innit Javier."
   }
+}
+
+// ── Fair crew rotation queue ─────────────────────────────────────────────
+let _crewQueue = []
+function getNextCrew(){
+  const active = Object.entries(OFFICE_CREW).filter(([,v]) => v.openers.length > 0)
+  if(!active.length) return null
+  // Refill and shuffle when queue runs out — guarantees everyone rotates evenly
+  if(_crewQueue.length === 0){
+    _crewQueue = [...active]
+    for(let i = _crewQueue.length - 1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i + 1));
+      [_crewQueue[i], _crewQueue[j]] = [_crewQueue[j], _crewQueue[i]]
+    }
+  }
+  return _crewQueue.pop()
 }
 
 function buildSpeechScript(ev,isAuto){
@@ -1214,10 +1233,10 @@ function buildSpeechScript(ev,isAuto){
     else if(dir==='mixed')script+=pick(mixedCalls)
     else script+=pick(neutralCalls)
   }
-  // Randomly pick a crew member with defined prompts and wrap the script
-  const activeCrew = Object.entries(OFFICE_CREW).filter(([,v]) => v.openers.length > 0)
-  if(activeCrew.length > 0){
-    const [name, person] = activeCrew[Math.floor(Math.random() * activeCrew.length)]
+  // Fair rotation — cycles through all crew before anyone repeats
+  const crewEntry = getNextCrew()
+  if(crewEntry){
+    const [, person] = crewEntry
     const opener = person.openers[Math.floor(Math.random() * person.openers.length)]
     script = opener + ' ' + script + ' ' + person.closer
   }
