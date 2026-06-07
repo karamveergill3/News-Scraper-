@@ -791,8 +791,16 @@ function stopReading(){
 // ── Speak text via ElevenLabs or fallback ─────────────────────────────────
 let currentAbortController = null
 
+function stopAudioOnly(){
+  // Stop audio without resetting buttons — for internal use
+  if(currentAbortController){ currentAbortController.abort(); currentAbortController = null }
+  if(currentAudio){ currentAudio.pause(); currentAudio.currentTime = 0; currentAudio = null }
+  window.speechSynthesis.cancel()
+  if(currentUtterance){ currentUtterance = null }
+}
+
 async function speakText(rawText, onEnd){
-  stopReading()
+  stopAudioOnly() // stop audio but DON'T reset buttons
   isReading = true
   await new Promise(r => setTimeout(r, 200))
   if(!isReading) return // was stopped during pause
