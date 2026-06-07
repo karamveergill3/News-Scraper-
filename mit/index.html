@@ -500,9 +500,21 @@ let fhKey = localStorage.getItem('fh_key') || ''
 let priceStripBuilt = false
 
 function promptPriceKey(){
-  const k = prompt('Paste your Finnhub API key (free at finnhub.io — takes 30 seconds to get one):')
-  if(!k || !k.trim()) return
-  fhKey = k.trim()
+  // Inline input — avoids browser popup blockers
+  const strip = document.getElementById('priceStrip')
+  strip.innerHTML =
+    '<span class="price-strip-label">Live</span>' +
+    '<span style="font-family:\'DM Mono\',monospace;font-size:10px;color:rgba(212,168,67,0.4);margin-right:8px;flex-shrink:0">Finnhub API key:</span>' +
+    '<input id="fhKeyInput" type="text" placeholder="paste key here" style="background:rgba(255,255,255,0.04);border:1px solid var(--border2);color:var(--white);font-family:\'DM Mono\',monospace;font-size:11px;padding:4px 10px;border-radius:6px;outline:none;width:230px;flex-shrink:0" onkeydown="if(event.key===\'Enter\')savePriceKey()">' +
+    '<button onclick="savePriceKey()" style="margin-left:8px;background:var(--gold-d);border:1px solid var(--border2);color:var(--gold);font-family:\'DM Mono\',monospace;font-size:10px;padding:5px 14px;border-radius:6px;cursor:pointer;letter-spacing:0.06em;text-transform:uppercase;flex-shrink:0">Connect</button>' +
+    '<a href="https://finnhub.io" target="_blank" style="margin-left:10px;font-family:\'DM Mono\',monospace;font-size:9px;color:rgba(212,168,67,0.35);text-decoration:none;flex-shrink:0">Get free key ↗</a>'
+  setTimeout(()=>{ const inp=document.getElementById('fhKeyInput'); if(inp) inp.focus() }, 80)
+}
+
+function savePriceKey(){
+  const inp = document.getElementById('fhKeyInput')
+  if(!inp || !inp.value.trim()) return
+  fhKey = inp.value.trim()
   localStorage.setItem('fh_key', fhKey)
   connectPriceFeed()
 }
@@ -1237,3 +1249,4 @@ init()
 </script>
 </body>
 </html>
+
