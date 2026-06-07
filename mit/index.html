@@ -177,6 +177,8 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;fo
 .tag-med{background:rgba(240,168,50,0.1);color:var(--amber);border-color:rgba(240,168,50,0.18)}
 .tag-low{background:rgba(255,255,255,0.03);color:rgba(255,255,255,0.2);border-color:rgba(255,255,255,0.06)}
 .tag-urg{background:rgba(240,68,68,0.12);color:var(--red);border-color:rgba(240,68,68,0.3);animation:blink 1s ease-in-out infinite}
+.nc-source-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px}
+.nc-timestamp{font-family:'DM Mono',monospace;font-size:9px;color:rgba(212,168,67,0.3);letter-spacing:0.03em;flex-shrink:0}
 .nc-time{font-family:'DM Mono',monospace;font-size:9px;color:rgba(212,168,67,0.3);flex-shrink:0}
 .nc-source{font-family:'DM Mono',monospace;font-size:10px;color:rgba(212,168,67,0.35);margin-bottom:5px;letter-spacing:0.04em}
 .nc-headline{font-family:'Playfair Display',serif;font-size:15px;font-weight:700;line-height:1.32;margin-bottom:8px;color:var(--white);letter-spacing:0.01em}
@@ -327,9 +329,7 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;fo
 <div class="topbar">
   <div class="top-left">
     <div class="kjc-mark">
-      <div class="kjc-letters">KJC</div>
-      <div class="kjc-rule"></div>
-      <div class="kjc-cap">Capital</div>
+      <img src="data:image/png;base64,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" alt="KJC Capital" style="height:38px;width:auto;display:block">
     </div>
     <div class="top-divider"></div>
     <div class="platform-name">Market<span>Intel</span></div>
@@ -498,7 +498,7 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;fo
 const SB_URL='https://xglnoorboeuiozwhdhde.supabase.co'
 const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhnbG5vb3Jib2V1aW96d2hkaGRlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MTAwNjIsImV4cCI6MjA5NjA4NjA2Mn0.TdK2R3wjp9mfmbE593uXJ6MJ0VvWyuzrAEFOQSlAUCI'
 const sb=window.supabase.createClient(SB_URL,SB_KEY)
-let allEvents=[],activeFilter='all',lastReport='',featureEvent=null,currentUtterance=null,apiKey=''
+let allEvents=[],activeFilter='all',lastReport='',featureEvent=null,currentUtterance=null,apiKey='',lastScanDate=''
 
 // ── Live Price Feed (Finnhub WebSocket) ───────────────────────────────────
 // Get a free key at finnhub.io — takes 30 seconds, no card needed
@@ -559,9 +559,14 @@ function connectPriceFeed(){
     Object.values(FH_SYMBOLS).forEach(sym => {
       priceWs.send(JSON.stringify({ type: 'subscribe', symbol: sym }))
     })
-    setPriceStripMsg('Waiting for prices...')
-    // Fetch 7-day change in background
-    setTimeout(fetchWeeklyChanges, 2000)
+    setPriceStripMsg('Loading prices...')
+    // REST fetch fills prices immediately — don't wait for WS ticks
+    fetchInitialPrices()
+    // 7-day changes in background
+    setTimeout(fetchWeeklyChanges, 3000)
+    // Poll REST every 15s so prices never go stale if WS is quiet
+    clearInterval(window._pricePoller)
+    window._pricePoller = setInterval(fetchInitialPrices, 15000)
   }
 
   priceWs.onmessage = (msg) => {
@@ -591,7 +596,7 @@ function connectPriceFeed(){
 
   priceWs.onclose = () => {
     priceStripBuilt = false
-    // Auto-reconnect after 6s
+    clearInterval(window._pricePoller)
     setTimeout(connectPriceFeed, 6000)
   }
 
@@ -626,6 +631,33 @@ function renderPriceStrip(){
   strip.innerHTML =
     '<span class="price-strip-label">Live</span>' +
     '<div class="price-ticker-track" id="priceTickerTrack">' + tiles + '</div>'
+}
+
+async function fetchInitialPrices(){
+  if(!fhKey) return
+  // Parallel REST quote fetch — works even when WS is quiet (off-hours)
+  await Promise.all(Object.entries(FH_SYMBOLS).map(async ([pair, sym]) => {
+    try{
+      const res = await fetch('https://finnhub.io/api/v1/quote?symbol=' + sym + '&token=' + fhKey)
+      const data = await res.json()
+      if(data.c && data.c > 0){
+        const prev = livePrices[pair]?.price || data.pc || data.c
+        livePrices[pair] = { price: data.c, prev, ts: Date.now() }
+      }
+    }catch(e){}
+  }))
+  if(!priceStripBuilt){
+    renderPriceStrip()
+    priceStripBuilt = true
+  } else {
+    // Just update values in existing tiles
+    Object.keys(FH_SYMBOLS).forEach(pair => {
+      const d = livePrices[pair]
+      if(!d) return
+      const el = document.getElementById('ptv-' + pair.replace('/','_'))
+      if(el) el.textContent = fmtP(pair, d.price)
+    })
+  }
 }
 
 async function fetchWeeklyChanges(){
@@ -757,6 +789,7 @@ async function loadLatest(){
     const{data}=await sb.from('scans').select('*').order('created_at',{ascending:false}).limit(1).single()
     if(!data)return
     allEvents=(data.events||[]).map(sanitizeEvent)
+    lastScanDate=data.scan_date||''
     if(data.market_summary){
       lastReport=data.market_summary
       document.getElementById('reportBtn').disabled=false
@@ -838,6 +871,17 @@ function sanitizeEvent(ev){
   return ev
 }
 
+function fmtEventDate(scanDate, time){
+  // "Sunday, 7 June 2025" -> "7 Jun 2025"
+  let datePart = ''
+  if(scanDate){
+    const m = scanDate.match(/(\d+)\s+(\w+)\s+(\d{4})/)
+    if(m) datePart = m[1] + ' ' + m[2].slice(0,3) + ' ' + m[3]
+  }
+  if(datePart && time) return datePart + ' · ' + time
+  return datePart || time || ''
+}
+
 function buildNewsCard(ev,i){
   const tm={trump:'tag-trump',geopolitical:'tag-geo','central-bank':'tag-cb',economic:'tag-eco',equities:'tag-eq',commodities:'tag-com',crypto:'tag-cry'}
   const tl={trump:'Trump',geopolitical:'Geopolitical','central-bank':'C.Bank',economic:'FX Factory',equities:'Equities',commodities:'Commod.',crypto:'Crypto'}
@@ -857,9 +901,11 @@ function buildNewsCard(ev,i){
     <div class="nc-body">
       <div class="nc-top">
         <div class="nc-tags">${ev.urgent?'<span class="tag tag-urg">⚡ URGENT</span>':''}<span class="tag ${tm[ev.type]||'tag-cb'}">${tl[ev.type]||ev.type}</span><span class="tag ${it}">${ev.impact||'LOW'}</span></div>
-        <span class="nc-time">${ev.time||''}</span>
       </div>
-      <div class="nc-source">${ev.source||''}</div>
+      <div class="nc-source-row">
+        <span class="nc-source">${ev.source||''}</span>
+        <span class="nc-timestamp">${fmtEventDate(lastScanDate,ev.time)}</span>
+      </div>
       <div class="nc-headline">${ev.headline}</div>
       <div class="nc-context">${ev.context}</div>
       <div class="nc-pairs-title">Pair Analysis</div>
@@ -950,6 +996,7 @@ async function runScan(){
     if(s===-1)throw new Error('No JSON')
     const result=JSON.parse(raw.slice(s,e+1))
     result.event_count=(result.events||[]).length
+    lastScanDate=result.scan_date||''
     await sb.from('scans').insert([result])
     allEvents=(result.events||[]).map(sanitizeEvent)
     if(result.market_summary){
@@ -1033,20 +1080,100 @@ function buildSpeechScript(ev,isAuto){
   const dir=ev.overall
   const isHigh=ev.impact==='HIGH'||ev.urgent
   const pick=arr=>arr[Math.floor(Math.random()*arr.length)]
-  const highOpeners=['Right boys, high impact. Listen up. ','Sharp move incoming. Pay attention. ','This one matters. High impact just dropped. ','Okay boys, big news just hit. Here it is. ','Stop what you are doing. High impact alert. ']
-  const medOpeners=['Quick update boys. ','Worth noting — ','Heads up on this one. ','Keep an eye on this. ']
+
+  const highOpeners=[
+    'Right. Something actually important just happened. Try to keep up. ',
+    'Okay, high impact. I know, shocking that it matters. Here we go. ',
+    'Listen up because I am not repeating this. High impact just dropped. ',
+    'Oh brilliant, a market-moving event. Obviously. Here is what happened. ',
+    'Alright, stop what you are doing. This one actually matters. For once. ',
+    'Yeah, big move. Shocker. Pay attention. '
+  ]
+  const medOpeners=[
+    'Fine, I will tell you about this one too. ',
+    'Quick update. Try not to overthink it. ',
+    'Worth knowing. Probably. ',
+    'Yeah this is a thing. Here you go. '
+  ]
   let script=isHigh?pick(highOpeners):pick(medOpeners)
-  const summaries={trump:{bullish:['Trump just gave the dollar a boost. Markets are reacting fast. ','Trump move — dollar positive. Risk appetite is up. '],bearish:['Trump just rattled the markets. Risk is off. ','Trump dropped something heavy. Dollar under pressure. '],mixed:['Trump just created uncertainty. Mixed reaction across the board. '],neutral:['Trump headline — limited market impact for now. Monitor for follow through. ']},geopolitical:{bullish:['Geopolitical risk is easing. Safe havens pulling back. '],bearish:['Geopolitical tension just spiked. Safe havens are bid. ','Risk off. Geopolitical fears are back on the table. '],mixed:['Geopolitical situation developing. Too early to call direction. '],neutral:['Geopolitical update — watching for follow through. ']},'central-bank':{bullish:['Central bank just turned hawkish. Currency catching a bid. '],bearish:['Central bank just turned dovish. Currency under pressure. '],mixed:['Central bank sent mixed signals. Market repricing. '],neutral:['Central bank update — digesting the tone. ']},economic:{bullish:['Strong data just hit. Market reacting bullish. '],bearish:['Weak data just came in. Selling pressure building. '],mixed:['Mixed data — cross currents in play. '],neutral:['Data just released — measuring the impact. ']},equities:{bullish:['Equities are pushing higher. Risk on across the board. '],bearish:['Equities selling off. Risk off flows kicking in. '],mixed:['Choppy equity session. FX taking its cue. '],neutral:['Equity update — watching for direction. ']},commodities:{bullish:['Commodity prices moving higher. Commodity currencies in play. '],bearish:['Commodity prices dropping. Commodity currencies under pressure. '],mixed:['Commodities mixed — cross currents developing. '],neutral:['Commodity update — monitoring price action. ']},crypto:{bullish:['Crypto catching a strong bid. Risk appetite improving. '],bearish:['Crypto selling off hard. Risk sentiment deteriorating. '],mixed:['Crypto volatile. Wait for a clear direction. '],neutral:['Crypto update — limited broader market impact for now. ']}}
+
+  const summaries={
+    trump:{
+      bullish:['Trump said something and apparently the dollar likes it. As per. ','Dollar is up. Trump posted. Yes, that is genuinely all it takes. Brilliant. ','Trump fired a bullish catalyst. Markets scrambling. Obviously. '],
+      bearish:['Trump opened his mouth and now risk is off. Bloody hell. ','Markets rattled. Trump happened. You know how this goes by now. ','Dollar under pressure. Trump posted something and here we are again. '],
+      mixed:['Trump created confusion. Genuinely cannot tell if this is bullish or bearish and I hate that. ','Mixed signals from Trump. How absolutely delightful for everyone. '],
+      neutral:['Trump headline. Limited impact for now. Which honestly makes a nice change. ']
+    },
+    geopolitical:{
+      bullish:['Geopolitical risk easing. Safe havens selling off. Good. Finally. ','Risk is back on. The world is slightly less on fire today. Progress. '],
+      bearish:['Geopolitical risk just spiked. Yen and gold catching a bid. Obviously. ','Conflict escalating. Safe havens getting absolutely bid. Here we bloody go. '],
+      mixed:['Geopolitical situation developing. Too early to call. Even for me. '],
+      neutral:['Geopolitical update. Watching for follow through. ']
+    },
+    'central-bank':{
+      bullish:['Central bank just went hawkish. Currency is flying. Called it. ','Rate expectations shifting higher. Currency likes it. Naturally. '],
+      bearish:['Central bank turned dovish. Currency getting smashed. As expected. ','Rate cut signals are here. Sellers stepping in. Told you. '],
+      mixed:['Central bank sent mixed signals. Which is apparently their whole thing. '],
+      neutral:['Central bank update. Digesting the tone. ']
+    },
+    economic:{
+      bullish:['Strong data just printed. Market reacting accordingly. Obviously. ','Beat on the numbers. Sentiment flipping bullish. About time. '],
+      bearish:['Weak data. Sellers piling in. Shocker. ','Miss on the numbers. Bears are absolutely loving this right now. '],
+      mixed:['Mixed data. Cross currents everywhere. Annoying. '],
+      neutral:['Data just dropped. Measuring the impact. ']
+    },
+    equities:{
+      bullish:['Equities pushing higher. Risk on. Get involved. ','Stocks rallying. High beta currencies waking up. Finally. '],
+      bearish:['Equities selling off hard. Risk off flows kicking in. Here we bloody go. ','Stock market under pressure. Safe havens getting bid. '],
+      mixed:['Choppy equities session. FX equally confused. Which tracks. '],
+      neutral:['Equity update. Watching for direction. ']
+    },
+    commodities:{
+      bullish:['Commodities moving higher. Commodity currencies in play. Do not miss this. ','Oil and gold bid. Watch the commodity currencies. Obviously. '],
+      bearish:['Commodities dumping. Commodity currencies following. Of course they are. '],
+      mixed:['Commodities mixed. Which is just as confusing as it sounds. '],
+      neutral:['Commodity update. Monitoring price action. ']
+    },
+    crypto:{
+      bullish:['Crypto catching a bid. Risk appetite improving. Interesting. ','Bitcoin moving. Risk on sentiment spreading. Fine. '],
+      bearish:['Crypto selling off. Sentiment is cooked right now. ','Bitcoin dropping. Risk off spillover incoming. Obviously. '],
+      mixed:['Crypto being volatile. Absolute shocker. Wait for a direction. '],
+      neutral:['Crypto update. Nothing to get excited about yet. ']
+    }
+  }
+
   const typeSummaries=summaries[ev.type]||summaries.economic
-  const dirSummaries=typeSummaries[dir]||typeSummaries.neutral||['Update just in. ']
+  const dirSummaries=typeSummaries[dir]||typeSummaries.neutral||['Update. ']
   script+=pick(dirSummaries)
-  if(ev.context){const firstSentence=ev.context.split(/[.!?]/)[0].trim();if(firstSentence.length>10)script+=firstSentence+'. '}
+
+  if(ev.context){const fs=ev.context.split(/[.!?]/)[0].trim();if(fs.length>10)script+=fs+'. '}
   if(ev.signal){const sig=ev.signal.split('.')[0].trim();if(sig.length>10)script+=sig+'. '}
+
   if(pairName){
-    const longCalls=['Eyes on '+pairName+'. Long is the play.',pairName+' — buy the dip, target higher.','Get long '+pairName+'. Setup is there.',pairName+' looking bullish. Do not chase — wait for the entry.','Long '+pairName+' boys. Manage your risk.']
-    const shortCalls=['Eyes on '+pairName+'. Short is the play.',pairName+' — sell the rally, target lower.','Get short '+pairName+'. Setup is there.',pairName+' looking bearish. Wait for confirmation before entry.','Short '+pairName+' boys. Tight stop, let it run.']
-    const mixedCalls=[pairName+' — no clean direction yet. Wait for the dust to settle.','Hold off on '+pairName+' until the market picks a side.',pairName+' is choppy. Patience is a position boys.']
-    const neutralCalls=['No clean setup on '+pairName+' right now. Watch and wait.','Sit on your hands boys. Let the setup come to you.','No trade yet. Patience pays.']
+    const longCalls=[
+      'Buy '+pairName+'. Simple.',
+      pairName+' long. Yes. Do it.',
+      'Get long '+pairName+'. If you miss this one that is genuinely on you.',
+      pairName+' is the play. Long. Do not overcomplicate it.',
+      'Obviously long '+pairName+' here. Wait for the entry though. Do not chase it.'
+    ]
+    const shortCalls=[
+      'Short '+pairName+'. Easy.',
+      pairName+' is a sell. Has been for a while honestly.',
+      'Get short '+pairName+'. Tight stop, let it run.',
+      'Do not be the person buying '+pairName+' right now. Short it.',
+      'Obviously short '+pairName+'. Wait for the pullback.'
+    ]
+    const mixedCalls=[
+      pairName+'. Honestly? Even I am not totally sure on this one. Wait for confirmation.',
+      'No clean direction on '+pairName+'. Which is annoying. Sit on your hands.',
+      pairName+' is a mess right now. Patience.'
+    ]
+    const neutralCalls=[
+      'Nothing to do on '+pairName+' right now. Wait.',
+      'Patience. Let the market give you the entry.',
+      'No setup yet. Which I know is painful. Tough.'
+    ]
     if(dir==='bullish')script+=pick(longCalls)
     else if(dir==='bearish')script+=pick(shortCalls)
     else if(dir==='mixed')script+=pick(mixedCalls)
