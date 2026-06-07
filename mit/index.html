@@ -73,16 +73,32 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;fo
 .ticker-bull{color:var(--green);font-size:10px}
 .ticker-bear{color:var(--red);font-size:10px}
 
-/* ── Live Price Strip ──────────────────────────────────────────────────── */
-.price-strip{background:#000;border-bottom:1px solid var(--border);height:38px;display:flex;align-items:center;padding:0 0 0 28px;gap:0;overflow-x:auto;overflow-y:hidden;flex-shrink:0}
-.price-strip::-webkit-scrollbar{display:none}
-.price-strip-label{font-family:'DM Mono',monospace;font-size:8px;font-weight:600;letter-spacing:0.2em;text-transform:uppercase;color:rgba(212,168,67,0.3);padding-right:14px;border-right:1px solid var(--border);flex-shrink:0;margin-right:6px}
-.price-tile{display:flex;align-items:center;gap:8px;padding:0 14px;border-right:1px solid rgba(212,168,67,0.05);height:100%;flex-shrink:0}
+/* ── Live Price Strip (scrolling ticker) ───────────────────────────────── */
+.price-strip{background:#000;border-bottom:1px solid var(--border);height:38px;overflow:hidden;position:relative;display:flex;align-items:center}
+.price-strip::before,.price-strip::after{content:'';position:absolute;top:0;bottom:0;width:70px;z-index:2;pointer-events:none}
+.price-strip::before{left:52px;background:linear-gradient(90deg,#000,transparent)}
+.price-strip::after{right:0;background:linear-gradient(270deg,#000,transparent)}
+.price-strip-label{font-family:'DM Mono',monospace;font-size:8px;font-weight:600;letter-spacing:0.2em;text-transform:uppercase;color:rgba(212,168,67,0.3);padding:0 14px;border-right:1px solid var(--border);flex-shrink:0;height:100%;display:flex;align-items:center;background:#000;z-index:3;position:relative}
+.price-ticker-track{display:flex;align-items:center;height:100%;animation:ticker 50s linear infinite}
+.price-ticker-track:hover{animation-play-state:paused}
+.price-tile{display:inline-flex;align-items:center;gap:8px;padding:0 18px;border-right:1px solid rgba(212,168,67,0.05);height:100%;flex-shrink:0;white-space:nowrap}
 .pt-sym{font-family:'DM Mono',monospace;font-size:9px;color:rgba(212,168,67,0.38);letter-spacing:0.05em}
 .pt-val{font-family:'DM Mono',monospace;font-size:12px;font-weight:600;color:var(--white);transition:color 0.5s;min-width:52px}
 .pt-val.up{color:var(--green)}.pt-val.dn{color:var(--red)}
-.connect-feed-btn{font-family:'DM Mono',monospace;font-size:10px;color:rgba(212,168,67,0.5);cursor:pointer;border:1px solid var(--border);background:transparent;padding:4px 14px;border-radius:6px;letter-spacing:0.06em;text-transform:uppercase;transition:all 0.2s;white-space:nowrap;margin:0 12px}
+.connect-feed-btn{font-family:'DM Mono',monospace;font-size:10px;color:rgba(212,168,67,0.5);cursor:pointer;border:1px solid var(--border);background:transparent;padding:4px 14px;border-radius:6px;letter-spacing:0.06em;text-transform:uppercase;transition:all 0.2s;white-space:nowrap;margin:0 12px;flex-shrink:0}
 .connect-feed-btn:hover{color:var(--gold);border-color:var(--border2)}
+/* 7-day gainers/losers strip */
+.gainers-strip{background:#000;border-bottom:1px solid var(--border);height:30px;display:flex;align-items:center;overflow:hidden;position:relative}
+.gainers-strip::before,.gainers-strip::after{content:'';position:absolute;top:0;bottom:0;width:60px;z-index:2;pointer-events:none}
+.gainers-strip::before{left:66px;background:linear-gradient(90deg,#000,transparent)}
+.gainers-strip::after{right:0;background:linear-gradient(270deg,#000,transparent)}
+.gainers-strip-label{font-family:'DM Mono',monospace;font-size:8px;font-weight:600;letter-spacing:0.2em;text-transform:uppercase;color:rgba(212,168,67,0.3);padding:0 14px;border-right:1px solid var(--border);flex-shrink:0;height:100%;display:flex;align-items:center;background:#000;z-index:3;position:relative;white-space:nowrap}
+.gainers-ticker-track{display:flex;align-items:center;height:100%;animation:ticker 45s linear infinite}
+.gainers-ticker-track:hover{animation-play-state:paused}
+.gainer-item{display:inline-flex;align-items:center;gap:7px;padding:0 16px;border-right:1px solid rgba(212,168,67,0.04);height:100%;flex-shrink:0;white-space:nowrap}
+.gi-pair{font-family:'DM Mono',monospace;font-size:9px;color:var(--w3);letter-spacing:0.04em}
+.gi-pct{font-family:'DM Mono',monospace;font-size:10px;font-weight:700}
+.gi-pct.up{color:var(--green)}.gi-pct.dn{color:var(--red)}
 /* Current price row inside trade card */
 .tc-now{display:flex;align-items:center;justify-content:space-between;padding:5px 8px;background:rgba(255,255,255,0.02);border-radius:6px;margin-top:6px;border:1px solid rgba(255,255,255,0.04)}
 .tc-now-label{font-family:'DM Mono',monospace;font-size:8px;text-transform:uppercase;letter-spacing:0.1em;color:rgba(255,255,255,0.2)}
@@ -342,11 +358,18 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;fo
   </div>
 </div>
 
-<!-- ── Live Price Strip ── -->
+<!-- u2500u2500 Live Price Strip (scrolling) u2500u2500 -->
 <div id="priceStrip" class="price-strip">
   <span class="price-strip-label">Live</span>
-  <span style="font-family:'DM Mono',monospace;font-size:11px;color:rgba(212,168,67,0.28)">No price feed</span>
-  <button class="connect-feed-btn" onclick="promptPriceKey()">⚡ Connect Prices</button>
+  <div id="priceTickerTrack" style="display:flex;align-items:center;height:100%">
+    <span style="font-family:'DM Mono',monospace;font-size:11px;color:rgba(212,168,67,0.28);padding-left:16px">No price feed</span>
+    <button class="connect-feed-btn" onclick="promptPriceKey()">&#9889; Connect Prices</button>
+  </div>
+</div>
+<!-- u2500u2500 7-Day Gainers / Losers Strip u2500u2500 -->
+<div id="gainersStrip" class="gainers-strip" style="display:none">
+  <span class="gainers-strip-label">7D Move</span>
+  <div id="gainersTrack" class="gainers-ticker-track"></div>
 </div>
 
 <!-- Feature Story -->
@@ -495,6 +518,7 @@ const FH_SYMBOLS = {
 }
 const FH_RMAP = Object.fromEntries(Object.entries(FH_SYMBOLS).map(([k,v])=>[v,k]))
 let livePrices = {}
+let weeklyChanges = {}
 let priceWs = null
 let fhKey = localStorage.getItem('fh_key') || ''
 let priceStripBuilt = false
@@ -532,11 +556,12 @@ function connectPriceFeed(){
   priceWs = new WebSocket('wss://ws.finnhub.io?token=' + fhKey)
 
   priceWs.onopen = () => {
-    // Subscribe to all symbols
     Object.values(FH_SYMBOLS).forEach(sym => {
       priceWs.send(JSON.stringify({ type: 'subscribe', symbol: sym }))
     })
     setPriceStripMsg('Waiting for prices...')
+    // Fetch 7-day change in background
+    setTimeout(fetchWeeklyChanges, 2000)
   }
 
   priceWs.onmessage = (msg) => {
@@ -582,13 +607,13 @@ function connectPriceFeed(){
 }
 
 function setPriceStripMsg(html){
-  document.getElementById('priceStrip').innerHTML =
-    '<span class="price-strip-label">Live</span>' +
-    '<span style="font-family:\'DM Mono\',monospace;font-size:11px;color:rgba(212,168,67,0.3)">' + html + '</span>'
+  const track = document.getElementById('priceTickerTrack')
+  if(track) track.innerHTML = '<span style="font-family:\'DM Mono\',monospace;font-size:11px;color:rgba(212,168,67,0.3);padding-left:16px">' + html + '</span>'
 }
 
 function renderPriceStrip(){
-  const tiles = Object.keys(FH_SYMBOLS).map(pair => {
+  // Build tiles, duplicate for seamless loop
+  const makeTiles = () => Object.keys(FH_SYMBOLS).map(pair => {
     const d = livePrices[pair]
     const val = d ? fmtP(pair, d.price) : '—'
     return '<div class="price-tile">' +
@@ -596,7 +621,54 @@ function renderPriceStrip(){
       '<span class="pt-val" id="ptv-' + pair.replace('/','_') + '">' + val + '</span>' +
       '</div>'
   }).join('')
-  document.getElementById('priceStrip').innerHTML = '<span class="price-strip-label">Live</span>' + tiles
+  const tiles = makeTiles() + makeTiles()  // duplicate for infinite scroll
+  const strip = document.getElementById('priceStrip')
+  strip.innerHTML =
+    '<span class="price-strip-label">Live</span>' +
+    '<div class="price-ticker-track" id="priceTickerTrack">' + tiles + '</div>'
+}
+
+async function fetchWeeklyChanges(){
+  if(!fhKey) return
+  const now = Math.floor(Date.now() / 1000)
+  const weekAgo = now - (7 * 24 * 60 * 60)
+  await Promise.all(Object.entries(FH_SYMBOLS).map(async ([pair, sym]) => {
+    try{
+      const isForex = sym.startsWith('OANDA:')
+      const url = isForex
+        ? 'https://finnhub.io/api/v1/forex/candle?symbol=' + sym + '&resolution=D&from=' + weekAgo + '&to=' + now + '&token=' + fhKey
+        : 'https://finnhub.io/api/v1/crypto/candle?symbol=' + sym + '&resolution=D&from=' + weekAgo + '&to=' + now + '&token=' + fhKey
+      const res = await fetch(url)
+      const data = await res.json()
+      if(data.s === 'ok' && data.c && data.c.length >= 2){
+        const first = data.c[0]
+        const last = data.c[data.c.length - 1]
+        weeklyChanges[pair] = ((last - first) / first) * 100
+      }
+    }catch(e){}
+  }))
+  renderGainers()
+}
+
+function renderGainers(){
+  const entries = Object.entries(weeklyChanges).filter(([,v]) => !isNaN(v) && isFinite(v))
+  if(!entries.length) return
+  entries.sort((a,b) => b[1] - a[1])
+  const top3 = entries.slice(0, 3)
+  const bot3 = [...entries].sort((a,b) => a[1] - b[1]).slice(0, 3)
+  const all = [...top3, ...bot3]
+  const makeTiles = () => all.map(([pair, pct]) => {
+    const up = pct >= 0
+    return '<div class="gainer-item">' +
+      '<span class="gi-pair">' + pair + '</span>' +
+      '<span class="gi-pct ' + (up?'up':'dn') + '">' + (up?'+':'') + pct.toFixed(2) + '%</span>' +
+      '</div>'
+  }).join('')
+  const track = document.getElementById('gainersTrack')
+  const strip = document.getElementById('gainersStrip')
+  if(!track || !strip) return
+  track.innerHTML = makeTiles() + makeTiles()  // duplicate for seamless loop
+  strip.style.display = 'flex'
 }
 
 function flashTile(pair, price, prev){
@@ -1249,4 +1321,3 @@ init()
 </script>
 </body>
 </html>
-
