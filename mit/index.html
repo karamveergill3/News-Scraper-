@@ -470,10 +470,7 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;fo
 </div><!-- end mainContent -->
 
 <!-- Auto-read unlock banner -->
-<div id="autoReadBanner" style="display:none;background:rgba(212,168,67,0.08);border:1px solid rgba(212,168,67,0.25);border-radius:10px;margin:12px 28px;padding:12px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;animation:fadeUp 0.3s ease">
-  <span style="font-size:13px;color:rgba(212,168,67,0.8)">🔊 <strong style="color:var(--gold)">High impact news detected</strong> — click to enable auto-read</span>
-  <button onclick="unlockAutoRead()" style="background:linear-gradient(135deg,#7a5a10,#d4a843);border:none;color:#000;font-family:'DM Mono',monospace;font-size:11px;font-weight:700;padding:7px 16px;border-radius:7px;cursor:pointer;letter-spacing:0.06em;text-transform:uppercase">Enable</button>
-</div>
+
 
 <div id="emptyState" class="empty-state">
   <span class="empty-icon">📰</span>
@@ -1841,7 +1838,7 @@ function renderOpenTrades(){
       </div>
       <div class="tc-rr" style="margin-bottom:7px">
         <span style="font-family:'DM Mono',monospace;font-size:9px;color:rgba(255,255,255,0.2);text-transform:uppercase;letter-spacing:0.06em">P&L</span>
-        <span class="otc-pnl ${pnlClass}">${pipsStr}</span>
+        <span class="otc-pnl ${pnlClass}">${pnlStr}</span>
       </div>
       <div style="display:flex;gap:5px;padding-top:7px;border-top:1px solid rgba(255,255,255,0.04)">
         <button class="nc-btn" style="flex:1;justify-content:center" onclick="tradeAnalysis('${t.pair}','${t.dir}','${t.entry}','${t.sl}','${t.tp}','${t.rr}',this)">⚡ Analysis</button>
