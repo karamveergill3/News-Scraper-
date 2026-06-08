@@ -114,9 +114,9 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;fo
 .feature-kicker-time{font-family:'DM Mono',monospace;font-size:9px;color:var(--w3)}
 .feature-card{background:linear-gradient(135deg,rgba(18,14,5,0.95),rgba(10,8,3,0.98));border:1px solid var(--border2);border-radius:var(--r2);overflow:hidden;position:relative;cursor:default}
 .feature-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--gold),var(--gold-b),var(--gold),transparent);animation:borderFlow 3s ease-in-out infinite}
-.feature-inner{display:grid;grid-template-columns:1fr 1fr;gap:0}
+.feature-inner{display:grid;grid-template-columns:1fr 1fr;gap:0;align-items:stretch}
 @media(max-width:768px){.feature-inner{grid-template-columns:1fr}}
-.feature-main{padding:28px 32px;border-right:1px solid var(--border)}
+.feature-main{padding:28px 32px;border-right:1px solid var(--border);overflow:hidden;max-height:340px;overflow-y:auto}
 .feature-impact{display:inline-flex;align-items:center;gap:6px;background:rgba(240,68,68,0.1);border:1px solid rgba(240,68,68,0.2);border-radius:5px;padding:4px 12px;font-family:'DM Mono',monospace;font-size:9px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:var(--red);margin-bottom:16px;animation:blink 2.5s ease-in-out infinite}
 .feature-headline{font-family:'Playfair Display',serif;font-size:clamp(22px,3vw,32px);font-weight:900;line-height:1.18;letter-spacing:-0.02em;color:var(--white);margin-bottom:14px;animation:glowPulse 6s ease-in-out infinite}
 .feature-context{font-size:13.5px;line-height:1.78;color:var(--w2);margin-bottom:20px}
@@ -421,7 +421,7 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;fo
           </div>
         </div>
         <!-- ── Forex Factory Calendar Column ── -->
-        <div style="padding:24px 24px;border-left:1px solid var(--border);display:flex;flex-direction:column;gap:0;overflow:hidden">
+        <div style="padding:24px 24px;border-left:1px solid var(--border);display:flex;flex-direction:column;gap:0;overflow:hidden;height:340px;max-height:340px">
           <div style="margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border)">
             <div style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--white);margin-bottom:3px">Forex Factory</div>
             <div style="font-family:'DM Mono',monospace;font-size:8px;font-weight:600;letter-spacing:0.22em;text-transform:uppercase;color:var(--red)">Economic Calendar · High Impact</div>
@@ -435,7 +435,7 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;fo
             <button class="cal-tab" onclick="filterCal('CNY',this)">CNY</button>
             <button class="cal-tab" onclick="filterCal('AUD',this)">AUD</button>
           </div>
-          <div id="featureCal" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px">
+          <div id="featureCal" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding-right:4px">
             <div style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(212,168,67,0.3);padding:8px 0">Loading events...</div>
           </div>
         </div>
