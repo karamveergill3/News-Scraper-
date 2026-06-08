@@ -681,22 +681,37 @@ function renderPriceStrip(){
 
 async function fetchInitialPrices(){
   if(!fhKey) return
-  // Parallel REST quote fetch — works even when WS is quiet (off-hours)
-  await Promise.all(Object.entries(FH_SYMBOLS).map(async ([pair, sym]) => {
-    try{
-      const res = await fetch('https://finnhub.io/api/v1/quote?symbol=' + sym + '&token=' + fhKey)
-      const data = await res.json()
-      if(data.c && data.c > 0){
-        const prev = livePrices[pair]?.price || data.pc || data.c
-        livePrices[pair] = { price: data.c, prev, ts: Date.now() }
-      }
-    }catch(e){}
-  }))
+  try{
+    // Single bulk call — forex/rates works on free tier, quote doesn't for OANDA symbols
+    const res = await fetch('https://finnhub.io/api/v1/forex/rates?base=USD&token=' + fhKey)
+    const data = await res.json()
+    const q = data.quote
+    if(!q) return
+    // Compute prices from USD base rates
+    const set = (pair, price) => {
+      if(!price || price <= 0) return
+      const prev = livePrices[pair]?.price || price
+      livePrices[pair] = { price, prev, ts: Date.now() }
+    }
+    if(q.EUR) set('EUR/USD', 1/q.EUR)
+    if(q.GBP) set('GBP/USD', 1/q.GBP)
+    if(q.JPY) set('USD/JPY', q.JPY)
+    if(q.CHF) set('USD/CHF', q.CHF)
+    if(q.AUD) set('AUD/USD', 1/q.AUD)
+    if(q.CAD) set('USD/CAD', q.CAD)
+    if(q.NZD) set('NZD/USD', 1/q.NZD)
+    if(q.EUR && q.GBP) set('EUR/GBP', q.GBP/q.EUR)
+    if(q.GBP && q.JPY) set('GBP/JPY', q.JPY/q.GBP)
+    if(q.XAU) set('XAU/USD', 1/q.XAU)
+    if(q.XAG) set('XAG/USD', 1/q.XAG)
+    // BTC via separate call
+    fetch('https://finnhub.io/api/v1/quote?symbol=BINANCE:BTCUSDT&token=' + fhKey)
+      .then(r=>r.json()).then(d=>{ if(d.c>0) set('BTC/USD', d.c) }).catch(()=>{})
+  }catch(e){ return }
   if(!priceStripBuilt){
     renderPriceStrip()
     priceStripBuilt = true
   } else {
-    // Just update values in existing tiles
     Object.keys(FH_SYMBOLS).forEach(pair => {
       const d = livePrices[pair]
       if(!d) return
@@ -864,7 +879,7 @@ function renderAll(){
   const sorted=[...allEvents].sort((a,b)=>order(a)-order(b))
   featureEvent=sorted[0]
   renderFeature(featureEvent)
-  const _calEvts = getCalCache(); if(_calEvts && _calEvts.length){ const _fc=document.getElementById('featureCal'); if(_fc) renderCalendar(_calEvts) }
+  const _calEvts = getCalCache(); if(_calEvts) renderCalendar(_calEvts)
   const rest=activeFilter==='all'?sorted.slice(1):allEvents.filter(e=>activeFilter==='urgent'?(e.urgent||e.impact==='HIGH'):e.type===activeFilter)
   renderMasonry(rest)
 }
@@ -874,7 +889,7 @@ function renderFeature(ev){
   document.getElementById('featureWrap').style.display='block'
   document.getElementById('featureHeadline').textContent=ev.headline
   document.getElementById('featureContext').textContent=ev.context
-  document.getElementById('featureTime').textContent=(ev.time||'')
+  document.getElementById('featureTime').textContent=fmtEventDate(lastScanDate,ev.time)
   document.getElementById('featureSource').textContent=ev.source||''
   const imp=document.getElementById('featureImpact')
   imp.textContent='● '+(ev.impact||'HIGH')+' IMPACT'
@@ -1664,52 +1679,51 @@ async function fetchCalendar(){
   }
 }
 
-function renderCalendar(events){
-  const body = document.getElementById('calBody')
-  if(!events.length){
-    body.innerHTML='<div style="padding:24px 6px;font-family:DM Mono,monospace;font-size:11px;color:rgba(212,168,67,0.35);text-align:center">No high impact events in next 48h</div>'
-    return
-  }
-  const makeCard = ev => {
-    const hasActual = ev.actual && ev.actual !== '—'
-    const actColor = hasActual ? (parseFloat(ev.actual) >= parseFloat(ev.forecast) ? 'var(--green)' : 'var(--red)') : 'var(--w3)'
-    return `<div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-left:3px solid var(--red);border-radius:8px;overflow:hidden">
-      <div style="padding:10px 12px 8px">
-        <div style="font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;color:var(--white);margin-bottom:4px;line-height:1.3">${ev.event}</div>
-        <div style="font-family:'DM Mono',monospace;font-size:9px;color:rgba(255,255,255,0.28);letter-spacing:0.04em">${ev.currency} · ${ev.date||''} · ${ev.time} ET</div>
+function makeCalCard(ev){
+  const hasActual = ev.actual && ev.actual !== '—'
+  const actColor = hasActual ? (parseFloat(ev.actual) >= parseFloat(ev.forecast) ? 'var(--green)' : 'var(--red)') : 'var(--w3)'
+  return `<div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-left:3px solid var(--red);border-radius:8px;overflow:hidden;flex-shrink:0">
+    <div style="padding:10px 12px 8px">
+      <div style="font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;color:var(--white);margin-bottom:4px;line-height:1.3">${ev.event}</div>
+      <div style="font-family:'DM Mono',monospace;font-size:9px;color:rgba(255,255,255,0.28);letter-spacing:0.04em">${ev.currency} · ${ev.date||''} · ${ev.time} ET</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;border-top:1px solid rgba(255,255,255,0.05)">
+      <div style="padding:7px 10px;border-right:1px solid rgba(255,255,255,0.05)">
+        <div style="font-family:'DM Mono',monospace;font-size:8px;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.2);margin-bottom:3px">Forecast</div>
+        <div style="font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:var(--amber)">${ev.forecast}</div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;border-top:1px solid rgba(255,255,255,0.05)">
-        <div style="padding:7px 10px;border-right:1px solid rgba(255,255,255,0.05)">
-          <div style="font-family:'DM Mono',monospace;font-size:8px;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.2);margin-bottom:3px">Forecast</div>
-          <div style="font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:var(--amber)">${ev.forecast}</div>
-        </div>
-        <div style="padding:7px 10px;border-right:1px solid rgba(255,255,255,0.05)">
-          <div style="font-family:'DM Mono',monospace;font-size:8px;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.2);margin-bottom:3px">Previous</div>
-          <div style="font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:var(--w3)">${ev.previous}</div>
-        </div>
-        <div style="padding:7px 10px">
-          <div style="font-family:'DM Mono',monospace;font-size:8px;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.2);margin-bottom:3px">Actual</div>
-          <div style="font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:${actColor}">${hasActual ? ev.actual : '—'}</div>
-        </div>
+      <div style="padding:7px 10px;border-right:1px solid rgba(255,255,255,0.05)">
+        <div style="font-family:'DM Mono',monospace;font-size:8px;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.2);margin-bottom:3px">Previous</div>
+        <div style="font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:var(--w3)">${ev.previous}</div>
       </div>
-    </div>`
-  }
-
-  window._calAllEvents = events
-  const empty = '<div style="font-family:DM Mono,monospace;font-size:10px;color:rgba(212,168,67,0.3);padding:8px 0">No high impact events</div>'
-  if(body) body.innerHTML = events.length ? events.map(makeCard).join('') : empty
-  const fc = document.getElementById('featureCal')
-  if(fc) fc.innerHTML = events.length ? events.map(makeCard).join('') : empty
+      <div style="padding:7px 10px">
+        <div style="font-family:'DM Mono',monospace;font-size:8px;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.2);margin-bottom:3px">Actual</div>
+        <div style="font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:${actColor}">${hasActual ? ev.actual : '—'}</div>
+      </div>
+    </div>
+  </div>`
 }
 
+function renderCalendar(events){
+  window._calAllEvents = events
+  const html = events.length ? events.map(makeCalCard).join('') : '<div style="font-family:DM Mono,monospace;font-size:10px;color:rgba(212,168,67,0.3);padding:8px 0">No high impact events in next 48h</div>'
+  const body = document.getElementById('calBody')
+  if(body) body.innerHTML = html
+  const fc = document.getElementById('featureCal')
+  if(fc) fc.innerHTML = html
+}
+
+
+const CAL_CUR_MAP = {USD:'US',GBP:'GB',CAD:'CA',JPY:'JP',CNY:'CN',AUD:'AU',EUR:'EU',NZD:'NZ',CHF:'CH'}
 function filterCal(cur, btn){
   document.querySelectorAll('.cal-tab').forEach(b=>b.classList.remove('on'))
   btn.classList.add('on')
   const events = window._calAllEvents || []
-  const filtered = cur==='ALL' ? events : events.filter(e=>e.currency===cur)
-  const empty = '<div style="font-family:DM Mono,monospace;font-size:10px;color:rgba(212,168,67,0.3);padding:8px 0">No '+cur+' events</div>'
+  const code = CAL_CUR_MAP[cur] || cur
+  const filtered = cur==='ALL' ? events : events.filter(e=>e.currency===code||e.currency===cur)
+  const empty = '<div style="font-family:DM Mono,monospace;font-size:10px;color:rgba(212,168,67,0.3);padding:8px 0">No '+cur+' events in next 48h</div>'
   const fc = document.getElementById('featureCal')
-  if(fc) fc.innerHTML = filtered.length ? filtered.map(makeCard).join('') : empty
+  if(fc) fc.innerHTML = filtered.length ? filtered.map(makeCalCard).join('') : empty
 }
 
 async function tradeAnalysis(pair,dir,entry,sl,tp,rr,btn){
