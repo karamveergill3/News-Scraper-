@@ -323,6 +323,14 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;fo
 .tc-expiry{font-family:'DM Mono',monospace;font-size:9px;color:rgba(255,255,255,0.2);letter-spacing:0.04em}
 .tc-expiry.expiring{color:var(--red);animation:blink 1.5s ease-in-out infinite}
 .trade-analysis-body{font-size:11px;color:var(--w2);line-height:1.65;padding:10px 0 4px;border-top:1px solid rgba(255,255,255,0.05);margin-top:6px}
+.tp-tab{flex:1;font-family:'DM Mono',monospace;font-size:9px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;padding:6px 4px;border:none;background:transparent;color:rgba(255,255,255,0.25);cursor:pointer;border-radius:6px;transition:all 0.2s}
+.tp-tab.on{background:rgba(212,168,67,0.1);color:var(--gold)}
+.open-trade-card{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:12px 13px;margin-bottom:10px;position:relative;overflow:hidden}
+.open-trade-card::before{content:'';position:absolute;top:0;left:0;bottom:0;width:2px}
+.open-trade-card.long::before{background:var(--green)}
+.open-trade-card.short::before{background:var(--red)}
+.otc-pnl{font-family:'DM Mono',monospace;font-size:12px;font-weight:700}
+.otc-pnl.pos{color:var(--green)}.otc-pnl.neg{color:var(--red)}
 .trade-empty{padding:32px 16px;text-align:center;color:rgba(255,255,255,0.2);font-size:12px;line-height:1.7}
 .trade-empty-icon{font-size:28px;display:block;margin-bottom:10px;opacity:0.3}
 
@@ -355,7 +363,6 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;fo
   <div class="top-right">
     <button class="btn" onclick="openReport()" id="reportBtn" disabled>Report</button>
     <button class="btn" onclick="location.href='/admin.html'" id="adminBtn" style="display:none">Admin</button>
-    <button class="btn" onclick="toggleCalendar()" id="calBtn" title="Forex Factory Calendar">📅</button>
     <button class="btn btn-scan" onclick="triggerScan()" id="scanBtn">⚡ Scan Now</button>
     <button class="btn" onclick="doSignOut()">Sign out</button>
   </div>
@@ -399,7 +406,7 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;fo
       <span class="feature-kicker-time" id="featureTime"></span>
     </div>
     <div class="feature-card">
-      <div class="feature-inner">
+      <div class="feature-inner" style="grid-template-columns:1fr">
         <div class="feature-main">
           <div class="feature-impact" id="featureImpact">● HIGH IMPACT</div>
           <div class="feature-headline" id="featureHeadline"></div>
@@ -410,15 +417,7 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;fo
             <button class="feat-btn" onclick="deepDive('__feature__')">Deep Dive →</button>
           </div>
         </div>
-        <div class="feature-pairs" style="overflow-y:auto;max-height:360px">
-          <div class="feature-pairs-title" style="display:flex;align-items:center;gap:8px">
-            <span>📅</span> Economic Calendar
-            <span style="font-size:8px;letter-spacing:0.12em;color:var(--red);margin-left:4px">NEXT 48H · HIGH IMPACT</span>
-          </div>
-          <div id="featureCal" style="margin-top:10px">
-            <div style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(212,168,67,0.3)">Loading events...</div>
-          </div>
-        </div>
+        
         <div class="feature-pairs">
           <div class="feature-pairs-title">Pair Impact Analysis</div>
           <table class="pair-table">
@@ -469,39 +468,20 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;fo
 <!-- Trade Ideas Panel -->
 <div class="trade-panel" id="tradePanel">
   <div class="trade-panel-head">
-    <div class="tp-title">Trade Ideas</div>
-    <div class="tp-subtitle">Entry · SL · TP · R:R</div>
+    <div style="display:flex;gap:0;margin-bottom:8px;background:rgba(255,255,255,0.03);border-radius:8px;padding:3px">
+      <button class="tp-tab on" id="tab-ideas" onclick="switchTab('ideas')">Trade Ideas</button>
+      <button class="tp-tab" id="tab-open" onclick="switchTab('open')">Open Trades</button>
+    </div>
     <div class="tp-scan-time" id="tpScanTime"></div>
   </div>
   <div class="trade-list" id="tradeList">
     <div class="trade-empty"><span class="trade-empty-icon">📈</span>Run a scan to generate trade setups</div>
   </div>
-</div>
-
-<!-- ── Economic Calendar Panel ── -->
-<div id="calPanel" style="display:none;position:fixed;top:64px;right:24px;width:420px;max-width:95vw;z-index:150;animation:fadeUp 0.25s ease">
-  <div style="background:#0c0c0c;border:1px solid var(--border2);border-radius:14px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,0.8)">
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border)">
-      <div>
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px">
-          <span style="font-size:14px">📅</span>
-          <span style="font-family:'DM Mono',monospace;font-size:11px;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;color:var(--red)">Economic Calendar</span>
-        </div>
-        <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.2)">Next 48h · High Impact</div>
-      </div>
-      <div style="display:flex;align-items:center;gap:8px">
-        <span id="calDate" style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(212,168,67,0.35)"></span>
-        <button onclick="toggleCalendar()" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);color:var(--w3);width:28px;height:28px;border-radius:7px;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center">✕</button>
-      </div>
-    </div>
-    <div id="calBody" style="max-height:460px;overflow-y:auto;padding:10px 12px">
-      <div style="display:flex;align-items:center;gap:10px;padding:20px 6px;font-family:'DM Mono',monospace;font-size:11px;color:rgba(212,168,67,0.4)">
-        <div style="width:13px;height:13px;border:2px solid rgba(212,168,67,0.15);border-top-color:var(--gold);border-radius:50%;animation:spin 0.7s linear infinite;flex-shrink:0"></div>
-        Loading high impact events...
-      </div>
-    </div>
+  <div class="trade-list" id="openTradeList" style="display:none">
+    <div class="trade-empty"><span class="trade-empty-icon">📊</span>No open trades yet<br><span style="font-size:10px;opacity:0.6">Click Open on any trade idea</span></div>
   </div>
 </div>
+
 </div><!-- end #app -->
 
 <!-- Deep Dive Modal -->
@@ -869,9 +849,6 @@ function renderAll(){
   const sorted=[...allEvents].sort((a,b)=>order(a)-order(b))
   featureEvent=sorted[0]
   renderFeature(featureEvent)
-  // Populate inline calendar if cache available
-  const calEvts = getCalCache()
-  if(calEvts){ const fc=document.getElementById('featureCal'); if(fc) renderCalendar(calEvts) }
   const rest=activeFilter==='all'?sorted.slice(1):allEvents.filter(e=>activeFilter==='urgent'?(e.urgent||e.impact==='HIGH'):e.type===activeFilter)
   renderMasonry(rest)
 }
@@ -1579,7 +1556,10 @@ function renderTrades(setups,scanTime){
         <span class="tc-expiry${exp.expiring?' expiring':''}">${exp.label}</span>
       </div>
     </div>
-      <button class="nc-btn" style="width:100%;margin-top:7px;justify-content:center" onclick="tradeAnalysis('${t.pair}','${dir}','${t.entry}','${t.sl}','${t.tp}','${t.rr}',this)">⚡ Analysis</button>
+      <div style="display:flex;gap:5px;margin-top:7px">
+        <button class="nc-btn" style="flex:1;justify-content:center" onclick="tradeAnalysis('${t.pair}','${dir}','${t.entry}','${t.sl}','${t.tp}','${t.rr}',this)">⚡ Analysis</button>
+        <button class="nc-btn" style="flex:1;justify-content:center;color:var(--green);border-color:rgba(34,199,122,0.2)" onclick="openTrade('${t.pair}','${dir}','${t.entry}','${t.sl}','${t.tp}','${t.rr}')">→ Open</button>
+      </div>
       <div class="trade-analysis-body" style="display:none"></div>`
   }).join('')
   clearInterval(window._tradeTimer)
@@ -1723,6 +1703,85 @@ async function tradeAnalysis(pair,dir,entry,sl,tp,rr,btn){
     btn.textContent='⚡ Analysis'
   }catch(e){ body.innerHTML='<div style="color:var(--red);font-size:10px">'+e.message+'</div>' }
 }
+
+// ── Open Trades ───────────────────────────────────────────────────────────
+let openTrades = JSON.parse(localStorage.getItem('kjc_open_trades')||'[]')
+let activeTab = 'ideas'
+
+function switchTab(tab){
+  activeTab = tab
+  document.getElementById('tradeList').style.display = tab==='ideas' ? 'block' : 'none'
+  document.getElementById('openTradeList').style.display = tab==='open' ? 'block' : 'none'
+  document.getElementById('tab-ideas').className = 'tp-tab' + (tab==='ideas'?' on':'')
+  document.getElementById('tab-open').className = 'tp-tab' + (tab==='open'?' on':'')
+  if(tab==='open') renderOpenTrades()
+}
+
+function openTrade(pair,dir,entry,sl,tp,rr){
+  const id = pair+'-'+Date.now()
+  const trade = {id,pair,dir,entry:parseFloat(entry),sl:parseFloat(sl),tp:parseFloat(tp),rr,openedAt:new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}
+  openTrades.push(trade)
+  localStorage.setItem('kjc_open_trades', JSON.stringify(openTrades))
+  // Badge on tab
+  document.getElementById('tab-open').textContent = 'Open Trades ('+openTrades.length+')'
+  switchTab('open')
+}
+
+function closeOpenTrade(id){
+  openTrades = openTrades.filter(t=>t.id!==id)
+  localStorage.setItem('kjc_open_trades', JSON.stringify(openTrades))
+  const cnt = openTrades.length
+  document.getElementById('tab-open').textContent = cnt ? 'Open Trades ('+cnt+')' : 'Open Trades'
+  renderOpenTrades()
+}
+
+function renderOpenTrades(){
+  const list = document.getElementById('openTradeList')
+  if(!openTrades.length){
+    list.innerHTML='<div class="trade-empty"><span class="trade-empty-icon">📊</span>No open trades yet<br><span style="font-size:10px;opacity:0.6">Click Open on any trade idea</span></div>'
+    return
+  }
+  list.innerHTML = openTrades.map(t => {
+    const cp = getCurrentPrice(t.pair)
+    const isLong = t.dir === 'long'
+    const pips = cp ? ((isLong ? cp-t.entry : t.entry-cp) * (t.pair.includes('JPY')?100:10000)) : null
+    const pipsStr = pips!==null ? (pips>=0?'+':'')+pips.toFixed(1)+' pips' : '—'
+    const pnlClass = pips===null?'':pips>=0?'pos':'neg'
+    const slDist = cp ? Math.abs(cp - t.sl) * (t.pair.includes('JPY')?100:10000) : null
+    const tpDist = cp ? Math.abs(t.tp - cp) * (t.pair.includes('JPY')?100:10000) : null
+    return `<div class="open-trade-card ${t.dir}">
+      <div class="tc-top" style="margin-bottom:8px">
+        <span class="tc-pair">${t.pair}</span>
+        <span class="tc-dir ${t.dir}">${t.dir==='long'?'↑ Long':'↓ Short'}</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px">
+        <div class="tc-level tc-entry"><div class="tc-level-label">Entry</div><div class="tc-level-val">${t.entry}</div></div>
+        <div class="tc-level"><div class="tc-level-label">Now</div><div class="tc-level-val" style="color:var(--white)">${cp?fmtP(t.pair,cp):'—'}</div></div>
+        <div class="tc-level tc-sl"><div class="tc-level-label">SL</div><div class="tc-level-val">${t.sl} ${slDist?'<span style="font-size:9px;color:rgba(255,255,255,0.3)">('+slDist.toFixed(1)+'p)</span>':''}</div></div>
+        <div class="tc-level tc-tp"><div class="tc-level-label">TP</div><div class="tc-level-val">${t.tp} ${tpDist?'<span style="font-size:9px;color:rgba(255,255,255,0.3)">('+tpDist.toFixed(1)+'p)</span>':''}</div></div>
+      </div>
+      <div class="tc-rr" style="margin-bottom:7px">
+        <span style="font-family:'DM Mono',monospace;font-size:9px;color:rgba(255,255,255,0.2);text-transform:uppercase;letter-spacing:0.06em">P&L</span>
+        <span class="otc-pnl ${pnlClass}">${pipsStr}</span>
+      </div>
+      <div style="display:flex;gap:5px;padding-top:7px;border-top:1px solid rgba(255,255,255,0.04)">
+        <button class="nc-btn" style="flex:1;justify-content:center" onclick="tradeAnalysis('${t.pair}','${t.dir}','${t.entry}','${t.sl}','${t.tp}','${t.rr}',this)">⚡ Analysis</button>
+        <button class="nc-btn" style="color:var(--red);border-color:rgba(240,68,68,0.2)" onclick="closeOpenTrade('${t.id}')">✕ Close</button>
+      </div>
+      <div class="trade-analysis-body" style="display:none"></div>
+      <div style="font-family:'DM Mono',monospace;font-size:9px;color:rgba(212,168,67,0.3);margin-top:6px">Opened ${t.openedAt}</div>
+    </div>`
+  }).join('')
+  // Live update every 5s
+  clearTimeout(window._otcTimer)
+  window._otcTimer = setTimeout(()=>{ if(activeTab==='open') renderOpenTrades() }, 5000)
+}
+
+// Init open trades badge on load
+if(openTrades.length) document.addEventListener('DOMContentLoaded',()=>{
+  const el = document.getElementById('tab-open')
+  if(el) el.textContent = 'Open Trades ('+openTrades.length+')'
+})
 
 async function doSignOut(){await sb.auth.signOut();window.location.replace('/login.html')}
 
