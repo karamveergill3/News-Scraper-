@@ -647,6 +647,8 @@ function connectPriceFeed(){
               const pnlRaw = t.dir==='long' ? tick.p-t.entry : t.entry-tick.p
               pnlEl.textContent = (pnlRaw>=0?'+':'-')+'$'+Math.abs(pnlRaw).toFixed(2)
               pnlEl.className = 'otc-pnl '+(pnlRaw>=0?'pos':'neg')
+              const lotEl = document.getElementById('otc-lot-'+t.id)
+              if(lotEl){const l=calcLotPnl(t.pair,pnlRaw,tick.p);if(l!==null)lotEl.textContent=(l>=0?'+':'-')+'$'+Math.abs(l).toFixed(2)+' (0.5L)'}
             }
           })
         })
@@ -1704,7 +1706,7 @@ async function fetchCalendar(){
     const now = new Date()
     const fmt = d => d.toISOString().split('T')[0]
     const from = fmt(now)
-    const to = fmt(new Date(now.getTime() + 48*60*60*1000))
+    const to = fmt(new Date(now.getTime() + 30*24*60*60*1000))
     const res = await fetch(`https://finnhub.io/api/v1/calendar/economic?from=${from}&to=${to}&token=${fhKey}`)
     const data = await res.json()
     const events = (data.economicCalendar||[])
@@ -1862,7 +1864,10 @@ function renderOpenTrades(){
       </div>
       <div class="tc-rr" style="margin-bottom:7px">
         <span style="font-family:'DM Mono',monospace;font-size:9px;color:rgba(255,255,255,0.2);text-transform:uppercase;letter-spacing:0.06em">P&L</span>
-        <span class="otc-pnl ${pnlClass}" id="otc-pnl-${t.id}">${pnlStr}</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="otc-pnl ${pnlClass}" id="otc-pnl-${t.id}">${pnlStr}</span>
+          <span style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,0.3);font-weight:500" id="otc-lot-${t.id}">${(()=>{const l=calcLotPnl(t.pair,pnlRaw,cp);return l!==null?(l>=0?'+':'-')+'$'+Math.abs(l).toFixed(2)+' (0.5L)':''})()} </span>
+        </div>
       </div>
       <div style="display:flex;gap:5px;padding-top:7px;border-top:1px solid rgba(255,255,255,0.04)">
         <button class="nc-btn" style="flex:1;justify-content:center" onclick="tradeAnalysis('${t.pair}','${t.dir}','${t.entry}','${t.sl}','${t.tp}','${t.rr}',this)">⚡ Analysis</button>
@@ -1883,6 +1888,19 @@ if(openTrades.length) document.addEventListener('DOMContentLoaded',()=>{
   const el = document.getElementById('tab-open')
   if(el) el.textContent = 'Open Trades ('+openTrades.length+')'
 })
+
+function calcLotPnl(pair, pnlRaw, cp){
+  // 0.5 standard lot P&L in USD
+  const lots = 0.5
+  if(!pnlRaw || !cp) return null
+  if(pair === 'XAU/USD' || pair === 'XAG/USD') return pnlRaw * lots * 100  // 1 lot = 100oz
+  if(pair === 'BTC/USD') return pnlRaw * lots  // 1 lot = 1 BTC
+  const units = lots * 100000  // 50,000 units
+  if(pair.endsWith('/USD')) return pnlRaw * units  // USD is quote
+  if(pair.startsWith('USD/')) return (pnlRaw / cp) * units  // USD is base
+  // Cross pairs — approximate via USD quote side
+  return pnlRaw * units
+}
 
 function checkOpenTradeExits(){
   if(!openTrades.length) return
