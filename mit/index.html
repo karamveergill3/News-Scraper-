@@ -900,10 +900,6 @@ async function autoScan(){
 }
 setInterval(autoScan,TWO_HOURS)
 setTimeout(()=>{if(localStorage.getItem('mit_api_key'))autoScan()},5000)
-}
-setInterval(autoScan, TWO_HOURS)
-// Also fire one after 5 seconds on load if key already exists (so it's fresh on page open)
-setTimeout(()=>{ if(localStorage.getItem('mit_api_key')) autoScan() }, 5000)
   }catch(e){console.error(e);window.location.replace('/login.html')}
 }
 
