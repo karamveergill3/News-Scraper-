@@ -1608,12 +1608,12 @@ function renderTrades(setups,scanTime){
         <span class="tc-time">📡 ${scanTime||'—'}</span>
         <span class="tc-expiry${exp.expiring?' expiring':''}">${exp.label}</span>
       </div>
-    </div>
-      <div style="display:flex;gap:5px;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.04)">
+      <div style="display:flex;gap:5px;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.06)">
         <button class="nc-btn" style="flex:1;justify-content:center" onclick="tradeAnalysis('${t.pair}','${dir}','${t.entry}','${t.sl}','${t.tp}','${t.rr}',this)">⚡ Analysis</button>
         <button class="nc-btn" style="flex:1;justify-content:center;color:var(--green);border-color:rgba(34,199,122,0.2)" onclick="openTrade('${t.pair}','${dir}','${t.entry}','${t.sl}','${t.tp}','${t.rr}')">→ Open</button>
       </div>
-      <div class="trade-analysis-body" style="display:none"></div>`
+      <div class="trade-analysis-body" style="display:none"></div>
+    </div>`
   }).join('')
   clearInterval(window._tradeTimer)
   window._tradeTimer=setInterval(()=>renderTrades(setups,scanTime),60000)
