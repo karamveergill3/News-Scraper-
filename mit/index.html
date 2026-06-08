@@ -1609,7 +1609,7 @@ function renderTrades(setups,scanTime){
         <span class="tc-expiry${exp.expiring?' expiring':''}">${exp.label}</span>
       </div>
     </div>
-      <div style="display:flex;gap:5px;margin-top:7px">
+      <div style="display:flex;gap:5px;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.04)">
         <button class="nc-btn" style="flex:1;justify-content:center" onclick="tradeAnalysis('${t.pair}','${dir}','${t.entry}','${t.sl}','${t.tp}','${t.rr}',this)">⚡ Analysis</button>
         <button class="nc-btn" style="flex:1;justify-content:center;color:var(--green);border-color:rgba(34,199,122,0.2)" onclick="openTrade('${t.pair}','${dir}','${t.entry}','${t.sl}','${t.tp}','${t.rr}')">→ Open</button>
       </div>
@@ -1774,7 +1774,7 @@ async function tradeAnalysis(pair,dir,entry,sl,tp,rr,btn){
     const res = await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:300,messages:[{role:'user',content:`In 3 short bullet points explain why this is a good trade setup. Pair: ${pair}, Direction: ${dir}, Entry: ${entry}, SL: ${sl}, TP: ${tp}, RR: ${rr}, Current price: ${cp||'unknown'}. Context: ${reason}. Be specific, concise, trader language only. No fluff.`}]})
+      body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:300,messages:[{role:'user',content:`In 3 short bullet points explain why this is a good trade setup. Pair: ${pair}, Direction: ${dir}, Entry: ${entry}, SL: ${sl}, TP: ${tp}, RR: ${rr}:1, Current price: ${cp||'unknown'}. Be specific with price levels and technical reasoning. Trader language only. No fluff.`}]})
     })
     const d = await res.json()
     const text = d.content.filter(b=>b.type==='text').map(b=>b.text).join('').trim()
