@@ -591,8 +591,17 @@ function savePriceKey(){
 }
 
 function initPriceFeed(){
+  // Restore last known prices immediately so strip never shows dashes
+  try{
+    const saved = localStorage.getItem('kjc_last_prices')
+    if(saved){
+      const parsed = JSON.parse(saved)
+      Object.entries(parsed).forEach(([pair, d]) => { livePrices[pair] = d })
+      renderPriceStrip()
+      priceStripBuilt = true
+    }
+  }catch(e){}
   if(fhKey) connectPriceFeed()
-  // else strip stays showing the connect button
 }
 
 function connectPriceFeed(){
@@ -613,7 +622,7 @@ function connectPriceFeed(){
     setTimeout(fetchWeeklyChanges, 3000)
     // Poll REST every 15s so prices never go stale if WS is quiet
     clearInterval(window._pricePoller)
-    window._pricePoller = setInterval(fetchInitialPrices, 15000)
+    window._pricePoller = setInterval(fetchInitialPrices, 1000)
   }
 
   priceWs.onmessage = (msg) => {
@@ -712,6 +721,8 @@ async function fetchInitialPrices(){
     fetch('https://finnhub.io/api/v1/quote?symbol=OANDA:XAU_USD&token=' + fhKey)
       .then(r=>r.json()).then(d=>{ if(d.c>0) set('XAU/USD', d.c) }).catch(()=>{})
   }catch(e){ return }
+  // Persist prices so next page load is instant with no dashes
+  try{ localStorage.setItem('kjc_last_prices', JSON.stringify(livePrices)) }catch(e){}
   if(!priceStripBuilt){
     renderPriceStrip()
     priceStripBuilt = true
