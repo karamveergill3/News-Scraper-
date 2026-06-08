@@ -743,6 +743,19 @@ function updatePriceStrip(){
       if(el) el.textContent = fmtP(pair, d.price)
     })
   }
+  // Live-update open trade NOW and P&L without full re-render
+  openTrades.forEach(t => {
+    const cp = getCurrentPrice(t.pair)
+    if(!cp) return
+    const nowEl = document.getElementById('otc-now-' + t.id)
+    if(nowEl) nowEl.textContent = fmtP(t.pair, cp)
+    const pnlEl = document.getElementById('otc-pnl-' + t.id)
+    if(pnlEl){
+      const pnlRaw = t.dir==='long' ? cp-t.entry : t.entry-cp
+      pnlEl.textContent = (pnlRaw>=0?'+':'-')+'$'+Math.abs(pnlRaw).toFixed(2)
+      pnlEl.className = 'otc-pnl '+(pnlRaw>=0?'pos':'neg')
+    }
+  })
 }
 
 
@@ -1832,13 +1845,13 @@ function renderOpenTrades(){
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px">
         <div class="tc-level tc-entry"><div class="tc-level-label">Entry</div><div class="tc-level-val">${t.entry}</div></div>
-        <div class="tc-level"><div class="tc-level-label">Now</div><div class="tc-level-val" style="color:var(--white)">${cp?fmtP(t.pair,cp):'—'}</div></div>
+        <div class="tc-level"><div class="tc-level-label">Now</div><div class="tc-level-val" id="otc-now-${t.id}" style="color:var(--white)">${cp?fmtP(t.pair,cp):'—'}</div></div>
         <div class="tc-level tc-sl"><div class="tc-level-label">SL</div><div class="tc-level-val">${t.sl} ${slDist?'<span style="font-size:9px;color:rgba(255,255,255,0.3)">('+slDist+')</span>':''}</div></div>
         <div class="tc-level tc-tp"><div class="tc-level-label">TP</div><div class="tc-level-val">${t.tp} ${tpDist?'<span style="font-size:9px;color:rgba(255,255,255,0.3)">('+tpDist+')</span>':''}</div></div>
       </div>
       <div class="tc-rr" style="margin-bottom:7px">
         <span style="font-family:'DM Mono',monospace;font-size:9px;color:rgba(255,255,255,0.2);text-transform:uppercase;letter-spacing:0.06em">P&L</span>
-        <span class="otc-pnl ${pnlClass}">${pnlStr}</span>
+        <span class="otc-pnl ${pnlClass}" id="otc-pnl-${t.id}">${pnlStr}</span>
       </div>
       <div style="display:flex;gap:5px;padding-top:7px;border-top:1px solid rgba(255,255,255,0.04)">
         <button class="nc-btn" style="flex:1;justify-content:center" onclick="tradeAnalysis('${t.pair}','${t.dir}','${t.entry}','${t.sl}','${t.tp}','${t.rr}',this)">⚡ Analysis</button>
