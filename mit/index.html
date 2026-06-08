@@ -894,6 +894,22 @@ async function init(){
     setInterval(updateCountdown,30000)
     await loadLatest()
     setInterval(async()=>await loadLatest(),60000)
+
+// Auto-scan every 2 hours
+const TWO_HOURS = 2 * 60 * 60 * 1000
+async function autoScan(){
+  if(!apiKey){ apiKey=localStorage.getItem('mit_api_key')||''; }
+  if(!apiKey) return  // skip if no key yet — user hasn't scanned manually once
+  console.log('[AutoScan] Triggering scheduled scan at', new Date().toLocaleTimeString())
+  const btn=document.getElementById('scanBtn')
+  btn.disabled=true; btn.textContent='Auto-scanning...'
+  setStatus('scanning','Auto-scanning...')
+  await runScan()
+  btn.disabled=false; btn.innerHTML='⚡ Scan Now'
+}
+setInterval(autoScan, TWO_HOURS)
+// Also fire one after 5 seconds on load if key already exists (so it's fresh on page open)
+setTimeout(()=>{ if(localStorage.getItem('mit_api_key')) autoScan() }, 5000)
   }catch(e){console.error(e);window.location.replace('/login.html')}
 }
 
