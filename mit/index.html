@@ -322,6 +322,7 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;fo
 .tc-time{font-family:'DM Mono',monospace;font-size:9px;color:rgba(212,168,67,0.35);letter-spacing:0.06em}
 .tc-expiry{font-family:'DM Mono',monospace;font-size:9px;color:rgba(255,255,255,0.2);letter-spacing:0.04em}
 .tc-expiry.expiring{color:var(--red);animation:blink 1.5s ease-in-out infinite}
+.trade-analysis-body{font-size:11px;color:var(--w2);line-height:1.65;padding:10px 0 4px;border-top:1px solid rgba(255,255,255,0.05);margin-top:6px}
 .trade-empty{padding:32px 16px;text-align:center;color:rgba(255,255,255,0.2);font-size:12px;line-height:1.7}
 .trade-empty-icon{font-size:28px;display:block;margin-bottom:10px;opacity:0.3}
 
@@ -398,12 +399,16 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;fo
       <span class="feature-kicker-time" id="featureTime"></span>
     </div>
     <div class="feature-card">
-      <div class="feature-inner">
+      <div class="feature-inner" style="grid-template-columns:1fr">
         <div class="feature-main">
           <div class="feature-impact" id="featureImpact">● HIGH IMPACT</div>
           <div class="feature-headline" id="featureHeadline"></div>
           <div class="feature-context" id="featureContext"></div>
           <div class="feature-signal" id="featureSignal"></div>
+          <div class="feature-btns" style="margin-top:16px;display:flex;gap:6px">
+            <button class="feat-btn" id="featReadBtn" onclick="readFeature()">▶ Read</button>
+            <button class="feat-btn" onclick="deepDive('__feature__')">Deep Dive →</button>
+          </div>
         </div>
         <div class="feature-pairs">
           <div class="feature-pairs-title">Pair Impact Analysis</div>
@@ -415,10 +420,6 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;fo
       </div>
       <div class="feature-footer">
         <span class="feature-source" id="featureSource"></span>
-        <div class="feature-btns">
-          <button class="feat-btn" id="featReadBtn" onclick="readFeature()">▶ Read</button>
-          <button class="feat-btn" onclick="deepDive('__feature__')">Deep Dive →</button>
-        </div>
       </div>
     </div>
   </div>
@@ -468,24 +469,26 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;fo
   </div>
 </div>
 
-<!-- ── Forex Factory Calendar Panel ── -->
-<div id="calPanel" style="display:none;position:fixed;top:64px;left:50%;transform:translateX(-50%);width:560px;max-width:95vw;z-index:150;animation:fadeUp 0.25s ease">
-  <div style="background:#0a0a0a;border:1px solid var(--border2);border-radius:14px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,0.7)">
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border);background:rgba(212,168,67,0.03)">
-      <div style="display:flex;align-items:center;gap:10px">
-        <span style="font-size:16px">📅</span>
-        <span style="font-family:'DM Mono',monospace;font-size:12px;font-weight:500;letter-spacing:0.12em;text-transform:uppercase;color:var(--white)">Forex Factory</span>
-        <span style="font-family:'DM Mono',monospace;font-size:9px;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;color:var(--red);padding:3px 9px;background:rgba(240,68,68,0.1);border:1px solid rgba(240,68,68,0.2);border-radius:4px">Red Events</span>
+<!-- ── Economic Calendar Panel ── -->
+<div id="calPanel" style="display:none;position:fixed;top:64px;right:24px;width:420px;max-width:95vw;z-index:150;animation:fadeUp 0.25s ease">
+  <div style="background:#0c0c0c;border:1px solid var(--border2);border-radius:14px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,0.8)">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border)">
+      <div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px">
+          <span style="font-size:14px">📅</span>
+          <span style="font-family:'DM Mono',monospace;font-size:11px;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;color:var(--red)">Economic Calendar</span>
+        </div>
+        <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.2)">Next 48h · High Impact</div>
       </div>
       <div style="display:flex;align-items:center;gap:8px">
-        <span id="calDate" style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(212,168,67,0.4)"></span>
-        <button onclick="toggleCalendar()" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:var(--w3);width:28px;height:28px;border-radius:7px;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center">✕</button>
+        <span id="calDate" style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(212,168,67,0.35)"></span>
+        <button onclick="toggleCalendar()" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);color:var(--w3);width:28px;height:28px;border-radius:7px;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center">✕</button>
       </div>
     </div>
-    <div id="calBody" style="max-height:400px;overflow-y:auto;padding:0">
-      <div style="display:flex;align-items:center;gap:12px;padding:28px 18px;font-family:'DM Mono',monospace;font-size:11px;color:rgba(212,168,67,0.4)">
-        <div style="width:14px;height:14px;border:2px solid rgba(212,168,67,0.15);border-top-color:var(--gold);border-radius:50%;animation:spin 0.7s linear infinite;flex-shrink:0"></div>
-        Fetching today's high impact events...
+    <div id="calBody" style="max-height:460px;overflow-y:auto;padding:10px 12px">
+      <div style="display:flex;align-items:center;gap:10px;padding:20px 6px;font-family:'DM Mono',monospace;font-size:11px;color:rgba(212,168,67,0.4)">
+        <div style="width:13px;height:13px;border:2px solid rgba(212,168,67,0.15);border-top-color:var(--gold);border-radius:50%;animation:spin 0.7s linear infinite;flex-shrink:0"></div>
+        Loading high impact events...
       </div>
     </div>
   </div>
@@ -1563,7 +1566,9 @@ function renderTrades(setups,scanTime){
         <span class="tc-time">📡 ${scanTime||'—'}</span>
         <span class="tc-expiry${exp.expiring?' expiring':''}">${exp.label}</span>
       </div>
-    </div>`
+    </div>
+      <button class="nc-btn" style="width:100%;margin-top:7px;justify-content:center" onclick="tradeAnalysis('${t.pair}','${dir}','${t.entry}','${t.sl}','${t.tp}','${t.rr}',this)">⚡ Analysis</button>
+      <div class="trade-analysis-body" style="display:none"></div>`
   }).join('')
   clearInterval(window._tradeTimer)
   window._tradeTimer=setInterval(()=>renderTrades(setups,scanTime),60000)
@@ -1620,7 +1625,6 @@ function setCalCache(events){
 }
 
 function initCalendar(){
-  // On load — fetch if cache is missing or stale
   const cached = getCalCache()
   if(!cached) fetchCalendar()
   // Auto-refresh every 12 hours silently in background
@@ -1628,66 +1632,78 @@ function initCalendar(){
 }
 
 async function fetchCalendar(){
-  if(!apiKey || calFetching) return  // skip if no key or already running
+  if(!fhKey || calFetching) return
   calFetching = true
-  const now = new Date()
-  const dateStr = now.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'})
   try{
-    const res = await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({
-        model:'claude-haiku-4-5-20251001',
-        max_tokens:600,
-        tools:[{type:'web_search_20250305',name:'web_search',max_uses:1}],
-        messages:[{role:'user',content:`Today is ${dateStr}. Search Forex Factory calendar. Return ONLY high impact red events as JSON, no markdown: {"events":[{"time":"HH:MM","currency":"USD","event":"Name","forecast":"0.3%","previous":"0.2%","actual":"—"}]}. High impact red only. JSON only.`}]
-      })
-    })
+    const now = new Date()
+    const fmt = d => d.toISOString().split('T')[0]
+    const from = fmt(now)
+    const to = fmt(new Date(now.getTime() + 48*60*60*1000))
+    const res = await fetch(`https://finnhub.io/api/v1/calendar/economic?from=${from}&to=${to}&token=${fhKey}`)
     const data = await res.json()
-    const raw = data.content.filter(b=>b.type==='text').map(b=>b.text).join('').trim().replace(/```json|```/g,'').trim()
-    const s = raw.indexOf('{'), e = raw.lastIndexOf('}')
-    if(s===-1) return
-    const result = JSON.parse(raw.slice(s,e+1))
-    const events = result.events||[]
+    const events = (data.economicCalendar||[])
+      .filter(e => e.impact === 'high')
+      .map(e => ({
+        time: e.time ? e.time.split(' ')[1].slice(0,5) : '—',
+        date: e.time ? e.time.split(' ')[0] : '—',
+        currency: (e.country||'').toUpperCase(),
+        event: e.event||'—',
+        forecast: e.estimate != null ? e.estimate + (e.unit||'') : '—',
+        previous: e.prev != null ? e.prev + (e.unit||'') : '—',
+        actual: e.actual != null ? e.actual + (e.unit||'') : '—'
+      }))
     setCalCache(events)
     calFetching = false
     if(calOpen) renderCalendar(events)
   }catch(err){
     calFetching = false
-    console.warn('Calendar fetch failed:', err.message)
     if(calOpen) document.getElementById('calBody').innerHTML =
-      '<div style="padding:20px 18px;font-family:DM Mono,monospace;font-size:11px;color:var(--red)">Failed to load — will retry next cycle.</div>'
+      '<div style="padding:16px;font-family:DM Mono,monospace;font-size:11px;color:var(--red)">Failed — check Finnhub key.</div>'
   }
 }
-
-const CUR_COLORS = {USD:'#4488f0',EUR:'#f0a832',GBP:'#22c77a',JPY:'#f04444',CHF:'#a066f0',AUD:'#f06432',CAD:'#f0c050',NZD:'#4af0c0',CNY:'#f04444',GBP:'#22c77a'}
 
 function renderCalendar(events){
   const body = document.getElementById('calBody')
   if(!events.length){
-    body.innerHTML = '<div style="padding:24px 18px;font-family:DM Mono,monospace;font-size:11px;color:rgba(212,168,67,0.4);text-align:center">No high impact events today 📅</div>'
+    body.innerHTML='<div style="padding:24px 6px;font-family:DM Mono,monospace;font-size:11px;color:rgba(212,168,67,0.35);text-align:center">No high impact events in next 48h</div>'
     return
   }
-  const header = `<div class="cal-row cal-header">
-    <div class="cal-cell cal-time">Time</div>
-    <div class="cal-cell cal-cur">Cur</div>
-    <div class="cal-cell">Event</div>
-    <div class="cal-cell cal-val" style="justify-content:flex-end">Forecast</div>
-    <div class="cal-cell cal-val" style="justify-content:flex-end">Previous</div>
-  </div>`
-  const rows = events.map(ev => {
-    const col = CUR_COLORS[ev.currency] || 'var(--w3)'
-    const actual = ev.actual && ev.actual !== '—' && ev.actual !== '-'
-    const actStyle = actual ? `color:var(--green);font-weight:700` : `color:var(--w3)`
-    return `<div class="cal-row">
-      <div class="cal-cell cal-time">${ev.time||'—'}</div>
-      <div class="cal-cell cal-cur" style="color:${col}">${ev.currency||'—'}</div>
-      <div class="cal-cell cal-event">${ev.event||'—'}</div>
-      <div class="cal-cell cal-val"><span class="cal-val-num" style="color:var(--amber)">${ev.forecast||'—'}</span></div>
-      <div class="cal-cell cal-val"><span class="cal-val-num" style="color:var(--w3)">${ev.previous||'—'}</span></div>
+  body.innerHTML = events.map(ev => {
+    const hasActual = ev.actual && ev.actual !== '—'
+    return `<div style="display:flex;align-items:stretch;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-left:3px solid var(--red);border-radius:8px;margin-bottom:8px;overflow:hidden">
+      <div style="padding:12px 14px;flex:1;min-width:0">
+        <div style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:var(--white);margin-bottom:4px">${ev.event}</div>
+        <div style="font-family:'DM Mono',monospace;font-size:9px;color:rgba(255,255,255,0.3);letter-spacing:0.04em">${ev.currency} · ${ev.date||''} ${ev.time} ET</div>
+      </div>
+      <div style="padding:12px 14px;text-align:right;flex-shrink:0;border-left:1px solid rgba(255,255,255,0.04)">
+        <div style="font-family:'DM Mono',monospace;font-size:10px;color:${hasActual?'var(--green)':'var(--red)'};font-weight:700">F: ${ev.forecast}</div>
+        <div style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,0.35);margin-top:2px">P: ${ev.previous}</div>
+        ${hasActual?`<div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--green);font-weight:700;margin-top:2px">A: ${ev.actual}</div>`:''}
+      </div>
     </div>`
   }).join('')
-  body.innerHTML = header + rows
+}
+
+async function tradeAnalysis(pair,dir,entry,sl,tp,rr,btn){
+  const body = btn.nextElementSibling
+  if(body.style.display !== 'none'){ body.style.display='none'; btn.textContent='⚡ Analysis'; return }
+  btn.textContent='Loading...'
+  body.style.display='block'
+  body.innerHTML='<div style="color:rgba(212,168,67,0.4);font-family:DM Mono,monospace;font-size:10px">Analysing trade...</div>'
+  if(!apiKey){ body.innerHTML='<div style="color:var(--red);font-size:10px">API key required</div>'; return }
+  const cp = getCurrentPrice(pair)
+  try{
+    const res = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:300,messages:[{role:'user',content:`In 3 short bullet points explain why this is a good trade setup. Pair: ${pair}, Direction: ${dir}, Entry: ${entry}, SL: ${sl}, TP: ${tp}, RR: ${rr}, Current price: ${cp||'unknown'}. Context: ${reason}. Be specific, concise, trader language only. No fluff.`}]})
+    })
+    const d = await res.json()
+    const text = d.content.filter(b=>b.type==='text').map(b=>b.text).join('').trim()
+    body.innerHTML = text.replace(/
+/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong style="color:var(--gold)">$1</strong>').replace(/^[-•]\s/gm,'<span style="color:var(--gold)">▸</span> ')
+    btn.textContent='⚡ Analysis'
+  }catch(e){ body.innerHTML='<div style="color:var(--red);font-size:10px">'+e.message+'</div>' }
 }
 
 async function doSignOut(){await sb.auth.signOut();window.location.replace('/login.html')}
