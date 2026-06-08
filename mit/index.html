@@ -323,6 +323,9 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;fo
 .tc-expiry{font-family:'DM Mono',monospace;font-size:9px;color:rgba(255,255,255,0.2);letter-spacing:0.04em}
 .tc-expiry.expiring{color:var(--red);animation:blink 1.5s ease-in-out infinite}
 .trade-analysis-body{font-size:11px;color:var(--w2);line-height:1.65;padding:10px 0 4px;border-top:1px solid rgba(255,255,255,0.05);margin-top:6px}
+.cal-tab{font-family:'DM Mono',monospace;font-size:9px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;padding:4px 10px;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--w3);cursor:pointer;transition:all 0.18s}
+.cal-tab:hover{border-color:var(--border2);color:var(--w2)}
+.cal-tab.on{border-color:var(--red);color:var(--red);background:rgba(240,68,68,0.08)}
 .tp-tab{flex:1;font-family:'DM Mono',monospace;font-size:9px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;padding:6px 4px;border:none;background:transparent;color:rgba(255,255,255,0.25);cursor:pointer;border-radius:6px;transition:all 0.2s}
 .tp-tab.on{background:rgba(212,168,67,0.1);color:var(--gold)}
 .open-trade-card{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:12px 13px;margin-bottom:10px;position:relative;overflow:hidden}
@@ -420,21 +423,23 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;fo
         <!-- ── Forex Factory Calendar Column ── -->
         <div style="padding:24px 24px;border-left:1px solid var(--border);display:flex;flex-direction:column;gap:0;overflow:hidden">
           <div style="margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border)">
-            <div style="font-family:'Cormorant Garamond',serif;font-size:17px;font-weight:600;letter-spacing:0.04em;color:var(--white);margin-bottom:3px">Forex Factory</div>
+            <div style="font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--white);margin-bottom:3px">Forex Factory</div>
             <div style="font-family:'DM Mono',monospace;font-size:8px;font-weight:600;letter-spacing:0.22em;text-transform:uppercase;color:var(--red)">Economic Calendar · High Impact</div>
+          </div>
+          <div style="display:flex;gap:4px;margin-bottom:10px;flex-wrap:wrap">
+            <button class="cal-tab on" onclick="filterCal('ALL',this)">All</button>
+            <button class="cal-tab" onclick="filterCal('USD',this)">USD</button>
+            <button class="cal-tab" onclick="filterCal('GBP',this)">GBP</button>
+            <button class="cal-tab" onclick="filterCal('CAD',this)">CAD</button>
+            <button class="cal-tab" onclick="filterCal('JPY',this)">JPY</button>
+            <button class="cal-tab" onclick="filterCal('CNY',this)">CNY</button>
           </div>
           <div id="featureCal" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px">
             <div style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(212,168,67,0.3);padding:8px 0">Loading events...</div>
           </div>
         </div>
         
-        <div class="feature-pairs">
-          <div class="feature-pairs-title">Pair Impact Analysis</div>
-          <table class="pair-table">
-            <thead><tr><th>Pair</th><th>Direction</th><th>Key Level</th></tr></thead>
-            <tbody id="featurePairs"></tbody>
-          </table>
-        </div>
+        
       </div>
       <div class="feature-footer">
         <span class="feature-source" id="featureSource"></span>
@@ -879,13 +884,7 @@ function renderFeature(ev){
   const sig=document.getElementById('featureSignal')
   sig.className='feature-signal'+(sgc?' '+sgc:'')
   sig.innerHTML='<span class="feature-signal-icon" style="color:'+sgi+'">'+sgt+'</span><span class="feature-signal-text">'+ev.signal+'</span>'
-  const tbody=document.getElementById('featurePairs')
-  tbody.innerHTML=(ev.pairs||[]).map(p=>{
-    const dc=p.direction==='bullish'?'bull-c':p.direction==='bearish'?'bear-c':'neut-c'
-    const dl=p.direction==='bullish'?'↑ Long':p.direction==='bearish'?'↓ Short':'→ Watch'
-    const lvl=p.analysis?.match(/\d{4,5}(\.\d+)?/)?.[0]||'—'
-    return'<tr class="pair-row"><td><div class="pt-name">'+p.pair+'</div><div class="pt-analysis">'+p.analysis+'</div></td><td><div class="pt-dir '+dc+'">'+dl+'</div></td><td class="pt-level">'+lvl+'</td></tr>'
-  }).join('')
+
 }
 
 function renderMasonry(events){
@@ -1696,10 +1695,21 @@ function renderCalendar(events){
     </div>`
   }
 
-  const empty = '<div style="font-family:DM Mono,monospace;font-size:10px;color:rgba(212,168,67,0.3);padding:8px 0">No high impact events in next 48h</div>'
+  window._calAllEvents = events
+  const empty = '<div style="font-family:DM Mono,monospace;font-size:10px;color:rgba(212,168,67,0.3);padding:8px 0">No high impact events</div>'
   if(body) body.innerHTML = events.length ? events.map(makeCard).join('') : empty
   const fc = document.getElementById('featureCal')
   if(fc) fc.innerHTML = events.length ? events.map(makeCard).join('') : empty
+}
+
+function filterCal(cur, btn){
+  document.querySelectorAll('.cal-tab').forEach(b=>b.classList.remove('on'))
+  btn.classList.add('on')
+  const events = window._calAllEvents || []
+  const filtered = cur==='ALL' ? events : events.filter(e=>e.currency===cur)
+  const empty = '<div style="font-family:DM Mono,monospace;font-size:10px;color:rgba(212,168,67,0.3);padding:8px 0">No '+cur+' events</div>'
+  const fc = document.getElementById('featureCal')
+  if(fc) fc.innerHTML = filtered.length ? filtered.map(makeCard).join('') : empty
 }
 
 async function tradeAnalysis(pair,dir,entry,sl,tp,rr,btn){
