@@ -433,6 +433,7 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;fo
             <button class="cal-tab" onclick="filterCal('CAD',this)">CAD</button>
             <button class="cal-tab" onclick="filterCal('JPY',this)">JPY</button>
             <button class="cal-tab" onclick="filterCal('CNY',this)">CNY</button>
+            <button class="cal-tab" onclick="filterCal('AUD',this)">AUD</button>
           </div>
           <div id="featureCal" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px">
             <div style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(212,168,67,0.3);padding:8px 0">Loading events...</div>
@@ -686,27 +687,30 @@ async function fetchInitialPrices(){
     const res = await fetch('https://finnhub.io/api/v1/forex/rates?base=USD&token=' + fhKey)
     const data = await res.json()
     const q = data.quote
-    if(!q) return
-    // Compute prices from USD base rates
+    if(!q || !Object.keys(q).length) return
     const set = (pair, price) => {
-      if(!price || price <= 0) return
+      if(price == null || !isFinite(price) || price <= 0) return
       const prev = livePrices[pair]?.price || price
       livePrices[pair] = { price, prev, ts: Date.now() }
     }
-    if(q.EUR) set('EUR/USD', 1/q.EUR)
-    if(q.GBP) set('GBP/USD', 1/q.GBP)
-    if(q.JPY) set('USD/JPY', q.JPY)
-    if(q.CHF) set('USD/CHF', q.CHF)
-    if(q.AUD) set('AUD/USD', 1/q.AUD)
-    if(q.CAD) set('USD/CAD', q.CAD)
-    if(q.NZD) set('NZD/USD', 1/q.NZD)
-    if(q.EUR && q.GBP) set('EUR/GBP', q.GBP/q.EUR)
-    if(q.GBP && q.JPY) set('GBP/JPY', q.JPY/q.GBP)
-    if(q.XAU) set('XAU/USD', 1/q.XAU)
-    if(q.XAG) set('XAG/USD', 1/q.XAG)
-    // BTC via separate call
+    // USD quote: how many units of currency per 1 USD
+    const r = (code) => parseFloat(q[code]) || 0
+    set('EUR/USD', r('EUR') > 0 ? 1/r('EUR') : 0)
+    set('GBP/USD', r('GBP') > 0 ? 1/r('GBP') : 0)
+    set('USD/JPY', r('JPY'))
+    set('USD/CHF', r('CHF'))
+    set('AUD/USD', r('AUD') > 0 ? 1/r('AUD') : 0)
+    set('USD/CAD', r('CAD'))
+    set('NZD/USD', r('NZD') > 0 ? 1/r('NZD') : 0)
+    if(r('EUR') > 0 && r('GBP') > 0) set('EUR/GBP', r('GBP')/r('EUR'))
+    if(r('GBP') > 0 && r('JPY') > 0) set('GBP/JPY', r('JPY')/r('GBP'))
+    if(r('XAU') > 0) set('XAU/USD', 1/r('XAU'))
+    if(r('XAG') > 0) set('XAG/USD', 1/r('XAG'))
+    // BTC + fallback gold via Binance/alternate
     fetch('https://finnhub.io/api/v1/quote?symbol=BINANCE:BTCUSDT&token=' + fhKey)
       .then(r=>r.json()).then(d=>{ if(d.c>0) set('BTC/USD', d.c) }).catch(()=>{})
+    fetch('https://finnhub.io/api/v1/quote?symbol=OANDA:XAU_USD&token=' + fhKey)
+      .then(r=>r.json()).then(d=>{ if(d.c>0) set('XAU/USD', d.c) }).catch(()=>{})
   }catch(e){ return }
   if(!priceStripBuilt){
     renderPriceStrip()
@@ -1671,7 +1675,7 @@ async function fetchCalendar(){
       }))
     setCalCache(events)
     calFetching = false
-    if(calOpen) renderCalendar(events)
+    renderCalendar(events)
   }catch(err){
     calFetching = false
     if(calOpen) document.getElementById('calBody').innerHTML =
@@ -1714,20 +1718,28 @@ function renderCalendar(events){
 }
 
 
-const CAL_CUR_MAP = {USD:'US',GBP:'GB',CAD:'CA',JPY:'JP',CNY:'CN',AUD:'AU',EUR:'EU',NZD:'NZ',CHF:'CH'}
+const CAL_CUR_MAP = {USD:'US',GBP:'GB',CAD:'CA',JPY:'JP',CNY:'CN',AUD:'AU',EUR:'DE',NZD:'NZ',CHF:'CH'}
 function filterCal(cur, btn){
   document.querySelectorAll('.cal-tab').forEach(b=>b.classList.remove('on'))
-  btn.classList.add('on')
-  const events = window._calAllEvents || []
-  const code = CAL_CUR_MAP[cur] || cur
-  const filtered = cur==='ALL' ? events : events.filter(e=>e.currency===code||e.currency===cur)
-  const empty = '<div style="font-family:DM Mono,monospace;font-size:10px;color:rgba(212,168,67,0.3);padding:8px 0">No '+cur+' events in next 48h</div>'
+  if(btn) btn.classList.add('on')
+  const all = window._calAllEvents || []
   const fc = document.getElementById('featureCal')
-  if(fc) fc.innerHTML = filtered.length ? filtered.map(makeCalCard).join('') : empty
+  if(!fc) return
+  if(cur === 'ALL'){ fc.innerHTML = all.length ? all.map(makeCalCard).join('') : '<div style="font-family:DM Mono,monospace;font-size:10px;color:rgba(212,168,67,0.3);padding:8px 0">No events</div>'; return }
+  const code = CAL_CUR_MAP[cur] || cur
+  // Normalize both sides — Finnhub uses country codes, normalize to uppercase for comparison
+  const filtered = all.filter(e => {
+    const c = (e.currency||'').toUpperCase().trim()
+    return c === code.toUpperCase() || c === cur.toUpperCase()
+  })
+  fc.innerHTML = filtered.length
+    ? filtered.map(makeCalCard).join('')
+    : '<div style="font-family:DM Mono,monospace;font-size:10px;color:rgba(212,168,67,0.3);padding:8px 0">No '+cur+' events in next 48h</div>'
 }
 
 async function tradeAnalysis(pair,dir,entry,sl,tp,rr,btn){
-  const body = btn.nextElementSibling
+  const body = btn.parentElement.nextElementSibling
+  if(!body) return
   if(body.style.display !== 'none'){ body.style.display='none'; btn.textContent='⚡ Analysis'; return }
   btn.textContent='Loading...'
   body.style.display='block'
