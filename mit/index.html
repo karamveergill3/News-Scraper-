@@ -634,10 +634,21 @@ function connectPriceFeed(){
           if(priceStripBuilt){
             flashTile(pair, tick.p, prev)
           } else {
-            // Build the strip on first real data
             renderPriceStrip()
             priceStripBuilt = true
           }
+          // Update open trade NOW + P&L on every tick — same speed as ticker
+          openTrades.forEach(t => {
+            if(t.pair !== pair) return
+            const nowEl = document.getElementById('otc-now-' + t.id)
+            if(nowEl) nowEl.textContent = fmtP(pair, tick.p)
+            const pnlEl = document.getElementById('otc-pnl-' + t.id)
+            if(pnlEl){
+              const pnlRaw = t.dir==='long' ? tick.p-t.entry : t.entry-tick.p
+              pnlEl.textContent = (pnlRaw>=0?'+':'-')+'$'+Math.abs(pnlRaw).toFixed(2)
+              pnlEl.className = 'otc-pnl '+(pnlRaw>=0?'pos':'neg')
+            }
+          })
         })
         // Refresh trade panel current prices live
         if(window._lastSetups && window._lastScanTime){
