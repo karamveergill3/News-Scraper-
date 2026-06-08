@@ -727,7 +727,7 @@ async function fetchForexRates(){
 
 async function fetchBTCPrice(){
   try{
-    const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd')
+    const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd&cachebust='+Date.now(), {mode:'cors'})
     const d = await res.json()
     const price = d?.bitcoin?.usd
     if(price > 0){
@@ -899,11 +899,11 @@ async function autoScan(){
   await runScan()
   btn.disabled=false;btn.innerHTML='⚡ Scan Now'
 }
-setInterval(autoScan,TWO_HOURS)
-setTimeout(()=>{
-  apiKey=localStorage.getItem('mit_api_key')||''
-  if(apiKey) autoScan()
-},8000)
+  setInterval(autoScan,TWO_HOURS)
+  setTimeout(()=>{
+    apiKey=localStorage.getItem('mit_api_key')||''
+    if(apiKey) autoScan()
+  },8000)
   }catch(e){console.error(e);window.location.replace('/login.html')}
 }
 
@@ -1059,7 +1059,7 @@ function setFilter(f,el){
 function updateCountdown(){
   const times=['07:00','15:00','23:00'],now=new Date(),nowM=now.getHours()*60+now.getMinutes()
   let next=times.find(t=>{const[h,m]=t.split(':').map(Number);return h*60+m>nowM})||times[0]
-  document.getElementById('tickerNextTime').textContent=next
+  const tnt=document.getElementById('tickerNextTime'); if(tnt) tnt.textContent=next
   document.querySelectorAll('.ticker-next2').forEach(el=>el.textContent=next)
 }
 
@@ -1861,10 +1861,14 @@ let activeTab = 'ideas'
 
 function switchTab(tab){
   activeTab = tab
-  document.getElementById('openTradeList').style.display = tab==='open'?'block':'none'
-  document.getElementById('historyList').style.display = tab==='history'?'block':'none'
-  document.getElementById('tab-open').className = 'tp-tab'+(tab==='open'?' on':'')
-  document.getElementById('tab-history').className = 'tp-tab'+(tab==='history'?' on':'')
+  const ol=document.getElementById('openTradeList')
+  const hl=document.getElementById('historyList')
+  const to=document.getElementById('tab-open')
+  const th=document.getElementById('tab-history')
+  if(ol) ol.style.display=tab==='open'?'block':'none'
+  if(hl) hl.style.display=tab==='history'?'block':'none'
+  if(to) to.className='tp-tab'+(tab==='open'?' on':'')
+  if(th) th.className='tp-tab'+(tab==='history'?' on':'')
   if(tab==='open') renderOpenTrades()
   if(tab==='history') renderHistory()
 }
@@ -1997,8 +2001,12 @@ return false
     const el = document.getElementById('tab-open')
     if(el) el.textContent = cnt ? 'Open Trades ('+cnt+')' : 'Open Trades'
     if(activeTab === 'open') renderOpenTrades()
-    function renderHistory(){
+  }
+}
+
+function renderHistory(){
   const list = document.getElementById('historyList')
+  if(!list) return
   if(!tradeHistory.length){
     list.innerHTML='<div class="trade-empty"><span class="trade-empty-icon">📋</span>No closed trades yet</div>'
     return
@@ -2044,8 +2052,6 @@ return false
     <div style="text-align:center;margin-top:8px">
       <button onclick="tradeHistory=[];localStorage.removeItem('kjc_trade_history');renderHistory()" style="font-family:'DM Mono',monospace;font-size:9px;color:rgba(255,255,255,0.2);background:transparent;border:1px solid rgba(255,255,255,0.06);padding:5px 14px;border-radius:6px;cursor:pointer;letter-spacing:0.06em;text-transform:uppercase">Clear History</button>
     </div>`
-}
-  }
 }
 
 async function openTradeAnalysis(pair,dir,entry,sl,tp,rr,bodyId,btn){
