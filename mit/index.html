@@ -622,7 +622,7 @@ function connectPriceFeed(){
     setTimeout(fetchWeeklyChanges, 3000)
     // Poll REST every 15s so prices never go stale if WS is quiet
     clearInterval(window._pricePoller)
-    window._pricePoller = setInterval(fetchInitialPrices, 1000)
+    window._pricePoller = setInterval(fetchInitialPrices, 5000)
   }
 
   priceWs.onmessage = (msg) => {
@@ -690,39 +690,51 @@ function renderPriceStrip(){
 }
 
 async function fetchInitialPrices(){
-  if(!fhKey) return
+  await Promise.allSettled([fetchForexRates(), fetchBTCPrice()])
+  updatePriceStrip()
+}
+
+async function fetchForexRates(){
+  // exchangerate-api.com — free, no key, CORS OK, includes XAU/XAG
   try{
-    // Single bulk call — forex/rates works on free tier, quote doesn't for OANDA symbols
-    const res = await fetch('https://finnhub.io/api/v1/forex/rates?base=USD&token=' + fhKey)
+    const res = await fetch('https://api.exchangerate-api.com/v4/latest/USD')
     const data = await res.json()
-    const q = data.quote
-    if(!q || !Object.keys(q).length) return
+    const r = data.rates
+    if(!r) return
     const set = (pair, price) => {
-      if(price == null || !isFinite(price) || price <= 0) return
+      if(!price || !isFinite(price) || price <= 0 || price > 1e8) return
       const prev = livePrices[pair]?.price || price
       livePrices[pair] = { price, prev, ts: Date.now() }
     }
-    // USD quote: how many units of currency per 1 USD
-    const r = (code) => parseFloat(q[code]) || 0
-    set('EUR/USD', r('EUR') > 0 ? 1/r('EUR') : 0)
-    set('GBP/USD', r('GBP') > 0 ? 1/r('GBP') : 0)
-    set('USD/JPY', r('JPY'))
-    set('USD/CHF', r('CHF'))
-    set('AUD/USD', r('AUD') > 0 ? 1/r('AUD') : 0)
-    set('USD/CAD', r('CAD'))
-    set('NZD/USD', r('NZD') > 0 ? 1/r('NZD') : 0)
-    if(r('EUR') > 0 && r('GBP') > 0) set('EUR/GBP', r('GBP')/r('EUR'))
-    if(r('GBP') > 0 && r('JPY') > 0) set('GBP/JPY', r('JPY')/r('GBP'))
-    if(r('XAU') > 0) set('XAU/USD', 1/r('XAU'))
-    if(r('XAG') > 0) set('XAG/USD', 1/r('XAG'))
-    // BTC + fallback gold via Binance/alternate
-    fetch('https://finnhub.io/api/v1/quote?symbol=BINANCE:BTCUSDT&token=' + fhKey)
-      .then(r=>r.json()).then(d=>{ if(d.c>0) set('BTC/USD', d.c) }).catch(()=>{})
-    fetch('https://finnhub.io/api/v1/quote?symbol=OANDA:XAU_USD&token=' + fhKey)
-      .then(r=>r.json()).then(d=>{ if(d.c>0) set('XAU/USD', d.c) }).catch(()=>{})
-  }catch(e){ return }
-  // Persist prices so next page load is instant with no dashes
+    if(r.EUR) set('EUR/USD', 1/r.EUR)
+    if(r.GBP) set('GBP/USD', 1/r.GBP)
+    if(r.JPY) set('USD/JPY', r.JPY)
+    if(r.CHF) set('USD/CHF', r.CHF)
+    if(r.AUD) set('AUD/USD', 1/r.AUD)
+    if(r.CAD) set('USD/CAD', r.CAD)
+    if(r.NZD) set('NZD/USD', 1/r.NZD)
+    if(r.EUR && r.GBP) set('EUR/GBP', r.GBP/r.EUR)
+    if(r.GBP && r.JPY) set('GBP/JPY', r.JPY/r.GBP)
+    if(r.XAU) set('XAU/USD', 1/r.XAU)  // exchangerate includes gold
+    if(r.XAG) set('XAG/USD', 1/r.XAG)
+  }catch(e){}
+}
+
+async function fetchBTCPrice(){
+  try{
+    const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd')
+    const d = await res.json()
+    const price = d?.bitcoin?.usd
+    if(price > 0){
+      const prev = livePrices['BTC/USD']?.price || price
+      livePrices['BTC/USD'] = { price, prev, ts: Date.now() }
+    }
+  }catch(e){}
+}
+
+function updatePriceStrip(){
   try{ localStorage.setItem('kjc_last_prices', JSON.stringify(livePrices)) }catch(e){}
+  checkOpenTradeExits()
   if(!priceStripBuilt){
     renderPriceStrip()
     priceStripBuilt = true
@@ -735,6 +747,7 @@ async function fetchInitialPrices(){
     })
   }
 }
+
 
 async function fetchWeeklyChanges(){
   if(!fhKey) return
@@ -1832,7 +1845,8 @@ function renderOpenTrades(){
       </div>
       <div style="display:flex;gap:5px;padding-top:7px;border-top:1px solid rgba(255,255,255,0.04)">
         <button class="nc-btn" style="flex:1;justify-content:center" onclick="tradeAnalysis('${t.pair}','${t.dir}','${t.entry}','${t.sl}','${t.tp}','${t.rr}',this)">⚡ Analysis</button>
-        <button class="nc-btn" style="color:var(--red);border-color:rgba(240,68,68,0.2)" onclick="closeOpenTrade('${t.id}')">✕ Close</button>
+        <button class="nc-btn" style="color:var(--red);border-color:rgba(240,68,68,0.2)" onclick="closeOpenTrade('${t.id}')">✕</button>
+
       </div>
       <div class="trade-analysis-body" style="display:none"></div>
       <div style="font-family:'DM Mono',monospace;font-size:9px;color:rgba(212,168,67,0.3);margin-top:6px">Opened ${t.openedAt}</div>
@@ -1848,6 +1862,31 @@ if(openTrades.length) document.addEventListener('DOMContentLoaded',()=>{
   const el = document.getElementById('tab-open')
   if(el) el.textContent = 'Open Trades ('+openTrades.length+')'
 })
+
+function {
+  if(!openTrades.length) return
+  let changed = false
+  openTrades = openTrades.filter(t => {
+    const cp = getCurrentPrice(t.pair)
+    if(!cp) return true  // keep — no price yet
+    const isLong = t.dir === 'long'
+    const hitTP = isLong ? cp >= t.tp : cp <= t.tp
+    const hitSL = isLong ? cp <= t.sl : cp >= t.sl
+    if(hitTP || hitSL){
+      changed = true
+      showToast((hitTP ? '✅ TP Hit — ' : '🛑 SL Hit — ') + t.pair + ' ' + t.dir + ' closed at ' + fmtP(t.pair, cp))
+      return false  // remove trade
+    }
+    return true  // keep
+  })
+  if(changed){
+    localStorage.setItem('kjc_open_trades', JSON.stringify(openTrades))
+    const cnt = openTrades.length
+    const el = document.getElementById('tab-open')
+    if(el) el.textContent = cnt ? 'Open Trades ('+cnt+')' : 'Open Trades'
+    if(activeTab === 'open') renderOpenTrades()
+  }
+}
 
 async function doSignOut(){await sb.auth.signOut();window.location.replace('/login.html')}
 
