@@ -474,7 +474,7 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;fo
     <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border);background:rgba(212,168,67,0.03)">
       <div style="display:flex;align-items:center;gap:10px">
         <span style="font-size:16px">📅</span>
-        <span style="font-family:'Playfair Display',serif;font-size:15px;font-weight:700;color:var(--white)">Forex Factory</span>
+        <span style="font-family:'DM Mono',monospace;font-size:12px;font-weight:500;letter-spacing:0.12em;text-transform:uppercase;color:var(--white)">Forex Factory</span>
         <span style="font-family:'DM Mono',monospace;font-size:9px;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;color:var(--red);padding:3px 9px;background:rgba(240,68,68,0.1);border:1px solid rgba(240,68,68,0.2);border-radius:4px">Red Events</span>
       </div>
       <div style="display:flex;align-items:center;gap:8px">
@@ -816,7 +816,7 @@ async function init(){
     apiKey=localStorage.getItem('mit_api_key')||''
     showApp()
     initPriceFeed()  // ← start live price feed
-    setTimeout(initCalendar, 3000)  // ← FF calendar, delayed so API key loads first
+    setTimeout(initCalendar, 1000)  // ← FF calendar
     updateCountdown()
     setInterval(updateCountdown,30000)
     await loadLatest()
@@ -1573,6 +1573,7 @@ function renderTrades(setups,scanTime){
 const CAL_CACHE_KEY = 'ff_cal_cache'
 const CAL_TTL = 12 * 60 * 60 * 1000  // 12 hours in ms
 let calOpen = false
+let calFetching = false
 
 function toggleCalendar(){
   calOpen = !calOpen
@@ -1583,10 +1584,20 @@ function toggleCalendar(){
     btn.style.background = 'var(--gold-d)'
     btn.style.borderColor = 'var(--border2)'
     document.getElementById('calDate').textContent = new Date().toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'})
-    // Render cached data immediately if available
     const cached = getCalCache()
-    if(cached) renderCalendar(cached)
-    else fetchCalendar()
+    if(cached){
+      // Instant render from cache
+      renderCalendar(cached)
+    } else if(calFetching){
+      // Already fetching in background — show live status
+      document.getElementById('calBody').innerHTML =
+        '<div style="display:flex;align-items:center;gap:12px;padding:28px 18px;font-family:DM Mono,monospace;font-size:11px;color:rgba(212,168,67,0.45)">' +
+        '<div style="width:14px;height:14px;border:2px solid rgba(212,168,67,0.15);border-top-color:var(--gold);border-radius:50%;animation:spin 0.7s linear infinite;flex-shrink:0"></div>' +
+        'Fetching from Forex Factory...</div>'
+    } else {
+      // Nothing cached and nothing in flight — fetch now
+      fetchCalendar()
+    }
   } else {
     panel.style.display = 'none'
     btn.style.background = ''
@@ -1617,7 +1628,8 @@ function initCalendar(){
 }
 
 async function fetchCalendar(){
-  if(!apiKey) return  // silently skip if no key yet
+  if(!apiKey || calFetching) return  // skip if no key or already running
+  calFetching = true
   const now = new Date()
   const dateStr = now.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'})
   try{
@@ -1638,8 +1650,14 @@ async function fetchCalendar(){
     const result = JSON.parse(raw.slice(s,e+1))
     const events = result.events||[]
     setCalCache(events)
+    calFetching = false
     if(calOpen) renderCalendar(events)
-  }catch(err){ console.warn('Calendar fetch failed:', err.message) }
+  }catch(err){
+    calFetching = false
+    console.warn('Calendar fetch failed:', err.message)
+    if(calOpen) document.getElementById('calBody').innerHTML =
+      '<div style="padding:20px 18px;font-family:DM Mono,monospace;font-size:11px;color:var(--red)">Failed to load — will retry next cycle.</div>'
+  }
 }
 
 const CUR_COLORS = {USD:'#4488f0',EUR:'#f0a832',GBP:'#22c77a',JPY:'#f04444',CHF:'#a066f0',AUD:'#f06432',CAD:'#f0c050',NZD:'#4af0c0',CNY:'#f04444',GBP:'#22c77a'}
