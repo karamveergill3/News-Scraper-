@@ -406,7 +406,7 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;fo
       <span class="feature-kicker-time" id="featureTime"></span>
     </div>
     <div class="feature-card">
-      <div class="feature-inner" style="grid-template-columns:1fr">
+      <div class="feature-inner">
         <div class="feature-main">
           <div class="feature-impact" id="featureImpact">● HIGH IMPACT</div>
           <div class="feature-headline" id="featureHeadline"></div>
@@ -415,6 +415,16 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;fo
           <div class="feature-btns" style="margin-top:16px;display:flex;gap:6px">
             <button class="feat-btn" id="featReadBtn" onclick="readFeature()">▶ Read</button>
             <button class="feat-btn" onclick="deepDive('__feature__')">Deep Dive →</button>
+          </div>
+        </div>
+        <!-- ── Forex Factory Calendar Column ── -->
+        <div style="padding:24px 24px;border-left:1px solid var(--border);display:flex;flex-direction:column;gap:0;overflow:hidden">
+          <div style="margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border)">
+            <div style="font-family:'Cormorant Garamond',serif;font-size:17px;font-weight:600;letter-spacing:0.04em;color:var(--white);margin-bottom:3px">Forex Factory</div>
+            <div style="font-family:'DM Mono',monospace;font-size:8px;font-weight:600;letter-spacing:0.22em;text-transform:uppercase;color:var(--red)">Economic Calendar · High Impact</div>
+          </div>
+          <div id="featureCal" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px">
+            <div style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(212,168,67,0.3);padding:8px 0">Loading events...</div>
           </div>
         </div>
         
@@ -849,6 +859,7 @@ function renderAll(){
   const sorted=[...allEvents].sort((a,b)=>order(a)-order(b))
   featureEvent=sorted[0]
   renderFeature(featureEvent)
+  const _calEvts = getCalCache(); if(_calEvts && _calEvts.length){ const _fc=document.getElementById('featureCal'); if(_fc) renderCalendar(_calEvts) }
   const rest=activeFilter==='all'?sorted.slice(1):allEvents.filter(e=>activeFilter==='urgent'?(e.urgent||e.impact==='HIGH'):e.type===activeFilter)
   renderMasonry(rest)
 }
@@ -1660,27 +1671,35 @@ function renderCalendar(events){
     body.innerHTML='<div style="padding:24px 6px;font-family:DM Mono,monospace;font-size:11px;color:rgba(212,168,67,0.35);text-align:center">No high impact events in next 48h</div>'
     return
   }
-  const makeCards = (small) => events.map(ev => {
+  const makeCard = ev => {
     const hasActual = ev.actual && ev.actual !== '—'
-    const p = small ? '9px 11px' : '12px 14px'
-    const fs = small ? '12px' : '13px'
-    return `<div style="display:flex;align-items:stretch;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-left:3px solid var(--red);border-radius:8px;margin-bottom:7px;overflow:hidden">
-      <div style="padding:${p};flex:1;min-width:0">
-        <div style="font-family:'DM Sans',sans-serif;font-size:${fs};font-weight:600;color:var(--white);margin-bottom:3px">${ev.event}</div>
-        <div style="font-family:'DM Mono',monospace;font-size:9px;color:rgba(255,255,255,0.28)">${ev.currency} · ${ev.date||''} ${ev.time} ET</div>
+    const actColor = hasActual ? (parseFloat(ev.actual) >= parseFloat(ev.forecast) ? 'var(--green)' : 'var(--red)') : 'var(--w3)'
+    return `<div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-left:3px solid var(--red);border-radius:8px;overflow:hidden">
+      <div style="padding:10px 12px 8px">
+        <div style="font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;color:var(--white);margin-bottom:4px;line-height:1.3">${ev.event}</div>
+        <div style="font-family:'DM Mono',monospace;font-size:9px;color:rgba(255,255,255,0.28);letter-spacing:0.04em">${ev.currency} · ${ev.date||''} · ${ev.time} ET</div>
       </div>
-      <div style="padding:${p};text-align:right;flex-shrink:0;border-left:1px solid rgba(255,255,255,0.04)">
-        <div style="font-family:'DM Mono',monospace;font-size:10px;color:${hasActual?'var(--green)':'var(--red)'};font-weight:700">F: ${ev.forecast}</div>
-        <div style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,0.3);margin-top:2px">P: ${ev.previous}</div>
-        ${hasActual?`<div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--green);font-weight:700;margin-top:2px">A: ${ev.actual}</div>`:''}
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;border-top:1px solid rgba(255,255,255,0.05)">
+        <div style="padding:7px 10px;border-right:1px solid rgba(255,255,255,0.05)">
+          <div style="font-family:'DM Mono',monospace;font-size:8px;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.2);margin-bottom:3px">Forecast</div>
+          <div style="font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:var(--amber)">${ev.forecast}</div>
+        </div>
+        <div style="padding:7px 10px;border-right:1px solid rgba(255,255,255,0.05)">
+          <div style="font-family:'DM Mono',monospace;font-size:8px;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.2);margin-bottom:3px">Previous</div>
+          <div style="font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:var(--w3)">${ev.previous}</div>
+        </div>
+        <div style="padding:7px 10px">
+          <div style="font-family:'DM Mono',monospace;font-size:8px;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.2);margin-bottom:3px">Actual</div>
+          <div style="font-family:'DM Mono',monospace;font-size:11px;font-weight:700;color:${actColor}">${hasActual ? ev.actual : '—'}</div>
+        </div>
       </div>
     </div>`
-  }).join('')
+  }
 
-  if(body) body.innerHTML = makeCards(false)
-  // Also populate the inline feature card calendar
+  const empty = '<div style="font-family:DM Mono,monospace;font-size:10px;color:rgba(212,168,67,0.3);padding:8px 0">No high impact events in next 48h</div>'
+  if(body) body.innerHTML = events.length ? events.map(makeCard).join('') : empty
   const fc = document.getElementById('featureCal')
-  if(fc) fc.innerHTML = events.length ? makeCards(true) : '<div style="font-family:DM Mono,monospace;font-size:10px;color:rgba(212,168,67,0.3)">No high impact events</div>'
+  if(fc) fc.innerHTML = events.length ? events.map(makeCard).join('') : empty
 }
 
 async function tradeAnalysis(pair,dir,entry,sl,tp,rr,btn){
