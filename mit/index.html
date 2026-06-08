@@ -482,11 +482,12 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;fo
 <div class="trade-panel" id="tradePanel">
   <div class="trade-panel-head">
     <div style="display:flex;gap:0;margin-bottom:8px;background:rgba(255,255,255,0.03);border-radius:8px;padding:3px">
-      <button class="tp-tab on" id="tab-open">Open Trades</button>
+      <button class="tp-tab on" id="tab-open" onclick="switchTab('open')">Open Trades</button>
+      <button class="tp-tab" id="tab-history" onclick="switchTab('history')">History</button>
     </div>
     <div class="tp-scan-time" id="tpScanTime"></div>
   </div>
-  <div class="trade-list" id="openTradeList">
+  <div class="trade-list" id="openTradeList"><div class="trade-list" id="historyList" style="display:none"></div>
     <div class="trade-empty"><span class="trade-empty-icon">📊</span>No open trades yet<br><span style="font-size:10px;opacity:0.6">Click Open on any trade idea</span></div>
   </div>
 </div>
@@ -899,7 +900,10 @@ async function autoScan(){
   btn.disabled=false;btn.innerHTML='⚡ Scan Now'
 }
 setInterval(autoScan,TWO_HOURS)
-setTimeout(()=>{if(localStorage.getItem('mit_api_key'))autoScan()},5000)
+setTimeout(()=>{
+  apiKey=localStorage.getItem('mit_api_key')||''
+  if(apiKey) autoScan()
+},8000)
   }catch(e){console.error(e);window.location.replace('/login.html')}
 }
 
@@ -1852,13 +1856,17 @@ async function tradeAnalysis(pair,dir,entry,sl,tp,rr,btn){
 
 // ── Open Trades ───────────────────────────────────────────────────────────
 let openTrades = JSON.parse(localStorage.getItem('kjc_open_trades')||'[]')
+let tradeHistory = JSON.parse(localStorage.getItem('kjc_trade_history')||'[]')
 let activeTab = 'ideas'
 
 function switchTab(tab){
-  activeTab = 'open'
-  document.getElementById('openTradeList').style.display = 'block'
-  document.getElementById('tab-open').className = 'tp-tab on'
-  renderOpenTrades()
+  activeTab = tab
+  document.getElementById('openTradeList').style.display = tab==='open'?'block':'none'
+  document.getElementById('historyList').style.display = tab==='history'?'block':'none'
+  document.getElementById('tab-open').className = 'tp-tab'+(tab==='open'?' on':'')
+  document.getElementById('tab-history').className = 'tp-tab'+(tab==='history'?' on':'')
+  if(tab==='open') renderOpenTrades()
+  if(tab==='history') renderHistory()
 }
 
 function openTrade(pair,dir,entry,sl,tp,rr){
@@ -1871,7 +1879,22 @@ function openTrade(pair,dir,entry,sl,tp,rr){
   switchTab('open')
 }
 
-function closeOpenTrade(id){
+function closeOpenTrade(id, outcome){
+  const t = openTrades.find(t=>t.id===id)
+  if(t){
+    const cp = getCurrentPrice(t.pair)
+    const pnlRaw = cp ? (t.dir==='long' ? cp-t.entry : t.entry-cp) : 0
+    tradeHistory.unshift({
+      id, pair:t.pair, dir:t.dir, entry:t.entry, sl:t.sl, tp:t.tp,
+      closePrice: cp || t.entry,
+      pnl: pnlRaw,
+      outcome: outcome || (pnlRaw>=0?'win':'loss'),
+      openedAt:t.openedAt,
+      closedAt:new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}),
+      date: new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short'})
+    })
+    localStorage.setItem('kjc_trade_history', JSON.stringify(tradeHistory))
+  }
   openTrades = openTrades.filter(t=>t.id!==id)
   localStorage.setItem('kjc_open_trades', JSON.stringify(openTrades))
   const cnt = openTrades.length
@@ -1953,8 +1976,18 @@ function checkOpenTradeExits(){
     const hitSL = isLong ? cp <= t.sl : cp >= t.sl
     if(hitTP || hitSL){
       changed = true
-      showToast((hitTP ? '✅ TP Hit — ' : '🛑 SL Hit — ') + t.pair + ' ' + t.dir + ' closed at ' + fmtP(t.pair, cp))
-      return false  // remove trade
+      const pnlRaw = t.dir==='long' ? cp-t.entry : t.entry-cp
+tradeHistory.unshift({
+  id:t.id, pair:t.pair, dir:t.dir, entry:t.entry, sl:t.sl, tp:t.tp,
+  closePrice:cp, pnl:pnlRaw,
+  outcome: hitTP?'win':'loss',
+  openedAt:t.openedAt,
+  closedAt:new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}),
+  date:new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short'})
+})
+localStorage.setItem('kjc_trade_history', JSON.stringify(tradeHistory))
+showToast((hitTP ? '✅ TP Hit — ' : '🛑 SL Hit — ') + t.pair + ' ' + t.dir + ' closed at ' + fmtP(t.pair, cp))
+return false
     }
     return true  // keep
   })
@@ -1964,6 +1997,54 @@ function checkOpenTradeExits(){
     const el = document.getElementById('tab-open')
     if(el) el.textContent = cnt ? 'Open Trades ('+cnt+')' : 'Open Trades'
     if(activeTab === 'open') renderOpenTrades()
+    function renderHistory(){
+  const list = document.getElementById('historyList')
+  if(!tradeHistory.length){
+    list.innerHTML='<div class="trade-empty"><span class="trade-empty-icon">📋</span>No closed trades yet</div>'
+    return
+  }
+  const todayStr = new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short'})
+  const todayTrades = tradeHistory.filter(t=>t.date===todayStr)
+  const dayPnl = todayTrades.reduce((sum,t)=>sum+(t.pnl||0),0)
+  const wins = todayTrades.filter(t=>t.outcome==='win').length
+  const losses = todayTrades.filter(t=>t.outcome==='loss').length
+  const pnlColor = dayPnl>=0?'var(--green)':'var(--red)'
+  list.innerHTML=`
+    <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:12px 14px;margin-bottom:12px">
+      <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:rgba(212,168,67,0.4);margin-bottom:8px">Today · ${todayStr}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
+        <div style="text-align:center">
+          <div style="font-family:'DM Mono',monospace;font-size:8px;color:rgba(255,255,255,0.2);margin-bottom:3px">P&L</div>
+          <div style="font-family:'DM Mono',monospace;font-size:14px;font-weight:700;color:${pnlColor}">${dayPnl>=0?'+':''}$${Math.abs(dayPnl).toFixed(2)}</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-family:'DM Mono',monospace;font-size:8px;color:rgba(255,255,255,0.2);margin-bottom:3px">Wins</div>
+          <div style="font-family:'DM Mono',monospace;font-size:14px;font-weight:700;color:var(--green)">${wins}</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-family:'DM Mono',monospace;font-size:8px;color:rgba(255,255,255,0.2);margin-bottom:3px">Losses</div>
+          <div style="font-family:'DM Mono',monospace;font-size:14px;font-weight:700;color:var(--red)">${losses}</div>
+        </div>
+      </div>
+    </div>
+    ${tradeHistory.map(t=>{
+      const pnlColor=t.pnl>=0?'var(--green)':'var(--red)'
+      const icon=t.outcome==='win'?'✅':'🛑'
+      return`<div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-left:3px solid ${t.pnl>=0?'var(--green)':'var(--red)'};border-radius:8px;padding:10px 12px;margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <span style="font-family:'DM Mono',monospace;font-size:12px;font-weight:600;color:var(--white)">${t.pair}</span>
+          <span style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:${pnlColor}">${t.pnl>=0?'+':''}$${Math.abs(t.pnl).toFixed(2)}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between">
+          <span style="font-family:'DM Mono',monospace;font-size:9px;color:rgba(255,255,255,0.25)">${t.dir.toUpperCase()} · ${t.date} · ${t.closedAt}</span>
+          <span style="font-size:11px">${icon}</span>
+        </div>
+      </div>`
+    }).join('')}
+    <div style="text-align:center;margin-top:8px">
+      <button onclick="tradeHistory=[];localStorage.removeItem('kjc_trade_history');renderHistory()" style="font-family:'DM Mono',monospace;font-size:9px;color:rgba(255,255,255,0.2);background:transparent;border:1px solid rgba(255,255,255,0.06);padding:5px 14px;border-radius:6px;cursor:pointer;letter-spacing:0.06em;text-transform:uppercase">Clear History</button>
+    </div>`
+}
   }
 }
 
