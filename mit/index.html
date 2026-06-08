@@ -220,7 +220,19 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;fo
 .modal-head{display:flex;align-items:center;justify-content:space-between;padding:16px 22px;border-bottom:1px solid var(--border)}
 .modal-title{font-family:'Playfair Display',serif;font-size:17px;font-weight:700;letter-spacing:0.02em;padding-right:16px}
 .modal-body{padding:22px;max-height:72vh;overflow-y:auto}
-.modal-body::-webkit-scrollbar{width:2px}
+.modal-body.cal-row{display:grid;grid-template-columns:52px 46px 1fr 72px 72px;gap:0;border-bottom:1px solid rgba(255,255,255,0.04);transition:background 0.2s}
+.cal-row:last-child{border-bottom:none}
+.cal-row:hover{background:rgba(212,168,67,0.03)}
+.cal-cell{padding:10px 10px;font-family:'DM Mono',monospace;font-size:11px;display:flex;align-items:center}
+.cal-time{color:rgba(212,168,67,0.5);font-size:10px;justify-content:center}
+.cal-cur{font-weight:700;font-size:11px;justify-content:center}
+.cal-event{color:var(--w2);font-family:'DM Sans',sans-serif;font-size:12px;line-height:1.35}
+.cal-val{flex-direction:column;gap:2px;align-items:flex-end}
+.cal-val-label{font-size:8px;letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.2)}
+.cal-val-num{font-size:11px;font-weight:600}
+.cal-header{background:rgba(0,0,0,0.4);border-bottom:1px solid var(--border)}
+.cal-header .cal-cell{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:0.12em;text-transform:uppercase;color:rgba(212,168,67,0.3);padding:7px 10px}
+::-webkit-scrollbar{width:2px}
 .modal-body::-webkit-scrollbar-thumb{background:var(--border2)}
 .modal-text{font-size:13.5px;line-height:1.82;color:var(--w2)}
 .dive-modal{background:linear-gradient(160deg,#0a0a0a 0%,#060606 100%);border:1px solid var(--border2);border-radius:20px;width:100%;max-width:820px;margin:auto;overflow:hidden;animation:fadeUp 0.3s ease;box-shadow:0 40px 100px rgba(0,0,0,0.8),0 0 0 1px rgba(212,168,67,0.06);position:relative}
@@ -342,6 +354,7 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;fo
   <div class="top-right">
     <button class="btn" onclick="openReport()" id="reportBtn" disabled>Report</button>
     <button class="btn" onclick="location.href='/admin.html'" id="adminBtn" style="display:none">Admin</button>
+    <button class="btn" onclick="toggleCalendar()" id="calBtn" title="Forex Factory Calendar">📅</button>
     <button class="btn btn-scan" onclick="triggerScan()" id="scanBtn">⚡ Scan Now</button>
     <button class="btn" onclick="doSignOut()">Sign out</button>
   </div>
@@ -455,6 +468,28 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;fo
   </div>
 </div>
 
+<!-- ── Forex Factory Calendar Panel ── -->
+<div id="calPanel" style="display:none;position:fixed;top:64px;left:50%;transform:translateX(-50%);width:560px;max-width:95vw;z-index:150;animation:fadeUp 0.25s ease">
+  <div style="background:#0a0a0a;border:1px solid var(--border2);border-radius:14px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,0.7)">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border);background:rgba(212,168,67,0.03)">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:16px">📅</span>
+        <span style="font-family:'Playfair Display',serif;font-size:15px;font-weight:700;color:var(--white)">Forex Factory</span>
+        <span style="font-family:'DM Mono',monospace;font-size:9px;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;color:var(--red);padding:3px 9px;background:rgba(240,68,68,0.1);border:1px solid rgba(240,68,68,0.2);border-radius:4px">Red Events</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span id="calDate" style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(212,168,67,0.4)"></span>
+        <button onclick="toggleCalendar()" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:var(--w3);width:28px;height:28px;border-radius:7px;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center">✕</button>
+      </div>
+    </div>
+    <div id="calBody" style="max-height:400px;overflow-y:auto;padding:0">
+      <div style="display:flex;align-items:center;gap:12px;padding:28px 18px;font-family:'DM Mono',monospace;font-size:11px;color:rgba(212,168,67,0.4)">
+        <div style="width:14px;height:14px;border:2px solid rgba(212,168,67,0.15);border-top-color:var(--gold);border-radius:50%;animation:spin 0.7s linear infinite;flex-shrink:0"></div>
+        Fetching today's high impact events...
+      </div>
+    </div>
+  </div>
+</div>
 </div><!-- end #app -->
 
 <!-- Deep Dive Modal -->
@@ -781,6 +816,7 @@ async function init(){
     apiKey=localStorage.getItem('mit_api_key')||''
     showApp()
     initPriceFeed()  // ← start live price feed
+    setTimeout(initCalendar, 3000)  // ← FF calendar, delayed so API key loads first
     updateCountdown()
     setInterval(updateCountdown,30000)
     await loadLatest()
@@ -1531,6 +1567,109 @@ function renderTrades(setups,scanTime){
   }).join('')
   clearInterval(window._tradeTimer)
   window._tradeTimer=setInterval(()=>renderTrades(setups,scanTime),60000)
+}
+
+// ── Forex Factory Calendar ────────────────────────────────────────────────
+const CAL_CACHE_KEY = 'ff_cal_cache'
+const CAL_TTL = 12 * 60 * 60 * 1000  // 12 hours in ms
+let calOpen = false
+
+function toggleCalendar(){
+  calOpen = !calOpen
+  const panel = document.getElementById('calPanel')
+  const btn = document.getElementById('calBtn')
+  if(calOpen){
+    panel.style.display = 'block'
+    btn.style.background = 'var(--gold-d)'
+    btn.style.borderColor = 'var(--border2)'
+    document.getElementById('calDate').textContent = new Date().toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'})
+    // Render cached data immediately if available
+    const cached = getCalCache()
+    if(cached) renderCalendar(cached)
+    else fetchCalendar()
+  } else {
+    panel.style.display = 'none'
+    btn.style.background = ''
+    btn.style.borderColor = ''
+  }
+}
+
+function getCalCache(){
+  try{
+    const raw = localStorage.getItem(CAL_CACHE_KEY)
+    if(!raw) return null
+    const {events, ts} = JSON.parse(raw)
+    if(Date.now() - ts > CAL_TTL) return null  // expired
+    return events
+  }catch(e){ return null }
+}
+
+function setCalCache(events){
+  try{ localStorage.setItem(CAL_CACHE_KEY, JSON.stringify({events, ts: Date.now()})) }catch(e){}
+}
+
+function initCalendar(){
+  // On load — fetch if cache is missing or stale
+  const cached = getCalCache()
+  if(!cached) fetchCalendar()
+  // Auto-refresh every 12 hours silently in background
+  setInterval(fetchCalendar, CAL_TTL)
+}
+
+async function fetchCalendar(){
+  if(!apiKey) return  // silently skip if no key yet
+  const now = new Date()
+  const dateStr = now.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'})
+  try{
+    const res = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({
+        model:'claude-haiku-4-5-20251001',
+        max_tokens:600,
+        tools:[{type:'web_search_20250305',name:'web_search',max_uses:1}],
+        messages:[{role:'user',content:`Today is ${dateStr}. Search Forex Factory calendar. Return ONLY high impact red events as JSON, no markdown: {"events":[{"time":"HH:MM","currency":"USD","event":"Name","forecast":"0.3%","previous":"0.2%","actual":"—"}]}. High impact red only. JSON only.`}]
+      })
+    })
+    const data = await res.json()
+    const raw = data.content.filter(b=>b.type==='text').map(b=>b.text).join('').trim().replace(/```json|```/g,'').trim()
+    const s = raw.indexOf('{'), e = raw.lastIndexOf('}')
+    if(s===-1) return
+    const result = JSON.parse(raw.slice(s,e+1))
+    const events = result.events||[]
+    setCalCache(events)
+    if(calOpen) renderCalendar(events)
+  }catch(err){ console.warn('Calendar fetch failed:', err.message) }
+}
+
+const CUR_COLORS = {USD:'#4488f0',EUR:'#f0a832',GBP:'#22c77a',JPY:'#f04444',CHF:'#a066f0',AUD:'#f06432',CAD:'#f0c050',NZD:'#4af0c0',CNY:'#f04444',GBP:'#22c77a'}
+
+function renderCalendar(events){
+  const body = document.getElementById('calBody')
+  if(!events.length){
+    body.innerHTML = '<div style="padding:24px 18px;font-family:DM Mono,monospace;font-size:11px;color:rgba(212,168,67,0.4);text-align:center">No high impact events today 📅</div>'
+    return
+  }
+  const header = `<div class="cal-row cal-header">
+    <div class="cal-cell cal-time">Time</div>
+    <div class="cal-cell cal-cur">Cur</div>
+    <div class="cal-cell">Event</div>
+    <div class="cal-cell cal-val" style="justify-content:flex-end">Forecast</div>
+    <div class="cal-cell cal-val" style="justify-content:flex-end">Previous</div>
+  </div>`
+  const rows = events.map(ev => {
+    const col = CUR_COLORS[ev.currency] || 'var(--w3)'
+    const actual = ev.actual && ev.actual !== '—' && ev.actual !== '-'
+    const actStyle = actual ? `color:var(--green);font-weight:700` : `color:var(--w3)`
+    return `<div class="cal-row">
+      <div class="cal-cell cal-time">${ev.time||'—'}</div>
+      <div class="cal-cell cal-cur" style="color:${col}">${ev.currency||'—'}</div>
+      <div class="cal-cell cal-event">${ev.event||'—'}</div>
+      <div class="cal-cell cal-val"><span class="cal-val-num" style="color:var(--amber)">${ev.forecast||'—'}</span></div>
+      <div class="cal-cell cal-val"><span class="cal-val-num" style="color:var(--w3)">${ev.previous||'—'}</span></div>
+    </div>`
+  }).join('')
+  body.innerHTML = header + rows
 }
 
 async function doSignOut(){await sb.auth.signOut();window.location.replace('/login.html')}
