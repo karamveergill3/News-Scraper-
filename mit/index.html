@@ -643,8 +643,6 @@ function connectPriceFeed(){
               const pnlRaw = t.dir==='long' ? tick.p-t.entry : t.entry-tick.p
               pnlEl.textContent = (pnlRaw>=0?'+':'-')+'$'+Math.abs(pnlRaw).toFixed(2)
               pnlEl.className = 'otc-pnl '+(pnlRaw>=0?'pos':'neg')
-              const lotEl = document.getElementById('otc-lot-'+t.id)
-              if(lotEl){const l=calcLotPnl(t.pair,pnlRaw,tick.p);if(l!==null)lotEl.textContent=(l>=0?'+':'-')+'$'+Math.abs(l).toFixed(2)+' (0.5L)'}
             }
           })
         })
@@ -890,18 +888,18 @@ async function init(){
     setInterval(updateCountdown,30000)
     await loadLatest()
     setInterval(async()=>await loadLatest(),60000)
-
-// Auto-scan every 2 hours
-const TWO_HOURS = 2 * 60 * 60 * 1000
+const TWO_HOURS=2*60*60*1000
 async function autoScan(){
-  if(!apiKey){ apiKey=localStorage.getItem('mit_api_key')||''; }
-  if(!apiKey) return  // skip if no key yet — user hasn't scanned manually once
-  console.log('[AutoScan] Triggering scheduled scan at', new Date().toLocaleTimeString())
+  apiKey=apiKey||localStorage.getItem('mit_api_key')||''
+  if(!apiKey)return
   const btn=document.getElementById('scanBtn')
-  btn.disabled=true; btn.textContent='Auto-scanning...'
+  btn.disabled=true;btn.textContent='Auto-scanning...'
   setStatus('scanning','Auto-scanning...')
   await runScan()
-  btn.disabled=false; btn.innerHTML='⚡ Scan Now'
+  btn.disabled=false;btn.innerHTML='⚡ Scan Now'
+}
+setInterval(autoScan,TWO_HOURS)
+setTimeout(()=>{if(localStorage.getItem('mit_api_key'))autoScan()},5000)
 }
 setInterval(autoScan, TWO_HOURS)
 // Also fire one after 5 seconds on load if key already exists (so it's fresh on page open)
@@ -1602,7 +1600,21 @@ function getExpiryLabel(scanTime){
 
 function renderTrades(setups,scanTime){
   window._lastSetups=setups
-  window._lastScanTime=scanTime
+window._lastScanTime=scanTime
+if(setups&&setups.length){
+  openTrades=openTrades.filter(o=>{const t=parseSetup(o);return !setups.some(s=>{const n=parseSetup(s);const d=(n.direction||'long').toLowerCase().includes('short')?'short':'long';return n.pair===t.pair&&d===t.dir})})
+  setups.forEach(s=>{
+    const t=parseSetup(s)
+    const dir=(t.direction||'long').toLowerCase().includes('short')?'short':'long'
+    if(t.entry&&t.entry!=='—'){
+      openTrades.push({id:t.pair+'-'+Date.now()+'-'+Math.random().toString(36).slice(2,5),pair:t.pair,dir,entry:parseFloat(t.entry),sl:parseFloat(t.sl),tp:parseFloat(t.tp),rr:t.rr,openedAt:new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})})
+    }
+  })
+  localStorage.setItem('kjc_open_trades',JSON.stringify(openTrades))
+  const el=document.getElementById('tab-open')
+  if(el)el.textContent='Open Trades ('+openTrades.length+')'
+  switchTab('open')
+}
   // Auto-open all new setups
 if(setups && setups.length){
   setups.forEach(s => {
@@ -1847,12 +1859,10 @@ let openTrades = JSON.parse(localStorage.getItem('kjc_open_trades')||'[]')
 let activeTab = 'ideas'
 
 function switchTab(tab){
-  activeTab = tab
-  document.getElementById('tradeList').style.display = tab==='ideas' ? 'block' : 'none'
-  document.getElementById('openTradeList').style.display = tab==='open' ? 'block' : 'none'
-  document.getElementById('tab-ideas').className = 'tp-tab' + (tab==='ideas'?' on':'')
-  document.getElementById('tab-open').className = 'tp-tab' + (tab==='open'?' on':'')
-  if(tab==='open') renderOpenTrades()
+  activeTab = 'open'
+  document.getElementById('openTradeList').style.display = 'block'
+  document.getElementById('tab-open').className = 'tp-tab on'
+  renderOpenTrades()
 }
 
 function openTrade(pair,dir,entry,sl,tp,rr){
@@ -1902,7 +1912,6 @@ function renderOpenTrades(){
         <span style="font-family:'DM Mono',monospace;font-size:9px;color:rgba(255,255,255,0.2);text-transform:uppercase;letter-spacing:0.06em">P&L</span>
         <div style="display:flex;align-items:center;gap:8px">
           <span class="otc-pnl ${pnlClass}" id="otc-pnl-${t.id}">${pnlStr}</span>
-          <span style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,0.3);font-weight:500" id="otc-lot-${t.id}">${(()=>{const l=calcLotPnl(t.pair,pnlRaw,cp);return l!==null?(l>=0?'+':'-')+'$'+Math.abs(l).toFixed(2)+' (0.5L)':''})()} </span>
         </div>
       </div>
       <div style="display:flex;gap:5px;padding-top:7px;border-top:1px solid rgba(255,255,255,0.04)">
