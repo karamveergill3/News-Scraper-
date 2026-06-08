@@ -1870,11 +1870,10 @@ function renderOpenTrades(){
         </div>
       </div>
       <div style="display:flex;gap:5px;padding-top:7px;border-top:1px solid rgba(255,255,255,0.04)">
-        <button class="nc-btn" style="flex:1;justify-content:center" onclick="tradeAnalysis('${t.pair}','${t.dir}','${t.entry}','${t.sl}','${t.tp}','${t.rr}',this)">⚡ Analysis</button>
+        <button class="nc-btn" style="flex:1;justify-content:center" onclick="openTradeAnalysis('${t.pair}','${t.dir}','${t.entry}','${t.sl}','${t.tp}','${t.rr}','otc-body-${t.id}',this)">⚡ Analysis</button>
         <button class="nc-btn" style="color:var(--red);border-color:rgba(240,68,68,0.2)" onclick="closeOpenTrade('${t.id}')">✕</button>
-
       </div>
-      <div class="trade-analysis-body" style="display:none"></div>
+      <div id="otc-body-${t.id}" style="display:none;padding:8px 0 2px;border-top:1px solid rgba(255,255,255,0.05);margin-top:6px;font-size:11px;line-height:1.65;color:var(--w2)"></div>
       <div style="font-family:'DM Mono',monospace;font-size:9px;color:rgba(212,168,67,0.3);margin-top:6px">Opened ${t.openedAt}</div>
     </div>`
   }).join('')
@@ -1925,6 +1924,29 @@ function checkOpenTradeExits(){
     if(el) el.textContent = cnt ? 'Open Trades ('+cnt+')' : 'Open Trades'
     if(activeTab === 'open') renderOpenTrades()
   }
+}
+
+async function openTradeAnalysis(pair,dir,entry,sl,tp,rr,bodyId,btn){
+  const body = document.getElementById(bodyId)
+  if(!body) return
+  if(body.style.display !== 'none'){ body.style.display='none'; btn.textContent='⚡ Analysis'; return }
+  btn.textContent='Loading...'
+  body.style.display='block'
+  body.innerHTML='<div style="color:rgba(212,168,67,0.4);font-family:DM Mono,monospace;font-size:10px">Analysing...</div>'
+  if(!apiKey){ body.innerHTML='<div style="color:var(--red);font-size:10px">Run a scan first to set API key</div>'; btn.textContent='⚡ Analysis'; return }
+  const cp = getCurrentPrice(pair)
+  try{
+    const res = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:300,messages:[{role:'user',content:`3 bullet points: why is this a good scalp trade? Pair: ${pair}, Direction: ${dir}, Entry: ${entry}, SL: ${sl}, TP: ${tp}, RR: ${rr}:1, Live price: ${cp||'unknown'}. Be specific. Trader language only.`}]})
+    })
+    const d = await res.json()
+    const text = d.content.filter(b=>b.type==='text').map(b=>b.text).join('').trim()
+    body.innerHTML = text.replace(/
+/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong style="color:var(--gold)">$1</strong>').replace(/^[-•▸]\s/gm,'<span style="color:var(--gold)">▸</span> ')
+    btn.textContent='⚡ Analysis'
+  }catch(e){ body.innerHTML='<div style="color:var(--red);font-size:10px">'+e.message+'</div>'; btn.textContent='⚡ Analysis' }
 }
 
 async function doSignOut(){await sb.auth.signOut();window.location.replace('/login.html')}
