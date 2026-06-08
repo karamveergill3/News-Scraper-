@@ -1863,7 +1863,7 @@ if(openTrades.length) document.addEventListener('DOMContentLoaded',()=>{
   if(el) el.textContent = 'Open Trades ('+openTrades.length+')'
 })
 
-function {
+function checkOpenTradeExits(){
   if(!openTrades.length) return
   let changed = false
   openTrades = openTrades.filter(t => {
