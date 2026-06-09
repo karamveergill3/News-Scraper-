@@ -912,7 +912,7 @@ async function loadLatest(){
     lastScanDate=data.scan_date||''
     if(data.market_summary){
       lastReport=data.market_summary
-      document.getElementById('reportBtn').disabled=false
+      const rb=document.getElementById('reportBtn'); if(rb) rb.disabled=false
       document.getElementById('reportDate').textContent=(data.scan_date||'')+' · '+(data.scan_time||'')
     }
     renderAll()
