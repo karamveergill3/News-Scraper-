@@ -641,9 +641,9 @@ function connectPriceFeed(){
             if(nowEl) nowEl.textContent = fmtP(pair, tick.p)
             const pnlEl = document.getElementById('otc-pnl-' + t.id)
             if(pnlEl){
-              const pnlRaw = t.dir==='long' ? tick.p-t.entry : t.entry-tick.p
-              pnlEl.textContent = (pnlRaw>=0?'+':'-')+'$'+Math.abs(pnlRaw).toFixed(2)
-              pnlEl.className = 'otc-pnl '+(pnlRaw>=0?'pos':'neg')
+              const pnlUsd = calcRealPnl(pair, t.dir, t.entry, tick.p)
+              pnlEl.textContent = pnlUsd!==null ? (pnlUsd>=0?'+':'-')+'$'+Math.abs(pnlUsd).toFixed(2) : '—'
+              pnlEl.className = 'otc-pnl '+(pnlUsd!==null?(pnlUsd>=0?'pos':'neg'):'')
             }
           })
         })
@@ -759,9 +759,9 @@ function updatePriceStrip(){
     if(nowEl) nowEl.textContent = fmtP(t.pair, cp)
     const pnlEl = document.getElementById('otc-pnl-' + t.id)
     if(pnlEl){
-      const pnlRaw = t.dir==='long' ? cp-t.entry : t.entry-cp
-      pnlEl.textContent = (pnlRaw>=0?'+':'-')+'$'+Math.abs(pnlRaw).toFixed(2)
-      pnlEl.className = 'otc-pnl '+(pnlRaw>=0?'pos':'neg')
+      const pnlUsd = calcRealPnl(t.pair, t.dir, t.entry, cp)
+      pnlEl.textContent = pnlUsd!==null ? (pnlUsd>=0?'+':'-')+'$'+Math.abs(pnlUsd).toFixed(2) : '—'
+      pnlEl.className = 'otc-pnl '+(pnlUsd!==null?(pnlUsd>=0?'pos':'neg'):'')
     }
   })
 }
@@ -1116,7 +1116,7 @@ async function runScan(){
     allEvents=(result.events||[]).map(sanitizeEvent)
     if(result.market_summary){
       lastReport=result.market_summary
-      document.getElementById('reportBtn').disabled=false
+      const rb=document.getElementById('reportBtn'); if(rb) rb.disabled=false
       const rd=document.getElementById('reportDate'); if(rd) rd.textContent=result.scan_date+' · '+result.scan_time
     }
     const urgents=allEvents.filter(e=>e.urgent||e.impact==='HIGH')
@@ -1126,7 +1126,7 @@ async function runScan(){
   }catch(err){
     setStatus('','Scan failed')
     showToast('Scan failed: '+err.message)
-    document.getElementById('masonryGrid').innerHTML='<div class="empty-state"><span class="empty-icon">⚠</span><div class="empty-h">Scan Failed</div><div class="empty-p">'+err.message+'</div></div>'
+    const mg=document.getElementById('masonryGrid'); if(mg) mg.innerHTML='<div class="empty-state"><span class="empty-icon">⚠</span><div class="empty-h">Scan Failed</div><div class="empty-p">'+err.message+'</div></div>'
   }
 }
 
@@ -1637,7 +1637,7 @@ if(setups && setups.length){
   const el = document.getElementById('tab-open')
   if(el) el.textContent = cnt ? 'Open Trades ('+cnt+')' : 'Open Trades'
 }
-  document.getElementById('tpScanTime').textContent=scanTime?'Signal time: '+scanTime:''
+  const tst=document.getElementById('tpScanTime'); if(tst) tst.textContent=scanTime?'Signal time: '+scanTime:''
 if(!setups||!setups.length){renderOpenTrades();return}
 const expiry=getExpiryLabel(scanTime)
 if(expiry.label==='Expired'){renderOpenTrades();return}
@@ -1686,7 +1686,6 @@ list.innerHTML=setups.map((s,i)=>{
   }).join('')
   clearInterval(window._tradeTimer)
   window._tradeTimer=setInterval(()=>renderTrades(setups,scanTime),60000)
-}
 }
 
 // ── Forex Factory Calendar ────────────────────────────────────────────────
@@ -1759,8 +1758,8 @@ async function fetchCalendar(){
     const events = (data.economicCalendar||[])
       .filter(e => e.impact === 'high')
       .map(e => ({
-        time: e.time ? e.time.split(' ')[1].slice(0,5) : '—',
-        date: e.time ? e.time.split(' ')[0] : '—',
+        time: e.time ? (()=>{ const d=new Date(e.time.replace(' ','T')+'Z'); d.setHours(d.getHours()+5); return d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/London'}) })() : '—',
+        date: e.time ? (()=>{ const d=new Date(e.time.replace(' ','T')+'Z'); return d.toLocaleDateString('en-GB',{day:'2-digit',month:'2-digit',year:'numeric',timeZone:'Europe/London'}) })() : '—',
         currency: (e.country||'').toUpperCase(),
         event: e.event||'—',
         forecast: e.estimate != null ? e.estimate + (e.unit||'') : '—',
@@ -1783,7 +1782,7 @@ function makeCalCard(ev){
   return `<div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-left:3px solid var(--red);border-radius:8px;overflow:hidden;flex-shrink:0">
     <div style="padding:10px 12px 8px">
       <div style="font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;color:var(--white);margin-bottom:4px;line-height:1.3">${ev.event}</div>
-      <div style="font-family:'DM Mono',monospace;font-size:9px;color:rgba(255,255,255,0.28);letter-spacing:0.04em">${ev.currency} · ${ev.date||''} · ${ev.time} ET</div>
+      <div style="font-family:'DM Mono',monospace;font-size:9px;color:rgba(255,255,255,0.28);letter-spacing:0.04em">${ev.currency} · ${ev.date||''} · ${ev.time} UK</div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;border-top:1px solid rgba(255,255,255,0.05)">
       <div style="padding:7px 10px;border-right:1px solid rgba(255,255,255,0.05)">
@@ -1886,12 +1885,12 @@ function closeOpenTrade(id, outcome){
   const t = openTrades.find(t=>t.id===id)
   if(t){
     const cp = getCurrentPrice(t.pair)
-    const pnlRaw = cp ? (t.dir==='long' ? cp-t.entry : t.entry-cp) : 0
+    const pnlUsd = cp ? (calcRealPnl(t.pair, t.dir, t.entry, cp) || 0) : 0
     tradeHistory.unshift({
       id, pair:t.pair, dir:t.dir, entry:t.entry, sl:t.sl, tp:t.tp,
       closePrice: cp || t.entry,
-      pnl: pnlRaw,
-      outcome: outcome || (pnlRaw>=0?'win':'loss'),
+      pnl: pnlUsd,
+      outcome: outcome || (pnlUsd>=0?'win':'loss'),
       openedAt:t.openedAt,
       closedAt:new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}),
       date: new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short'})
@@ -1914,9 +1913,9 @@ function renderOpenTrades(){
   list.innerHTML = openTrades.map(t => {
     const cp = getCurrentPrice(t.pair)
     const isLong = t.dir === 'long'
-    const pnlRaw = cp ? (isLong ? cp-t.entry : t.entry-cp) : null
-    const pnlStr = pnlRaw!==null ? (pnlRaw>=0?'+':'-')+'$'+Math.abs(pnlRaw).toFixed(2) : '—'
-    const pnlClass = pnlRaw===null?'':pnlRaw>=0?'pos':'neg'
+    const pnlUsd = cp ? calcRealPnl(t.pair, t.dir, t.entry, cp) : null
+    const pnlStr = pnlUsd!==null ? (pnlUsd>=0?'+':'-')+'$'+Math.abs(pnlUsd).toFixed(2) : '—'
+    const pnlClass = pnlUsd===null?'':pnlUsd>=0?'pos':'neg'
     const slDist = cp ? '$'+Math.abs(cp-t.sl).toFixed(2) : null
     const tpDist = cp ? '$'+Math.abs(t.tp-cp).toFixed(2) : null
     return `<div class="open-trade-card ${t.dir}">
@@ -1955,17 +1954,17 @@ if(openTrades.length) document.addEventListener('DOMContentLoaded',()=>{
   if(el) el.textContent = 'Open Trades ('+openTrades.length+')'
 })
 
-function calcLotPnl(pair, pnlRaw, cp){
-  // 0.5 standard lot P&L in USD
-  const lots = 0.5
-  if(!pnlRaw || !cp) return null
-  if(pair === 'XAU/USD' || pair === 'XAG/USD') return pnlRaw * lots * 100  // 1 lot = 100oz
-  if(pair === 'BTC/USD') return pnlRaw * lots  // 1 lot = 1 BTC
-  const units = lots * 100000  // 50,000 units
-  if(pair.endsWith('/USD')) return pnlRaw * units  // USD is quote
-  if(pair.startsWith('USD/')) return (pnlRaw / cp) * units  // USD is base
-  // Cross pairs — approximate via USD quote side
-  return pnlRaw * units
+function calcRealPnl(pair, dir, entry, currentPrice){
+  if(!currentPrice || !entry) return null
+  const priceDiff = dir==='long' ? currentPrice-entry : entry-currentPrice
+  // 1 standard lot = 100,000 units
+  if(pair==='XAU/USD') return priceDiff * 100  // 100 oz per lot
+  if(pair==='XAG/USD') return priceDiff * 5000  // 5000 oz per lot
+  if(pair==='BTC/USD') return priceDiff * 1      // 1 BTC per lot
+  if(pair.endsWith('/USD')) return priceDiff * 100000
+  if(pair.startsWith('USD/')) return (priceDiff / currentPrice) * 100000
+  // Cross pairs — approximate via USD
+  return priceDiff * 100000
 }
 
 function checkOpenTradeExits(){
@@ -1979,18 +1978,18 @@ function checkOpenTradeExits(){
     const hitSL = isLong ? cp <= t.sl : cp >= t.sl
     if(hitTP || hitSL){
       changed = true
-      const pnlRaw = t.dir==='long' ? cp-t.entry : t.entry-cp
-tradeHistory.unshift({
-  id:t.id, pair:t.pair, dir:t.dir, entry:t.entry, sl:t.sl, tp:t.tp,
-  closePrice:cp, pnl:pnlRaw,
-  outcome: hitTP?'win':'loss',
-  openedAt:t.openedAt,
-  closedAt:new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}),
-  date:new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short'})
-})
-localStorage.setItem('kjc_trade_history', JSON.stringify(tradeHistory))
-showToast((hitTP ? '✅ TP Hit — ' : '🛑 SL Hit — ') + t.pair + ' ' + t.dir + ' closed at ' + fmtP(t.pair, cp))
-return false
+      const pnlUsd = calcRealPnl(t.pair, t.dir, t.entry, cp) || 0
+      tradeHistory.unshift({
+        id:t.id, pair:t.pair, dir:t.dir, entry:t.entry, sl:t.sl, tp:t.tp,
+        closePrice:cp, pnl:pnlUsd,
+        outcome: hitTP?'win':'loss',
+        openedAt:t.openedAt,
+        closedAt:new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}),
+        date:new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short'})
+      })
+      localStorage.setItem('kjc_trade_history', JSON.stringify(tradeHistory))
+      showToast((hitTP ? '✅ TP Hit — ' : '🛑 SL Hit — ') + t.pair + ' ' + t.dir + ' closed at ' + fmtP(t.pair, cp))
+      return false
     }
     return true  // keep
   })
@@ -2047,8 +2046,7 @@ function renderHistory(){
           <span style="font-size:11px">${icon}</span>
         </div>
       </div>`
-    }).join('')}'
-}
+    }).join('')}
     <div style="text-align:center;margin-top:8px">
       <button onclick="tradeHistory=[];localStorage.removeItem('kjc_trade_history');renderHistory()" style="font-family:'DM Mono',monospace;font-size:9px;color:rgba(255,255,255,0.2);background:transparent;border:1px solid rgba(255,255,255,0.06);padding:5px 14px;border-radius:6px;cursor:pointer;letter-spacing:0.06em;text-transform:uppercase">Clear History</button>
     </div>`
