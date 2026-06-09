@@ -1637,12 +1637,12 @@ if(setups && setups.length){
   const el = document.getElementById('tab-open')
   if(el) el.textContent = cnt ? 'Open Trades ('+cnt+')' : 'Open Trades'
 }
-  const list=document.getElementById('tradeList')
   document.getElementById('tpScanTime').textContent=scanTime?'Signal time: '+scanTime:''
-  if(!setups||!setups.length){list.innerHTML='<div class="trade-empty"><span class="trade-empty-icon">📈</span>No trade setups this scan</div>';return}
-  const expiry=getExpiryLabel(scanTime)
-  if(expiry.label==='Expired'){list.innerHTML='<div class="trade-empty"><span class="trade-empty-icon">⏰</span>Setups expired<br>Next scan will refresh</div>';return}
-  list.innerHTML=setups.map((s,i)=>{
+if(!setups||!setups.length){renderOpenTrades();return}
+const expiry=getExpiryLabel(scanTime)
+if(expiry.label==='Expired'){renderOpenTrades();return}
+const list=document.createElement('div')
+list.innerHTML=setups.map((s,i)=>{
     const t=parseSetup(s)
     const dir=(t.direction||'long').toLowerCase().includes('short')?'short':'long'
     const exp=getExpiryLabel(scanTime)
@@ -1686,6 +1686,7 @@ if(setups && setups.length){
   }).join('')
   clearInterval(window._tradeTimer)
   window._tradeTimer=setInterval(()=>renderTrades(setups,scanTime),60000)
+}
 }
 
 // ── Forex Factory Calendar ────────────────────────────────────────────────
