@@ -889,7 +889,11 @@ async function init(){
     setInterval(updateCountdown,30000)
     await loadLatest()
     setInterval(async()=>await loadLatest(),60000)
-const TWO_HOURS=2*60*60*1000
+    setInterval(autoScan,2*60*60*1000)
+    setTimeout(()=>{apiKey=localStorage.getItem('mit_api_key')||'';if(apiKey)autoScan()},8000)
+  }catch(e){console.error(e);window.location.replace('/login.html')}
+}
+
 async function autoScan(){
   apiKey=apiKey||localStorage.getItem('mit_api_key')||''
   if(!apiKey)return
@@ -898,13 +902,6 @@ async function autoScan(){
   setStatus('scanning','Auto-scanning...')
   await runScan()
   btn.disabled=false;btn.innerHTML='⚡ Scan Now'
-}
-  setInterval(autoScan,TWO_HOURS)
-  setTimeout(()=>{
-    apiKey=localStorage.getItem('mit_api_key')||''
-    if(apiKey) autoScan()
-  },8000)
-  }catch(e){console.error(e);window.location.replace('/login.html')}
 }
 
 async function loadLatest(){
@@ -1128,6 +1125,7 @@ async function runScan(){
     setStatus('live','Updated '+result.scan_time);queueAutoRead(allEvents)
   }catch(err){
     setStatus('','Scan failed')
+    showToast('Scan failed: '+err.message)
     document.getElementById('masonryGrid').innerHTML='<div class="empty-state"><span class="empty-icon">⚠</span><div class="empty-h">Scan Failed</div><div class="empty-p">'+err.message+'</div></div>'
   }
 }
