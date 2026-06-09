@@ -1117,7 +1117,7 @@ async function runScan(){
     if(result.market_summary){
       lastReport=result.market_summary
       document.getElementById('reportBtn').disabled=false
-      document.getElementById('reportDate').textContent=result.scan_date+' · '+result.scan_time
+      const rd=document.getElementById('reportDate'); if(rd) rd.textContent=result.scan_date+' · '+result.scan_time
     }
     const urgents=allEvents.filter(e=>e.urgent||e.impact==='HIGH')
     if(urgents.length)showToast(urgents[0].headline)
