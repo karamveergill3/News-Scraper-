@@ -2048,13 +2048,13 @@ function renderHistory(){
           <span style="font-size:11px">${icon}</span>
         </div>
       </div>`
-    }).join('')}'
+    }).join('')}
     <div style="text-align:center;margin-top:8px">
       <button onclick="tradeHistory=[];localStorage.removeItem('kjc_trade_history');renderHistory()" style="font-family:'DM Mono',monospace;font-size:9px;color:rgba(255,255,255,0.2);background:transparent;border:1px solid rgba(255,255,255,0.06);padding:5px 14px;border-radius:6px;cursor:pointer;letter-spacing:0.06em;text-transform:uppercase">Clear History</button>
     </div>`
 }
 
-async function openTradeAnalysis
+async function openTradeAnalysis(pair,dir,entry,sl,tp,rr,bodyId,btn){
   const body = document.getElementById(bodyId)
   if(!body) return
   if(body.style.display !== 'none'){ body.style.display='none'; btn.textContent='⚡ Analysis'; return }
