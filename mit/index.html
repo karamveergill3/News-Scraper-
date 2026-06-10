@@ -1601,45 +1601,32 @@ function getExpiryLabel(scanTime){
 
 function renderTrades(setups,scanTime){
   window._lastSetups=setups
-window._lastScanTime=scanTime
-if(setups&&setups.length){
-  openTrades=openTrades.filter(o=>{const t=parseSetup(o);return !setups.some(s=>{const n=parseSetup(s);const d=(n.direction||'long').toLowerCase().includes('short')?'short':'long';return n.pair===t.pair&&d===t.dir})})
-  setups.forEach(s=>{
-    const t=parseSetup(s)
-    const dir=(t.direction||'long').toLowerCase().includes('short')?'short':'long'
-    if(t.entry&&t.entry!=='—'){
-      openTrades.push({id:t.pair+'-'+Date.now()+'-'+Math.random().toString(36).slice(2,5),pair:t.pair,dir,entry:parseFloat(t.entry),sl:parseFloat(t.sl),tp:parseFloat(t.tp),rr:t.rr,openedAt:new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})})
-    }
-  })
-  localStorage.setItem('kjc_open_trades',JSON.stringify(openTrades))
-  const el=document.getElementById('tab-open')
-  if(el)el.textContent='Open Trades ('+openTrades.length+')'
-  switchTab('open')
-}
-  // Auto-open all new setups
-if(setups && setups.length){
-  setups.forEach(s => {
-    const t = parseSetup(s)
-    const dir = (t.direction||'long').toLowerCase().includes('short') ? 'short' : 'long'
-    // Avoid duplicates — don't re-open if same pair+direction already open
-    const alreadyOpen = openTrades.some(o => o.pair === t.pair && o.dir === dir)
-    if(!alreadyOpen && t.entry && t.entry !== '—'){
-      const id = t.pair + '-' + Date.now() + '-' + Math.random().toString(36).slice(2,5)
+  window._lastScanTime=scanTime
+  // Auto-open setups ONLY if not already open for that pair
+  if(setups && setups.length){
+    let changed = false
+    setups.forEach(s => {
+      const t = parseSetup(s)
+      const dir = (t.direction||'long').toLowerCase().includes('short') ? 'short' : 'long'
+      // Skip if ANY trade for this pair already exists (regardless of direction)
+      if(openTrades.some(o => o.pair === t.pair)) return
+      if(!t.entry || t.entry === '—') return
       openTrades.push({
-        id, pair: t.pair, dir,
-        entry: parseFloat(t.entry),
-        sl: parseFloat(t.sl),
-        tp: parseFloat(t.tp),
-        rr: t.rr,
+        id: t.pair + '-' + Date.now() + '-' + Math.random().toString(36).slice(2,5),
+        pair: t.pair, dir,
+        entry: parseFloat(t.entry), sl: parseFloat(t.sl),
+        tp: parseFloat(t.tp), rr: t.rr,
         openedAt: new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})
       })
+      changed = true
+    })
+    if(changed){
+      localStorage.setItem('kjc_open_trades', JSON.stringify(openTrades))
+      const cnt = openTrades.length
+      const el = document.getElementById('tab-open')
+      if(el) el.textContent = cnt ? 'Open Trades ('+cnt+')' : 'Open Trades'
     }
-  })
-  localStorage.setItem('kjc_open_trades', JSON.stringify(openTrades))
-  const cnt = openTrades.length
-  const el = document.getElementById('tab-open')
-  if(el) el.textContent = cnt ? 'Open Trades ('+cnt+')' : 'Open Trades'
-}
+  }
   const tst=document.getElementById('tpScanTime'); if(tst) tst.textContent=scanTime?'Signal time: '+scanTime:''
 if(!setups||!setups.length){renderOpenTrades();return}
 const expiry=getExpiryLabel(scanTime)
