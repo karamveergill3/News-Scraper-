@@ -1961,6 +1961,11 @@ function switchTab(tab){
 }
 
 function openTrade(pair,dir,entry,sl,tp,rr){
+  // Prevent duplicate open trades for same pair
+  if(openTrades.find(t=>t.pair===pair)){
+    showToast('⚠️ '+pair+' already has an open trade')
+    return
+  }
   const id = pair+'-'+Date.now()
   const trade = {id,pair,dir,entry:parseFloat(entry),sl:parseFloat(sl),tp:parseFloat(tp),rr,openedAt:new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}
   openTrades.push(trade)
