@@ -1879,6 +1879,11 @@ function getWeekStartUTC(){
 
 // ── Load this week's trade history from Supabase ─────────────────────────
 async function loadTradeHistory(){
+  // Load from localStorage immediately so history shows instantly
+  try{
+    const cached=localStorage.getItem('kjc_th_cache')
+    if(cached) tradeHistory=JSON.parse(cached)
+  }catch(e){}
   if(!currentUserId) return
   try{
     const ws = getWeekStartUTC()
@@ -1895,13 +1900,24 @@ async function loadTradeHistory(){
       outcome:r.outcome, openedAt:r.opened_at,
       closedAt:r.closed_at, date:r.trade_date
     }))
+    // Cache to localStorage so it persists if Supabase is slow
+    localStorage.setItem('kjc_th_cache', JSON.stringify(tradeHistory))
     const th=document.getElementById('tab-history')
     if(th&&tradeHistory.length) th.textContent='History ('+tradeHistory.length+')'
-  }catch(e){console.error('loadTradeHistory:',e.message)}
+  }catch(e){
+    console.error('loadTradeHistory:',e.message)
+    // Keep localStorage data as fallback — trades still visible
+  }
 }
 
 // ── Save a closed trade to Supabase ──────────────────────────────────────
 async function saveTradeToSupabase(t){
+  // Always update localStorage cache immediately for instant persistence
+  try{
+    const cached=localStorage.getItem('kjc_th_cache')
+    const hist=cached?JSON.parse(cached):[]
+    if(!hist.find(x=>x.id===t.id)){hist.unshift(t);localStorage.setItem('kjc_th_cache',JSON.stringify(hist))}
+  }catch(e){}
   if(!currentUserId) return
   try{
     await sb.from('trade_history').insert([{
@@ -2039,18 +2055,11 @@ function renderOpenTrades(){
         <button class="nc-btn" style="flex:1;justify-content:center" onclick="openTradeAnalysis('${t.pair}','${t.dir}','${t.entry}','${t.sl}','${t.tp}','${t.rr}','otc-body-${t.id}',this)">⚡ Analysis</button>
         <button class="nc-btn" style="color:var(--red);border-color:rgba(240,68,68,0.2)" onclick="closeOpenTrade('${t.id}')">✕</button>
       </div>
-      <div id="otc-body-${t.id}" style="display:none;padding:8px 0 2px;border-top:1px solid rgba(255,255,255,0.05);margin-top:6px;font-size:11px;line-height:1.65;color:var(--w2)"></div>
+      <div id="otc-body-${t.id}" style="display:none"></div>
       <div style="font-family:'DM Mono',monospace;font-size:9px;color:rgba(212,168,67,0.3);margin-top:6px">Opened ${t.openedAt}</div>
     </div>`
   }).join('')
-  // Restore any cached analysis content so it survives re-renders
-  openTrades.forEach(t => {
-    const bodyEl = document.getElementById('otc-body-'+t.id)
-    if(bodyEl && otcAnalysisCache['otc-body-'+t.id]){
-      bodyEl.innerHTML = otcAnalysisCache['otc-body-'+t.id]
-      bodyEl.style.display = 'block'
-    }
-  })
+  // (analysis now shown in modal, not inline)
   // Live update every 5s
   clearTimeout(window._otcTimer)
   window._otcTimer = setTimeout(()=>{ if(activeTab==='open') renderOpenTrades() }, 5000)
