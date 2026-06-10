@@ -74,7 +74,6 @@ module.exports = async function handler(req, res) {
     result.event_count = (result.events || []).length
     result.scan_date = dateStr
     result.scan_time = timeStr
-    result.source = 'cron'
 
     const { error: dbError } = await sb.from('scans').insert([result])
     if(dbError) throw new Error('Supabase insert failed: ' + dbError.message)
