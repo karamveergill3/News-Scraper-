@@ -1856,7 +1856,10 @@ async function tradeAnalysis(pair,dir,entry,sl,tp,rr,btn){
 }
 
 // ── Open Trades ───────────────────────────────────────────────────────────
-let openTrades = JSON.parse(localStorage.getItem('kjc_open_trades')||'[]')
+let _rawTrades = JSON.parse(localStorage.getItem('kjc_open_trades')||'[]')
+// Deduplicate — keep only the most recent trade per pair
+let openTrades = _rawTrades.filter((t,i,arr) => arr.findIndex(x=>x.pair===t.pair) === i)
+if(openTrades.length !== _rawTrades.length) localStorage.setItem('kjc_open_trades', JSON.stringify(openTrades))
 let tradeHistory = [] // loaded from Supabase
 let otcAnalysisCache = {}
 let currentUserId = null
@@ -2133,6 +2136,10 @@ function renderHistory(){
     list.innerHTML='<div class="trade-empty"><span class="trade-empty-icon">📋</span>No closed trades yet</div>'
     return
   }
+  // Deduplicate by id before rendering
+  const seen = new Set()
+  const uniqueHistory = tradeHistory.filter(t=>{ if(seen.has(t.id)) return false; seen.add(t.id); return true })
+  tradeHistory = uniqueHistory
   const weekPnl = tradeHistory.reduce((sum,t)=>sum+(t.pnl||0),0)
   const wins = tradeHistory.filter(t=>t.outcome==='win').length
   const losses = tradeHistory.filter(t=>t.outcome==='loss').length
