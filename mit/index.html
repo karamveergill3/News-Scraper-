@@ -487,9 +487,10 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;fo
     </div>
     <div class="tp-scan-time" id="tpScanTime"></div>
   </div>
-  <div class="trade-list" id="openTradeList"><div class="trade-list" id="historyList" style="display:none"></div>
-    <div class="trade-empty"><span class="trade-empty-icon">📊</span>No open trades yet<br><span style="font-size:10px;opacity:0.6">Click Open on any trade idea</span></div>
+  <div class="trade-list" id="openTradeList">
+    <div class="trade-empty"><span class="trade-empty-icon">📊</span>No open trades yet<br><span style="font-size:10px;opacity:0.6">Trades auto-open on scan</span></div>
   </div>
+  <div class="trade-list" id="historyList" style="display:none"></div>
 </div>
 
 </div><!-- end #app -->
@@ -881,6 +882,7 @@ async function init(){
     if(error||!p){window.location.replace('/login.html');return}
     if(p.status!=='approved'&&!p.is_admin){window.location.replace('/pending.html');return}
     if(p.is_admin) document.getElementById('adminBtn').style.display='inline-flex'
+    currentUserId = user.id
     apiKey=localStorage.getItem('mit_api_key')||''
     showApp()
     initPriceFeed()  // ← start live price feed
@@ -888,6 +890,7 @@ async function init(){
     updateCountdown()
     setInterval(updateCountdown,30000)
     await loadLatest()
+    await loadTradeHistory()
     setInterval(async()=>await loadLatest(),60000)
     setInterval(autoScan,2*60*60*1000)
     setTimeout(()=>{apiKey=localStorage.getItem('mit_api_key')||'';if(apiKey)autoScan()},8000)
@@ -1758,8 +1761,8 @@ async function fetchCalendar(){
     const events = (data.economicCalendar||[])
       .filter(e => e.impact === 'high')
       .map(e => ({
-        time: e.time ? (()=>{ const d=new Date(e.time.replace(' ','T')+'Z'); d.setHours(d.getHours()+5); return d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/London'}) })() : '—',
-        date: e.time ? (()=>{ const d=new Date(e.time.replace(' ','T')+'Z'); return d.toLocaleDateString('en-GB',{day:'2-digit',month:'2-digit',year:'numeric',timeZone:'Europe/London'}) })() : '—',
+        time: e.time ? (()=>{ const d=new Date(e.time.replace(' ','T')+'Z'); return d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/London'}) })() : '—',
+        date: e.time ? (()=>{ const d=new Date(e.time.replace(' ','T')+'Z'); return d.toLocaleDateString('en-GB',{day:'2-digit',month:'2-digit',year:'numeric',timeZone:'Europe/London'}).replace(/\//g,':') })() : '—',
         currency: (e.country||'').toUpperCase(),
         event: e.event||'—',
         forecast: e.estimate != null ? e.estimate + (e.unit||'') : '—',
@@ -1854,7 +1857,93 @@ async function tradeAnalysis(pair,dir,entry,sl,tp,rr,btn){
 
 // ── Open Trades ───────────────────────────────────────────────────────────
 let openTrades = JSON.parse(localStorage.getItem('kjc_open_trades')||'[]')
-let tradeHistory = JSON.parse(localStorage.getItem('kjc_trade_history')||'[]')
+let tradeHistory = [] // loaded from Supabase
+let otcAnalysisCache = {}
+let currentUserId = null
+
+// ── Week helpers ─────────────────────────────────────────────────────────
+function getWeekStartUTC(){
+  const now = new Date()
+  const day = now.getUTCDay() // 0=Sun,6=Sat
+  const hour = now.getUTCHours()
+  let daysBack
+  if(day===6 && hour>=16) daysBack=0       // Sat after 4pm UTC (5pm BST)
+  else if(day===6) daysBack=7              // Sat before 4pm UTC
+  else if(day===0) daysBack=1             // Sun
+  else daysBack = day + 1                 // Mon-Fri
+  const ws = new Date(now)
+  ws.setUTCDate(ws.getUTCDate()-daysBack)
+  ws.setUTCHours(16,0,0,0)               // 4pm UTC = 5pm BST
+  return ws.toISOString()
+}
+
+// ── Load this week's trade history from Supabase ─────────────────────────
+async function loadTradeHistory(){
+  if(!currentUserId) return
+  try{
+    const ws = getWeekStartUTC()
+    const{data,error}=await sb.from('trade_history')
+      .select('*')
+      .eq('user_id',currentUserId)
+      .gte('created_at',ws)
+      .order('created_at',{ascending:false})
+    if(error) throw error
+    tradeHistory = (data||[]).map(r=>({
+      id:r.id, pair:r.pair, dir:r.dir,
+      entry:r.entry, sl:r.sl, tp:r.tp,
+      closePrice:r.close_price, pnl:r.pnl,
+      outcome:r.outcome, openedAt:r.opened_at,
+      closedAt:r.closed_at, date:r.trade_date
+    }))
+    const th=document.getElementById('tab-history')
+    if(th&&tradeHistory.length) th.textContent='History ('+tradeHistory.length+')'
+  }catch(e){console.error('loadTradeHistory:',e.message)}
+}
+
+// ── Save a closed trade to Supabase ──────────────────────────────────────
+async function saveTradeToSupabase(t){
+  if(!currentUserId) return
+  try{
+    await sb.from('trade_history').insert([{
+      id:t.id, user_id:currentUserId,
+      pair:t.pair, dir:t.dir,
+      entry:t.entry, sl:t.sl, tp:t.tp,
+      close_price:t.closePrice, pnl:t.pnl,
+      outcome:t.outcome, opened_at:t.openedAt,
+      closed_at:t.closedAt, trade_date:t.date
+    }])
+  }catch(e){console.error('saveTradeToSupabase:',e.message)}
+}
+
+// ── Save closed trade to Airtable ────────────────────────────────────────
+async function saveTradeToAirtable(t){
+  try{
+    await fetch('/api/trade',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        pair:t.pair, dir:t.dir, entry:t.entry,
+        closePrice:t.closePrice, sl:t.sl, tp:t.tp,
+        pnl:t.pnl, outcome:t.outcome,
+        openedAt:t.openedAt, closedAt:t.closedAt, date:t.date
+      })
+    })
+  }catch(e){console.error('Airtable save failed:',e.message)}
+}
+
+// ── Load weekly archives ──────────────────────────────────────────────────
+async function loadArchives(){
+  if(!currentUserId) return []
+  try{
+    const{data,error}=await sb.from('trade_archives')
+      .select('*')
+      .eq('user_id',currentUserId)
+      .order('week_start',{ascending:false})
+      .limit(12)
+    if(error) throw error
+    return data||[]
+  }catch(e){console.error('loadArchives:',e.message);return[]}
+}
 let activeTab = 'ideas'
 
 function switchTab(tab){
@@ -1895,13 +1984,19 @@ function closeOpenTrade(id, outcome){
       closedAt:new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}),
       date: new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short'})
     })
-    localStorage.setItem('kjc_trade_history', JSON.stringify(tradeHistory))
+    saveTradeToSupabase(tradeHistory[0])
+    saveTradeToAirtable(tradeHistory[0])
+    // Update history badge
+    const thBadge = document.getElementById('tab-history')
+    if(thBadge) thBadge.textContent = 'History ('+tradeHistory.length+')'
   }
   openTrades = openTrades.filter(t=>t.id!==id)
   localStorage.setItem('kjc_open_trades', JSON.stringify(openTrades))
   const cnt = openTrades.length
-  document.getElementById('tab-open').textContent = cnt ? 'Open Trades ('+cnt+')' : 'Open Trades'
+  const tabOpen = document.getElementById('tab-open')
+  if(tabOpen) tabOpen.textContent = cnt ? 'Open Trades ('+cnt+')' : 'Open Trades'
   renderOpenTrades()
+  if(activeTab === 'history') renderHistory()
 }
 
 function renderOpenTrades(){
@@ -1943,6 +2038,14 @@ function renderOpenTrades(){
       <div style="font-family:'DM Mono',monospace;font-size:9px;color:rgba(212,168,67,0.3);margin-top:6px">Opened ${t.openedAt}</div>
     </div>`
   }).join('')
+  // Restore any cached analysis content so it survives re-renders
+  openTrades.forEach(t => {
+    const bodyEl = document.getElementById('otc-body-'+t.id)
+    if(bodyEl && otcAnalysisCache['otc-body-'+t.id]){
+      bodyEl.innerHTML = otcAnalysisCache['otc-body-'+t.id]
+      bodyEl.style.display = 'block'
+    }
+  })
   // Live update every 5s
   clearTimeout(window._otcTimer)
   window._otcTimer = setTimeout(()=>{ if(activeTab==='open') renderOpenTrades() }, 5000)
@@ -1979,15 +2082,17 @@ function checkOpenTradeExits(){
     if(hitTP || hitSL){
       changed = true
       const pnlUsd = calcRealPnl(t.pair, t.dir, t.entry, cp) || 0
-      tradeHistory.unshift({
+      const closedTrade = {
         id:t.id, pair:t.pair, dir:t.dir, entry:t.entry, sl:t.sl, tp:t.tp,
         closePrice:cp, pnl:pnlUsd,
         outcome: hitTP?'win':'loss',
         openedAt:t.openedAt,
         closedAt:new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}),
         date:new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short'})
-      })
-      localStorage.setItem('kjc_trade_history', JSON.stringify(tradeHistory))
+      }
+      tradeHistory.unshift(closedTrade)
+      saveTradeToSupabase(closedTrade)
+      saveTradeToAirtable(closedTrade)
       showToast((hitTP ? '✅ TP Hit — ' : '🛑 SL Hit — ') + t.pair + ' ' + t.dir + ' closed at ' + fmtP(t.pair, cp))
       return false
     }
@@ -1998,7 +2103,12 @@ function checkOpenTradeExits(){
     const cnt = openTrades.length
     const el = document.getElementById('tab-open')
     if(el) el.textContent = cnt ? 'Open Trades ('+cnt+')' : 'Open Trades'
+    // Always re-render history so new closed trades appear immediately
     if(activeTab === 'open') renderOpenTrades()
+    if(activeTab === 'history') renderHistory()
+    // Badge on history tab so user knows closed trades are waiting
+    const th = document.getElementById('tab-history')
+    if(th) th.textContent = 'History ('+tradeHistory.length+')'
   }
 }
 
@@ -2009,27 +2119,30 @@ function renderHistory(){
     list.innerHTML='<div class="trade-empty"><span class="trade-empty-icon">📋</span>No closed trades yet</div>'
     return
   }
-  const todayStr = new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short'})
-  const todayTrades = tradeHistory.filter(t=>t.date===todayStr)
-  const dayPnl = todayTrades.reduce((sum,t)=>sum+(t.pnl||0),0)
-  const wins = todayTrades.filter(t=>t.outcome==='win').length
-  const losses = todayTrades.filter(t=>t.outcome==='loss').length
-  const pnlColor = dayPnl>=0?'var(--green)':'var(--red)'
+  const weekPnl = tradeHistory.reduce((sum,t)=>sum+(t.pnl||0),0)
+  const wins = tradeHistory.filter(t=>t.outcome==='win').length
+  const losses = tradeHistory.filter(t=>t.outcome==='loss').length
+  const total = wins+losses
+  const winRate = total>0?Math.round((wins/total)*100):0
+  const pnlColor = weekPnl>=0?'var(--green)':'var(--red)'
   list.innerHTML=`
     <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:12px 14px;margin-bottom:12px">
-      <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:rgba(212,168,67,0.4);margin-bottom:8px">Today · ${todayStr}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:rgba(212,168,67,0.4)">This Week</div>
+        <button onclick="showArchivesModal()" style="font-family:'DM Mono',monospace;font-size:8px;color:rgba(212,168,67,0.5);background:rgba(212,168,67,0.06);border:1px solid rgba(212,168,67,0.15);padding:3px 8px;border-radius:4px;cursor:pointer;letter-spacing:0.06em;text-transform:uppercase">📁 Archives</button>
+      </div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
         <div style="text-align:center">
-          <div style="font-family:'DM Mono',monospace;font-size:8px;color:rgba(255,255,255,0.2);margin-bottom:3px">P&L</div>
-          <div style="font-family:'DM Mono',monospace;font-size:14px;font-weight:700;color:${pnlColor}">${dayPnl>=0?'+':''}$${Math.abs(dayPnl).toFixed(2)}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:8px;color:rgba(255,255,255,0.2);margin-bottom:3px">Week P&L</div>
+          <div style="font-family:'DM Mono',monospace;font-size:14px;font-weight:700;color:${pnlColor}">${weekPnl>=0?'+':''}$${Math.abs(weekPnl).toFixed(2)}</div>
         </div>
         <div style="text-align:center">
-          <div style="font-family:'DM Mono',monospace;font-size:8px;color:rgba(255,255,255,0.2);margin-bottom:3px">Wins</div>
-          <div style="font-family:'DM Mono',monospace;font-size:14px;font-weight:700;color:var(--green)">${wins}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:8px;color:rgba(255,255,255,0.2);margin-bottom:3px">Win Rate</div>
+          <div style="font-family:'DM Mono',monospace;font-size:14px;font-weight:700;color:${winRate>=50?'var(--green)':'var(--red)'}">${winRate}%</div>
         </div>
         <div style="text-align:center">
-          <div style="font-family:'DM Mono',monospace;font-size:8px;color:rgba(255,255,255,0.2);margin-bottom:3px">Losses</div>
-          <div style="font-family:'DM Mono',monospace;font-size:14px;font-weight:700;color:var(--red)">${losses}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:8px;color:rgba(255,255,255,0.2);margin-bottom:3px">W / L</div>
+          <div style="font-family:'DM Mono',monospace;font-size:14px;font-weight:700;color:rgba(255,255,255,0.6)">${wins}<span style="color:rgba(255,255,255,0.2)"> / </span>${losses}</div>
         </div>
       </div>
     </div>
@@ -2048,7 +2161,7 @@ function renderHistory(){
       </div>`
     }).join('')}
     <div style="text-align:center;margin-top:8px">
-      <button onclick="tradeHistory=[];localStorage.removeItem('kjc_trade_history');renderHistory()" style="font-family:'DM Mono',monospace;font-size:9px;color:rgba(255,255,255,0.2);background:transparent;border:1px solid rgba(255,255,255,0.06);padding:5px 14px;border-radius:6px;cursor:pointer;letter-spacing:0.06em;text-transform:uppercase">Clear History</button>
+      <button onclick="loadTradeHistory().then(()=>renderHistory())" style="font-family:'DM Mono',monospace;font-size:9px;color:rgba(255,255,255,0.2);background:transparent;border:1px solid rgba(255,255,255,0.06);padding:5px 14px;border-radius:6px;cursor:pointer;letter-spacing:0.06em;text-transform:uppercase">↻ Refresh</button>
     </div>`
 }
 
@@ -2069,9 +2182,71 @@ async function openTradeAnalysis(pair,dir,entry,sl,tp,rr,bodyId,btn){
     })
     const d = await res.json()
     const text = d.content.filter(b=>b.type==='text').map(b=>b.text).join('').trim()
-    body.innerHTML = text.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong style="color:var(--gold)">$1</strong>').replace(/^[-•▸]\s/gm,'<span style="color:var(--gold)">▸</span> ')
+    const html = text.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong style="color:var(--gold)">$1</strong>').replace(/^[-•▸]\s/gm,'<span style="color:var(--gold)">▸</span> ')
+    body.innerHTML = html
+    otcAnalysisCache[bodyId] = html  // save so re-render doesn't wipe it
     btn.textContent='⚡ Analysis'
   }catch(e){ body.innerHTML='<div style="color:var(--red);font-size:10px">'+e.message+'</div>'; btn.textContent='⚡ Analysis' }
+}
+
+async function showArchivesModal(){
+  let modal = document.getElementById('archivesModal')
+  if(!modal){
+    modal = document.createElement('div')
+    modal.id = 'archivesModal'
+    modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px'
+    modal.innerHTML=`<div style="background:#0f0f0f;border:1px solid rgba(212,168,67,0.2);border-radius:14px;width:100%;max-width:480px;max-height:80vh;overflow:hidden;display:flex;flex-direction:column">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 18px;border-bottom:1px solid rgba(255,255,255,0.06)">
+        <div style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(212,168,67,0.6)">📁 Trade Archives</div>
+        <button onclick="document.getElementById('archivesModal').remove()" style="background:none;border:none;color:rgba(255,255,255,0.3);font-size:18px;cursor:pointer;line-height:1">×</button>
+      </div>
+      <div id="archivesBody" style="overflow-y:auto;padding:16px 18px;flex:1">
+        <div style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,0.2);text-align:center;padding:20px">Loading...</div>
+      </div>
+    </div>`
+    document.body.appendChild(modal)
+  } else {
+    modal.style.display='flex'
+  }
+  // Load archives
+  const archives = await loadArchives()
+  const body = document.getElementById('archivesBody')
+  if(!archives.length){
+    body.innerHTML=`<div style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,0.2);text-align:center;padding:20px">No archived weeks yet.<br>Archives are created every Saturday at 5pm.</div>`
+    return
+  }
+  body.innerHTML = archives.map(a=>{
+    const pnlColor = a.total_pnl>=0?'var(--green)':'var(--red)'
+    const trades = (a.trades||[])
+    return `<div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:12px 14px;margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(212,168,67,0.5)">${a.week_label||'Week'}</div>
+        <div style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:${pnlColor}">${a.total_pnl>=0?'+':''}$${Math.abs(a.total_pnl||0).toFixed(2)}</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin-bottom:8px">
+        <div style="text-align:center;font-family:'DM Mono',monospace;font-size:9px">
+          <div style="color:rgba(255,255,255,0.2)">Win Rate</div>
+          <div style="color:${(a.win_rate||0)>=50?'var(--green)':'var(--red)'};font-weight:700">${Math.round(a.win_rate||0)}%</div>
+        </div>
+        <div style="text-align:center;font-family:'DM Mono',monospace;font-size:9px">
+          <div style="color:rgba(255,255,255,0.2)">Trades</div>
+          <div style="color:rgba(255,255,255,0.6);font-weight:700">${a.trade_count||0}</div>
+        </div>
+        <div style="text-align:center;font-family:'DM Mono',monospace;font-size:9px">
+          <div style="color:rgba(255,255,255,0.2)">W / L</div>
+          <div style="color:rgba(255,255,255,0.6);font-weight:700">${a.wins||0} / ${a.losses||0}</div>
+        </div>
+      </div>
+      ${trades.length?`<details style="margin-top:4px"><summary style="font-family:'DM Mono',monospace;font-size:9px;color:rgba(255,255,255,0.2);cursor:pointer;letter-spacing:0.06em;text-transform:uppercase">View ${trades.length} trades</summary>
+        <div style="margin-top:6px;display:flex;flex-direction:column;gap:4px">
+          ${trades.map(t=>`<div style="display:flex;justify-content:space-between;font-family:'DM Mono',monospace;font-size:9px;padding:5px 8px;background:rgba(255,255,255,0.02);border-radius:5px">
+            <span style="color:rgba(255,255,255,0.5)">${t.pair} ${t.dir?.toUpperCase()}</span>
+            <span style="color:${(t.pnl||0)>=0?'var(--green)':'var(--red)'}">${(t.pnl||0)>=0?'+':''}$${Math.abs(t.pnl||0).toFixed(2)} ${t.outcome==='win'?'✅':'🛑'}</span>
+          </div>`).join('')}
+        </div>
+      </details>`:''}
+    </div>`
+  }).join('')
 }
 
 async function doSignOut(){await sb.auth.signOut();window.location.replace('/login.html')}
