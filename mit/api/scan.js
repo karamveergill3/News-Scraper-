@@ -75,6 +75,9 @@ module.exports = async function handler(req, res) {
     result.scan_date = dateStr
     result.scan_time = timeStr
 
+    // Clean up scans older than 7 days
+    await sb.from('scans').delete().lt('created_at', new Date(Date.now() - 7*24*60*60*1000).toISOString())
+
     const { error: dbError } = await sb.from('scans').insert([result])
     if(dbError) throw new Error('Supabase insert failed: ' + dbError.message)
 
