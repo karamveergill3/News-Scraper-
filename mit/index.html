@@ -2171,27 +2171,43 @@ function renderHistory(){
 }
 
 async function openTradeAnalysis(pair,dir,entry,sl,tp,rr,bodyId,btn){
-  const body = document.getElementById(bodyId)
-  if(!body) return
-  if(body.style.display !== 'none'){ body.style.display='none'; btn.textContent='⚡ Analysis'; return }
+  if(!apiKey){ showToast('Run a scan first to set API key'); return }
+  // Show modal
+  let modal = document.getElementById('tradeAnalysisModal')
+  if(!modal){
+    modal = document.createElement('div')
+    modal.id = 'tradeAnalysisModal'
+    modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px'
+    modal.innerHTML=`<div style="background:#0f0f0f;border:1px solid rgba(212,168,67,0.2);border-radius:14px;width:100%;max-width:480px;max-height:80vh;overflow:hidden;display:flex;flex-direction:column">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 18px;border-bottom:1px solid rgba(255,255,255,0.06)">
+        <div id="taModalTitle" style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(212,168,67,0.6)">⚡ Trade Analysis</div>
+        <button onclick="document.getElementById('tradeAnalysisModal').style.display='none'" style="background:none;border:none;color:rgba(255,255,255,0.3);font-size:18px;cursor:pointer;line-height:1">×</button>
+      </div>
+      <div id="taModalBody" style="overflow-y:auto;padding:18px;flex:1;font-size:12px;line-height:1.8;color:var(--w2)"></div>
+    </div>`
+    document.body.appendChild(modal)
+  } else {
+    modal.style.display='flex'
+  }
+  const titleEl = document.getElementById('taModalTitle')
+  const bodyEl = document.getElementById('taModalBody')
+  titleEl.textContent = pair + ' · ' + dir.toUpperCase() + ' · ⚡ Analysis'
+  bodyEl.innerHTML='<div style="color:rgba(212,168,67,0.4);font-family:DM Mono,monospace;font-size:10px;text-align:center;padding:20px">Analysing trade...</div>'
   btn.textContent='Loading...'
-  body.style.display='block'
-  body.innerHTML='<div style="color:rgba(212,168,67,0.4);font-family:DM Mono,monospace;font-size:10px">Analysing...</div>'
-  if(!apiKey){ body.innerHTML='<div style="color:var(--red);font-size:10px">Run a scan first to set API key</div>'; btn.textContent='⚡ Analysis'; return }
   const cp = getCurrentPrice(pair)
   try{
     const res = await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:300,messages:[{role:'user',content:`3 bullet points: why is this a good scalp trade? Pair: ${pair}, Direction: ${dir}, Entry: ${entry}, SL: ${sl}, TP: ${tp}, RR: ${rr}:1, Live price: ${cp||'unknown'}. Be specific. Trader language only.`}]})
+      body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:400,messages:[{role:'user',content:`3 bullet points: why is this a good scalp trade? Pair: ${pair}, Direction: ${dir}, Entry: ${entry}, SL: ${sl}, TP: ${tp}, RR: ${rr}:1, Live price: ${cp||'unknown'}. Be specific. Trader language only.`}]})
     })
     const d = await res.json()
     const text = d.content.filter(b=>b.type==='text').map(b=>b.text).join('').trim()
     const html = text.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong style="color:var(--gold)">$1</strong>').replace(/^[-•▸]\s/gm,'<span style="color:var(--gold)">▸</span> ')
-    body.innerHTML = html
-    otcAnalysisCache[bodyId] = html  // save so re-render doesn't wipe it
+    bodyEl.innerHTML = html
+    otcAnalysisCache[bodyId] = html
     btn.textContent='⚡ Analysis'
-  }catch(e){ body.innerHTML='<div style="color:var(--red);font-size:10px">'+e.message+'</div>'; btn.textContent='⚡ Analysis' }
+  }catch(e){ bodyEl.innerHTML='<div style="color:var(--red);font-size:11px">'+e.message+'</div>'; btn.textContent='⚡ Analysis' }
 }
 
 async function showArchivesModal(){
