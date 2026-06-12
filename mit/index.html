@@ -705,12 +705,72 @@ function initPriceFeed(){
   if(!priceStripBuilt) setPriceStripMsg('Loading prices...')
   fetchInitialPrices().catch(e=>{ console.error('fetchInitialPrices:', e.message); if(!priceStripBuilt){ renderPriceStrip(); priceStripBuilt=true } })
   clearInterval(window._pricePoller)
-  window._pricePoller = setInterval(fetchInitialPrices, 2000)
+  window._pricePoller = setInterval(fetchInitialPrices, 4000)
   // Hard fallback — if nothing rendered within 5s for any reason, render anyway
   setTimeout(()=>{ if(!priceStripBuilt){ renderPriceStrip(); priceStripBuilt=true } }, 5000)
   // True real-time BTC ticks via Binance WebSocket (free, no key)
   connectBinanceWS()
-  // Note: Finnhub forex WebSocket/candle endpoints return 403 on free tier — disabled
+  // True real-time forex ticks via TwelveData WebSocket (falls back to REST polling if unavailable)
+  connectTwelveDataWS()
+}
+
+let tdWs = null
+let tdWsConnected = false
+const TD_WS_SYMBOLS = TD_SYMBOLS.map(s=>s.replace('/','/')) // TwelveData WS uses "EUR/USD" format
+
+function connectTwelveDataWS(){
+  try{
+    if(tdWs){ try{ tdWs.close() }catch(e){} }
+    tdWs = new WebSocket('wss://ws.twelvedata.com/v1/quotes/price?apikey=' + TD_API_KEY)
+
+    tdWs.onopen = () => {
+      console.log('[Prices] TwelveData WS connected')
+      tdWsConnected = true
+      const subscribeMsg = { action: 'subscribe', params: { symbols: TD_WS_SYMBOLS.join(',') } }
+      tdWs.send(JSON.stringify(subscribeMsg))
+    }
+
+    tdWs.onmessage = (msg) => {
+      try{
+        const d = JSON.parse(msg.data)
+        if(d.event === 'price' && d.symbol && d.price){
+          const pair = d.symbol
+          const price = parseFloat(d.price)
+          if(!price || !isFinite(price)) return
+          const prev = livePrices[pair]?.price || price
+          livePrices[pair] = { price, prev, ts: Date.now() }
+          if(priceStripBuilt){
+            flashTile(pair, price, prev)
+          }
+          // Live update open trades for this pair
+          openTrades.forEach(t => {
+            if(t.pair !== pair) return
+            const nowEl = document.getElementById('otc-now-' + t.id)
+            if(nowEl) nowEl.textContent = fmtP(pair, price)
+            const pnlEl = document.getElementById('otc-pnl-' + t.id)
+            if(pnlEl){
+              const pnlUsd = calcRealPnl(pair, t.dir, t.entry, price)
+              pnlEl.textContent = pnlUsd!==null ? (pnlUsd>=0?'+':'-')+'$'+Math.abs(pnlUsd).toFixed(2) : '—'
+              pnlEl.className = 'otc-pnl '+(pnlUsd!==null?(pnlUsd>=0?'pos':'neg'):'')
+            }
+          })
+          refreshTradePrices()
+        } else if(d.event === 'subscribe-status'){
+          console.log('[Prices] TwelveData WS subscribe status:', JSON.stringify(d).slice(0,200))
+        }
+      }catch(e){}
+    }
+
+    tdWs.onclose = () => {
+      tdWsConnected = false
+      console.warn('[Prices] TwelveData WS closed — REST polling continues as fallback')
+      setTimeout(connectTwelveDataWS, 15000)
+    }
+
+    tdWs.onerror = () => {
+      console.warn('[Prices] TwelveData WS error — REST polling continues as fallback')
+    }
+  }catch(e){ console.error('[Prices] TwelveData WS init failed:', e.message) }
 }
 
 function connectBinanceWS(){
@@ -839,19 +899,64 @@ async function fetchInitialPrices(){
   updatePriceStrip()
 }
 
+const TD_API_KEY = '16e7a2c115c547ed9767977540156109'
+const TD_SYMBOLS = ['EUR/USD','GBP/USD','USD/JPY','USD/CHF','AUD/USD','USD/CAD','NZD/USD','EUR/GBP','GBP/JPY','XAU/USD','XAG/USD']
+let tdQuotaExceeded = false
+let tdQuotaResetTimer = null
+
+const set = (pair, price) => {
+  const p = parseFloat(price)
+  if(!p || !isFinite(p) || p <= 0 || p > 1e8) return
+  const prev = livePrices[pair]?.price || p
+  livePrices[pair] = { price: p, prev, ts: Date.now() }
+}
+
 async function fetchForexRates(){
-  // exchangerate-api.com — free, no key, CORS OK, includes XAU/XAG
+  // If the WS is live and connected, skip the REST call entirely — saves daily credits
+  if(tdWsConnected) return
+  if(!tdQuotaExceeded){
+    const ok = await fetchFromTwelveData()
+    if(ok) return
+    // Quota hit or error — fall back for the rest of the day
+    tdQuotaExceeded = true
+    scheduleQuotaReset()
+    console.warn('[Prices] TwelveData quota exceeded — falling back to ExchangeRate-API until midnight UTC')
+  }
+  await fetchFromExchangeRateAPI()
+}
+
+async function fetchFromTwelveData(){
+  // TwelveData — free tier, real-time-ish forex quotes. Returns false if quota exceeded.
+  try{
+    const symbols = TD_SYMBOLS.join(',')
+    const res = await fetch('https://api.twelvedata.com/price?symbol='+encodeURIComponent(symbols)+'&apikey='+TD_API_KEY)
+    const data = await res.json()
+    // TwelveData returns {code:429, message:'...run out of API credits...'} on quota exceeded
+    if(data.code === 429 || data.code === 403 || (data.message && /credit|limit|quota/i.test(data.message))){
+      console.warn('[Prices] TwelveData:', data.message)
+      return false
+    }
+    if(data.price){
+      set(TD_SYMBOLS[0], data.price)
+    } else {
+      let gotAny = false
+      TD_SYMBOLS.forEach(sym => {
+        const entry = data[sym]
+        if(entry && entry.price){ set(sym, entry.price); gotAny = true }
+      })
+      if(!gotAny) return false
+    }
+    return true
+  }catch(e){ console.error('[Prices] TwelveData error:', e.message); return false }
+}
+
+async function fetchFromExchangeRateAPI(){
+  // Fallback — free, no key, unlimited, but refreshes only ~hourly
   try{
     const res = await fetch('https://api.exchangerate-api.com/v4/latest/USD')
     const data = await res.json()
-    console.log('[Prices] fetchForexRates response:', JSON.stringify(data).slice(0,200))
     const r = data.rates
     if(!r) return
-    const set = (pair, price) => {
-      if(!price || !isFinite(price) || price <= 0 || price > 1e8) return
-      const prev = livePrices[pair]?.price || price
-      livePrices[pair] = { price, prev, ts: Date.now() }
-    }
     if(r.EUR) set('EUR/USD', 1/r.EUR)
     if(r.GBP) set('GBP/USD', 1/r.GBP)
     if(r.JPY) set('USD/JPY', r.JPY)
@@ -861,9 +966,18 @@ async function fetchForexRates(){
     if(r.NZD) set('NZD/USD', 1/r.NZD)
     if(r.EUR && r.GBP) set('EUR/GBP', r.GBP/r.EUR)
     if(r.GBP && r.JPY) set('GBP/JPY', r.JPY/r.GBP)
-    if(r.XAU) set('XAU/USD', 1/r.XAU)  // exchangerate includes gold
+    if(r.XAU) set('XAU/USD', 1/r.XAU)
     if(r.XAG) set('XAG/USD', 1/r.XAG)
-  }catch(e){}
+  }catch(e){ console.error('[Prices] ExchangeRate-API error:', e.message) }
+}
+
+function scheduleQuotaReset(){
+  // TwelveData quota resets at midnight UTC — schedule a retry then
+  clearTimeout(tdQuotaResetTimer)
+  const now = new Date()
+  const nextUTCMidnight = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()+1, 0, 0, 0))
+  const msUntilReset = nextUTCMidnight - now
+  tdQuotaResetTimer = setTimeout(()=>{ tdQuotaExceeded = false; console.log('[Prices] TwelveData quota reset — retrying') }, msUntilReset)
 }
 
 async function fetchBTCPrice(){
