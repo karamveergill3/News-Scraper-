@@ -378,6 +378,10 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;fo
 
   /* Section headers + masonry grid */
   .section-head{padding:16px 14px 10px;flex-wrap:wrap;gap:8px}
+  .section-head-rule{display:none}
+  .section-filters{flex:1 1 100%;display:flex;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;gap:6px;padding-bottom:4px;scrollbar-width:none}
+  .section-filters::-webkit-scrollbar{display:none}
+  .section-filters .s-chip{flex-shrink:0}
   .masonry-wrap{padding:0 14px 24px;columns:1}
 
   /* Calendar tabs wrap nicely */
@@ -1058,8 +1062,6 @@ async function init(){
 }
 
 async function autoScan(){
-  apiKey=apiKey||localStorage.getItem('mit_api_key')||''
-  if(!apiKey)return
   const btn=document.getElementById('scanBtn')
   btn.disabled=true;btn.textContent='Auto-scanning...'
   setStatus('scanning','Auto-scanning...')
@@ -1231,7 +1233,6 @@ function setStatus(s,l){
 // ── Scan ──────────────────────────────────────────────────────────────────
 async function triggerScan(){
   const btn=document.getElementById('scanBtn')
-  if(!apiKey){const k=prompt('Enter your Anthropic API key (sk-ant-...):');if(!k)return;apiKey=k;localStorage.setItem('mit_api_key',k)}
   btn.disabled=true;btn.textContent='Scanning...';setStatus('scanning','Scanning...')
   document.getElementById('masonryGrid').innerHTML=Array(6).fill(0).map((_,i)=>`<div class="shim-card" style="animation-delay:${i*0.08}s"><div class="shim" style="width:28%;height:9px;margin-bottom:14px"></div><div class="shim" style="width:75%;height:14px;margin-bottom:10px"></div><div class="shim" style="width:100%;height:9px;margin-bottom:5px"></div><div class="shim" style="width:60%;height:9px;margin-bottom:18px"></div><div class="shim" style="height:60px"></div></div>`).join('')
   await runScan()
@@ -1703,7 +1704,6 @@ async function deepDive(id){
   document.getElementById('diveMeta').textContent=(ev.source||'')+(ev.time?' · '+ev.time:'')+(ev.impact?' · '+ev.impact+' IMPACT':'')
   document.getElementById('diveBody').innerHTML='<div class="dive-loading"><div class="dive-spinner"></div><span>Generating analysis...</span></div>'
   document.getElementById('diveModal').classList.add('open')
-  if(!apiKey){apiKey=localStorage.getItem('mit_api_key')||'';if(!apiKey){const k=prompt('Enter your Anthropic API key for Deep Dive:');if(k){apiKey=k;localStorage.setItem('mit_api_key',k)}else{document.getElementById('diveBody').innerHTML='<div style="color:var(--red)">API key required for Deep Dive</div>';return}}}
   // Get current price for context
   const cp=getCurrentPrice(ev.pairs?.[0]?.pair)
   const priceCtx=cp?`Current live price for ${ev.pairs[0].pair}: ${fmtP(ev.pairs[0].pair,cp)}.`:''
@@ -1990,14 +1990,14 @@ async function tradeAnalysis(pair,dir,entry,sl,tp,rr,btn){
   btn.textContent='Loading...'
   body.style.display='block'
   body.innerHTML='<div style="color:rgba(212,168,67,0.4);font-family:DM Mono,monospace;font-size:10px">Analysing trade...</div>'
-  if(!apiKey){ body.innerHTML='<div style="color:var(--red);font-size:10px">API key required</div>'; return }
   const cp = getCurrentPrice(pair)
   try{
-    const res = await fetch('https://api.anthropic.com/v1/messages',{
+    const res = await fetch('/api/analyze',{
       method:'POST',
-      headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:300,messages:[{role:'user',content:`In 3 short bullet points explain why this is a good trade setup. Pair: ${pair}, Direction: ${dir}, Entry: ${entry}, SL: ${sl}, TP: ${tp}, RR: ${rr}:1, Current price: ${cp||'unknown'}. Be specific with price levels and technical reasoning. Trader language only. No fluff.`}]})
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({apiKey,body:{model:'claude-haiku-4-5-20251001',max_tokens:300,messages:[{role:'user',content:`In 3 short bullet points explain why this is a good trade setup. Pair: ${pair}, Direction: ${dir}, Entry: ${entry}, SL: ${sl}, TP: ${tp}, RR: ${rr}:1, Current price: ${cp||'unknown'}. Be specific with price levels and technical reasoning. Trader language only. No fluff.`}]}})
     })
+    if(!res.ok){const errData=await res.json().catch(()=>({}));throw new Error(errData.error?.message||'API error '+res.status)}
     const d = await res.json()
     const text = d.content.filter(b=>b.type==='text').map(b=>b.text).join('').trim()
     body.innerHTML = text.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong style="color:var(--gold)">$1</strong>').replace(/^[-•]\s/gm,'<span style="color:var(--gold)">▸</span> ')
@@ -2356,7 +2356,6 @@ function renderHistory(){
 }
 
 async function openTradeAnalysis(pair,dir,entry,sl,tp,rr,bodyId,btn){
-  if(!apiKey){ showToast('Run a scan first to set API key'); return }
   // Show modal
   let modal = document.getElementById('tradeAnalysisModal')
   if(!modal){
