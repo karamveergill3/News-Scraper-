@@ -89,12 +89,12 @@ module.exports = async function handler(req, res) {
         await fetch('https://ntfy.sh/KJC', {
           method: 'POST',
           headers: {
-            'Title': '⚡ KJC Capital — ' + urgentEvents.length + ' HIGH Impact',
+            'Title': 'KJC Capital - ' + urgentEvents.length + ' HIGH Impact',
             'Tags': 'warning',
             'Priority': '4',
             'Click': 'https://news-scraper-five.vercel.app/index.html'
           },
-          body: headlines
+          body: Buffer.from(headlines, 'utf-8')
         })
         console.log('[Scan] ntfy sent for', urgentEvents.length, 'urgent events')
       }catch(e){ console.log('[Scan] ntfy failed:', e.message) }
