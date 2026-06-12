@@ -81,6 +81,25 @@ module.exports = async function handler(req, res) {
     const { error: dbError } = await sb.from('scans').insert([result])
     if(dbError) throw new Error('Supabase insert failed: ' + dbError.message)
 
+    // Send push notification for HIGH/urgent events only
+    const urgentEvents = (result.events||[]).filter(e => e.urgent || e.impact === 'HIGH')
+    if(urgentEvents.length > 0){
+      const headlines = urgentEvents.slice(0,3).map(e => '• ' + e.headline).join('\n')
+      try{
+        await fetch('https://ntfy.sh/KJC', {
+          method: 'POST',
+          headers: {
+            'Title': '⚡ KJC Capital — ' + urgentEvents.length + ' HIGH Impact',
+            'Tags': 'warning',
+            'Priority': '4',
+            'Click': 'https://news-scraper-five.vercel.app/index.html'
+          },
+          body: headlines
+        })
+        console.log('[Scan] ntfy sent for', urgentEvents.length, 'urgent events')
+      }catch(e){ console.log('[Scan] ntfy failed:', e.message) }
+    }
+
     console.log('[Scan] Success:', result.event_count, 'events')
     return res.status(200).json({
       success: true,
