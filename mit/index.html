@@ -716,7 +716,6 @@ function initPriceFeed(){
 
 let tdWs = null
 let tdWsConnected = false
-const TD_WS_SYMBOLS = TD_SYMBOLS.map(s=>s.replace('/','/')) // TwelveData WS uses "EUR/USD" format
 
 function connectTwelveDataWS(){
   try{
@@ -726,7 +725,7 @@ function connectTwelveDataWS(){
     tdWs.onopen = () => {
       console.log('[Prices] TwelveData WS connected')
       tdWsConnected = true
-      const subscribeMsg = { action: 'subscribe', params: { symbols: TD_WS_SYMBOLS.join(',') } }
+      const subscribeMsg = { action: 'subscribe', params: { symbols: TD_SYMBOLS.join(',') } }
       tdWs.send(JSON.stringify(subscribeMsg))
     }
 
