@@ -764,8 +764,8 @@ function connectPriceFeed(){
     setPriceStripMsg('Loading prices...')
     // REST fetch fills prices immediately — don't wait for WS ticks
     fetchInitialPrices()
-    // 7-day changes in background
-    setTimeout(fetchWeeklyChanges, 3000)
+    // 7-day % change widget disabled — Finnhub candle endpoint requires a paid plan (403 on free tier)
+    // setTimeout(fetchWeeklyChanges, 3000)
     // Light REST safety-net poll — Finnhub ticks are the primary source now
     clearInterval(window._pricePoller)
     window._pricePoller = setInterval(fetchInitialPrices, 15000)
