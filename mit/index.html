@@ -701,7 +701,8 @@ function initPriceFeed(){
     }
   }catch(e){}
   // Free REST feed — baseline, always runs, no key required
-  setPriceStripMsg('Loading prices...')
+  // Only show "Loading prices..." if we didn't already restore cached tiles above
+  if(!priceStripBuilt) setPriceStripMsg('Loading prices...')
   fetchInitialPrices().catch(e=>{ console.error('fetchInitialPrices:', e.message); if(!priceStripBuilt){ renderPriceStrip(); priceStripBuilt=true } })
   clearInterval(window._pricePoller)
   window._pricePoller = setInterval(fetchInitialPrices, 2000)
