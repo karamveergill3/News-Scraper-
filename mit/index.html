@@ -816,6 +816,7 @@ function setPriceStripMsg(html){
 }
 
 function renderPriceStrip(){
+  console.log('[Prices] renderPriceStrip called, livePrices:', JSON.stringify(livePrices))
   // Build tiles, duplicate for seamless loop
   const makeTiles = () => Object.keys(FH_SYMBOLS).map(pair => {
     const d = livePrices[pair]
@@ -842,6 +843,7 @@ async function fetchForexRates(){
   try{
     const res = await fetch('https://api.exchangerate-api.com/v4/latest/USD')
     const data = await res.json()
+    console.log('[Prices] fetchForexRates response:', JSON.stringify(data).slice(0,200))
     const r = data.rates
     if(!r) return
     const set = (pair, price) => {
