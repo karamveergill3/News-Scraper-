@@ -761,8 +761,10 @@ function connectPriceFeed(){
       priceWs.send(JSON.stringify({ type: 'subscribe', symbol: sym }))
     })
     fhWsConnected = true
-    setPriceStripMsg('Loading prices...')
-    // REST fetch fills prices immediately — don't wait for WS ticks
+    // Don't call setPriceStripMsg here — if the strip is already built, this would
+    // wipe out the rendered price tiles (and their #ptv-* ids) without resetting
+    // priceStripBuilt, leaving the strip permanently stuck on "Loading prices...".
+    // fetchInitialPrices()/updatePriceStrip() below will render or update as needed.
     fetchInitialPrices()
     // 7-day % change widget disabled — Finnhub candle endpoint requires a paid plan (403 on free tier)
     // setTimeout(fetchWeeklyChanges, 3000)
