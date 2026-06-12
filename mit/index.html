@@ -381,18 +381,43 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;fo
   /* Calendar tabs wrap nicely */
   .cal-tab{font-size:8px;padding:4px 8px}
 
-  /* Trade panel — bottom sheet, scrollable */
+  /* Trade panel — bottom sheet, hidden by default, toggled via FAB */
   .trade-panel{
     position:fixed;left:0;right:0;bottom:0;top:auto;
-    width:100%;height:55vh;max-height:55vh;
+    width:100%;height:65vh;max-height:65vh;
     border-left:none;border-top:1px solid var(--border);
     border-radius:16px 16px 0 0;
     z-index:200;
     box-shadow:0 -8px 32px rgba(0,0,0,0.6);
-    display:flex;flex-direction:column
+    display:flex;flex-direction:column;
+    transform:translateY(100%);
+    transition:transform 0.3s ease;
   }
+  .trade-panel.mobile-open{transform:translateY(0)}
   .trade-panel-head{flex-shrink:0}
   .trade-list{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+
+  /* Floating Action Button to toggle trade panel */
+  .trade-fab{
+    display:flex;position:fixed;bottom:18px;right:18px;z-index:250;
+    width:54px;height:54px;border-radius:50%;
+    background:linear-gradient(135deg,#7a5a10,#d4a843,#f0c050,#d4a843,#7a5a10);
+    align-items:center;justify-content:center;
+    box-shadow:0 4px 20px rgba(0,0,0,0.5),0 0 24px rgba(212,168,67,0.3);
+    cursor:pointer;border:none;
+  }
+  .trade-fab-icon{font-size:20px;color:#000}
+  .trade-fab-badge{
+    position:absolute;top:-4px;right:-4px;
+    background:var(--red);color:#fff;
+    font-family:'DM Mono',monospace;font-size:9px;font-weight:700;
+    min-width:18px;height:18px;border-radius:9px;
+    display:flex;align-items:center;justify-content:center;padding:0 4px;
+    border:2px solid #000;
+  }
+  .trade-fab-close{display:none}
+  .trade-fab.open .trade-fab-close{display:block}
+  .trade-fab.open .trade-fab-icon{display:none}
 
   /* Trade cards — tighten padding */
   .trade-card,.open-trade-card{padding:10px 11px;margin-bottom:8px}
@@ -408,6 +433,10 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;fo
   .kjc-letters{font-size:16px}
   .btn span{display:none}
 }
+
+/* FAB only on mobile */
+.trade-fab{display:none}
+@media(max-width:768px){.trade-fab{display:flex}}
 </style>
 </head>
 <body>
@@ -548,6 +577,11 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;fo
 </div>
 
 <!-- Trade Ideas Panel -->
+<button class="trade-fab" id="tradeFab" onclick="toggleTradePanel()">
+  <span class="trade-fab-icon">📊</span>
+  <span class="trade-fab-close" style="color:#000;font-size:20px;font-weight:700">✕</span>
+  <span class="trade-fab-badge" id="tradeFabBadge" style="display:none">0</span>
+</button>
 <div class="trade-panel" id="tradePanel">
   <div class="trade-panel-head">
     <div style="display:flex;gap:0;margin-bottom:8px;background:rgba(255,255,255,0.03);border-radius:8px;padding:3px">
@@ -2015,6 +2049,19 @@ async function loadArchives(){
 }
 let activeTab = 'ideas'
 
+function toggleTradePanel(){
+  const panel=document.getElementById('tradePanel')
+  const fab=document.getElementById('tradeFab')
+  panel.classList.toggle('mobile-open')
+  fab.classList.toggle('open')
+}
+function updateTradeFabBadge(){
+  const badge=document.getElementById('tradeFabBadge')
+  if(!badge)return
+  const cnt=openTrades.length
+  if(cnt>0){badge.textContent=cnt;badge.style.display='flex'}
+  else{badge.style.display='none'}
+}
 function switchTab(tab){
   activeTab = tab
   const ol=document.getElementById('openTradeList')
@@ -2074,6 +2121,7 @@ function closeOpenTrade(id, outcome){
 }
 
 function renderOpenTrades(){
+  updateTradeFabBadge()
   const list = document.getElementById('openTradeList')
   if(!openTrades.length){
     list.innerHTML='<div class="trade-empty"><span class="trade-empty-icon">📊</span>No open trades yet<br><span style="font-size:10px;opacity:0.6">Click Open on any trade idea</span></div>'
