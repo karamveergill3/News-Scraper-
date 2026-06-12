@@ -491,7 +491,7 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;fo
   <div id="priceTickerTrack" style="display:flex;align-items:center;height:100%">
     <span style="font-family:'DM Mono',monospace;font-size:11px;color:rgba(212,168,67,0.28);padding-left:16px">Loading prices...</span>
   </div>
-  <button class="connect-feed-btn" onclick="promptPriceKey()" id="fhConnectBtn" style="margin-left:auto;margin-right:12px">&#9889; Faster ticks</button>
+
 </div>
 <!-- u2500u2500 7-Day Gainers / Losers Strip u2500u2500 -->
 <div id="gainersStrip" class="gainers-strip" style="display:none">
@@ -709,8 +709,7 @@ function initPriceFeed(){
   setTimeout(()=>{ if(!priceStripBuilt){ renderPriceStrip(); priceStripBuilt=true } }, 5000)
   // True real-time BTC ticks via Binance WebSocket (free, no key)
   connectBinanceWS()
-  // Finnhub WebSocket — true tick-by-tick forex updates when a key is connected
-  if(fhKey) connectPriceFeed()
+  // Note: Finnhub forex WebSocket/candle endpoints return 403 on free tier — disabled
 }
 
 function connectBinanceWS(){
@@ -1734,11 +1733,14 @@ function getExpiryLabel(scanTime){
   return{label:minsLeft+'m left',expiring:false}
 }
 
+let _lastAutoOpenScanTime = localStorage.getItem('kjc_last_autoopen_scan') || null
+
 function renderTrades(setups,scanTime){
   window._lastSetups=setups
   window._lastScanTime=scanTime
-  // Auto-open setups ONLY if not already open for that pair
-  if(setups && setups.length){
+  // Auto-open setups ONLY on a genuinely NEW scan — prevents the 60s refresh timer
+  // from re-opening pairs that were just closed (infinite open/close loop)
+  if(setups && setups.length && scanTime !== _lastAutoOpenScanTime){
     let changed = false
     setups.forEach(s => {
       const t = parseSetup(s)
@@ -1761,6 +1763,8 @@ function renderTrades(setups,scanTime){
       const el = document.getElementById('tab-open')
       if(el) el.textContent = cnt ? 'Open Trades ('+cnt+')' : 'Open Trades'
     }
+    _lastAutoOpenScanTime = scanTime
+    localStorage.setItem('kjc_last_autoopen_scan', scanTime)
   }
   const tst=document.getElementById('tpScanTime'); if(tst) tst.textContent=scanTime?'Signal time: '+scanTime:''
 if(!setups||!setups.length){renderOpenTrades();return}
@@ -2232,6 +2236,11 @@ function checkOpenTradeExits(){
   openTrades = openTrades.filter(t => {
     const cp = getCurrentPrice(t.pair)
     if(!cp) return true  // keep — no price yet
+    // Sanity guard — if entry/sl/tp are missing or wildly mismatched vs current price
+    // (e.g. corrupted data), don't auto-close. Prevents runaway fake P&L loops.
+    if(!t.entry || !t.sl || !t.tp || isNaN(t.entry) || isNaN(t.sl) || isNaN(t.tp)) return true
+    const refScale = Math.max(Math.abs(t.entry), Math.abs(cp), 1)
+    if(Math.abs(cp - t.entry) > refScale * 0.5) return true  // entry/price mismatch > 50% — corrupted, skip
     const isLong = t.dir === 'long'
     const hitTP = isLong ? cp >= t.tp : cp <= t.tp
     const hitSL = isLong ? cp <= t.sl : cp >= t.sl
