@@ -892,8 +892,7 @@ async function init(){
     await loadLatest()
     await loadTradeHistory()
     setInterval(async()=>await loadLatest(),60000)
-    setInterval(autoScan,2*60*60*1000)
-    setTimeout(()=>{apiKey=localStorage.getItem('mit_api_key')||'';if(apiKey)autoScan()},8000)
+    // Auto-scan disabled — Vercel cron handles daily scans automatically
   }catch(e){console.error(e);window.location.replace('/login.html')}
 }
 
