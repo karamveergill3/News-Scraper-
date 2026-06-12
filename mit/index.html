@@ -716,6 +716,8 @@ function initPriceFeed(){
 
 let tdWs = null
 let tdWsConnected = false
+let tdWsLastTick = 0
+let tdWsWatchdog = null
 
 function connectTwelveDataWS(){
   try{
@@ -725,19 +727,33 @@ function connectTwelveDataWS(){
     tdWs.onopen = () => {
       console.log('[Prices] TwelveData WS connected')
       tdWsConnected = true
+      tdWsLastTick = Date.now()
       const subscribeMsg = { action: 'subscribe', params: { symbols: TD_SYMBOLS.join(',') } }
       tdWs.send(JSON.stringify(subscribeMsg))
+      // Watchdog — if no price ticks arrive within 20s, this connection is dead weight; fall back to REST
+      clearTimeout(tdWsWatchdog)
+      tdWsWatchdog = setTimeout(()=>{
+        if(Date.now() - tdWsLastTick > 18000){
+          console.warn('[Prices] TwelveData WS gave no price ticks within 20s — falling back to REST polling')
+          tdWsConnected = false
+          try{ tdWs.close() }catch(e){}
+        }
+      }, 20000)
     }
 
     tdWs.onmessage = (msg) => {
       try{
         const d = JSON.parse(msg.data)
         if(d.event === 'price' && d.symbol && d.price){
+          tdWsLastTick = Date.now()
           const pair = d.symbol
           const price = parseFloat(d.price)
           if(!price || !isFinite(price)) return
           const prev = livePrices[pair]?.price || price
           livePrices[pair] = { price, prev, ts: Date.now() }
+          // Log first 5 ticks so we can confirm the WS is genuinely live
+          if(!window._tdTickCount) window._tdTickCount = 0
+          if(window._tdTickCount < 5){ console.log('[Prices] TD tick:', pair, price); window._tdTickCount++ }
           if(priceStripBuilt){
             flashTile(pair, price, prev)
           }
@@ -755,7 +771,9 @@ function connectTwelveDataWS(){
           })
           refreshTradePrices()
         } else if(d.event === 'subscribe-status'){
-          console.log('[Prices] TwelveData WS subscribe status:', JSON.stringify(d).slice(0,200))
+          console.log('[Prices] TwelveData WS subscribe status:', JSON.stringify(d))
+        } else if(d.event === 'heartbeat'){
+          tdWsLastTick = Date.now()  // heartbeats count as "alive" even if no price ticks yet
         }
       }catch(e){}
     }
@@ -930,7 +948,12 @@ async function fetchFromTwelveData(){
     const symbols = TD_SYMBOLS.join(',')
     const res = await fetch('https://api.twelvedata.com/price?symbol='+encodeURIComponent(symbols)+'&apikey='+TD_API_KEY)
     const data = await res.json()
-    // TwelveData returns {code:429, message:'...run out of API credits...'} on quota exceeded
+    // Per-minute limit — just skip this cycle, don't trigger daily fallback
+    if(data.code === 429 && data.message && /current minute/i.test(data.message)){
+      console.warn('[Prices] TwelveData per-minute limit hit, skipping this cycle:', data.message)
+      return true  // pretend success — don't escalate to daily fallback
+    }
+    // Genuine daily quota / plan restriction
     if(data.code === 429 || data.code === 403 || (data.message && /credit|limit|quota/i.test(data.message))){
       console.warn('[Prices] TwelveData:', data.message)
       return false
