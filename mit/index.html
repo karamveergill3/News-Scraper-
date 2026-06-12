@@ -666,7 +666,9 @@ const FH_RMAP = Object.fromEntries(Object.entries(FH_SYMBOLS).map(([k,v])=>[v,k]
 let livePrices = {}
 let weeklyChanges = {}
 let priceWs = null
-let fhKey = localStorage.getItem('fh_key') || ''
+let fhWsConnected = false
+const FH_DEFAULT_KEY = 'd8m14rhr01qkiso4ucq0d8m14rhr01qkiso4ucqg'
+let fhKey = localStorage.getItem('fh_key') || FH_DEFAULT_KEY
 let priceStripBuilt = false
 
 function promptPriceKey(){
@@ -705,89 +707,15 @@ function initPriceFeed(){
   if(!priceStripBuilt) setPriceStripMsg('Loading prices...')
   fetchInitialPrices().catch(e=>{ console.error('fetchInitialPrices:', e.message); if(!priceStripBuilt){ renderPriceStrip(); priceStripBuilt=true } })
   clearInterval(window._pricePoller)
-  window._pricePoller = setInterval(fetchInitialPrices, 4000)
+  window._pricePoller = setInterval(fetchInitialPrices, 10000)
   // Hard fallback — if nothing rendered within 5s for any reason, render anyway
   setTimeout(()=>{ if(!priceStripBuilt){ renderPriceStrip(); priceStripBuilt=true } }, 5000)
   // True real-time BTC ticks via Binance WebSocket (free, no key)
   connectBinanceWS()
-  // True real-time forex ticks via TwelveData WebSocket (falls back to REST polling if unavailable)
-  connectTwelveDataWS()
-}
-
-let tdWs = null
-let tdWsConnected = false
-let tdWsLastTick = 0
-let tdWsWatchdog = null
-
-function connectTwelveDataWS(){
-  try{
-    if(tdWs){ try{ tdWs.close() }catch(e){} }
-    tdWs = new WebSocket('wss://ws.twelvedata.com/v1/quotes/price?apikey=' + TD_API_KEY)
-
-    tdWs.onopen = () => {
-      console.log('[Prices] TwelveData WS connected')
-      tdWsConnected = true
-      tdWsLastTick = Date.now()
-      const subscribeMsg = { action: 'subscribe', params: { symbols: TD_SYMBOLS.join(',') } }
-      tdWs.send(JSON.stringify(subscribeMsg))
-      // Watchdog — if no price ticks arrive within 20s, this connection is dead weight; fall back to REST
-      clearTimeout(tdWsWatchdog)
-      tdWsWatchdog = setTimeout(()=>{
-        if(Date.now() - tdWsLastTick > 18000){
-          console.warn('[Prices] TwelveData WS gave no price ticks within 20s — falling back to REST polling')
-          tdWsConnected = false
-          try{ tdWs.close() }catch(e){}
-        }
-      }, 20000)
-    }
-
-    tdWs.onmessage = (msg) => {
-      try{
-        const d = JSON.parse(msg.data)
-        if(d.event === 'price' && d.symbol && d.price){
-          tdWsLastTick = Date.now()
-          const pair = d.symbol
-          const price = parseFloat(d.price)
-          if(!price || !isFinite(price)) return
-          const prev = livePrices[pair]?.price || price
-          livePrices[pair] = { price, prev, ts: Date.now() }
-          // Log first 5 ticks so we can confirm the WS is genuinely live
-          if(!window._tdTickCount) window._tdTickCount = 0
-          if(window._tdTickCount < 5){ console.log('[Prices] TD tick:', pair, price); window._tdTickCount++ }
-          if(priceStripBuilt){
-            flashTile(pair, price, prev)
-          }
-          // Live update open trades for this pair
-          openTrades.forEach(t => {
-            if(t.pair !== pair) return
-            const nowEl = document.getElementById('otc-now-' + t.id)
-            if(nowEl) nowEl.textContent = fmtP(pair, price)
-            const pnlEl = document.getElementById('otc-pnl-' + t.id)
-            if(pnlEl){
-              const pnlUsd = calcRealPnl(pair, t.dir, t.entry, price)
-              pnlEl.textContent = pnlUsd!==null ? (pnlUsd>=0?'+':'-')+'$'+Math.abs(pnlUsd).toFixed(2) : '—'
-              pnlEl.className = 'otc-pnl '+(pnlUsd!==null?(pnlUsd>=0?'pos':'neg'):'')
-            }
-          })
-          refreshTradePrices()
-        } else if(d.event === 'subscribe-status'){
-          console.log('[Prices] TwelveData WS subscribe status:', JSON.stringify(d))
-        } else if(d.event === 'heartbeat'){
-          tdWsLastTick = Date.now()  // heartbeats count as "alive" even if no price ticks yet
-        }
-      }catch(e){}
-    }
-
-    tdWs.onclose = () => {
-      tdWsConnected = false
-      console.warn('[Prices] TwelveData WS closed — REST polling continues as fallback')
-      setTimeout(connectTwelveDataWS, 15000)
-    }
-
-    tdWs.onerror = () => {
-      console.warn('[Prices] TwelveData WS error — REST polling continues as fallback')
-    }
-  }catch(e){ console.error('[Prices] TwelveData WS init failed:', e.message) }
+  // True real-time forex + metals ticks via Finnhub WebSocket (primary feed, free key)
+  if(fhKey){
+    connectPriceFeed()
+  }
 }
 
 function connectBinanceWS(){
@@ -832,14 +760,15 @@ function connectPriceFeed(){
     Object.values(FH_SYMBOLS).forEach(sym => {
       priceWs.send(JSON.stringify({ type: 'subscribe', symbol: sym }))
     })
+    fhWsConnected = true
     setPriceStripMsg('Loading prices...')
     // REST fetch fills prices immediately — don't wait for WS ticks
     fetchInitialPrices()
     // 7-day changes in background
     setTimeout(fetchWeeklyChanges, 3000)
-    // Poll REST every 15s so prices never go stale if WS is quiet
+    // Light REST safety-net poll — Finnhub ticks are the primary source now
     clearInterval(window._pricePoller)
-    window._pricePoller = setInterval(fetchInitialPrices, 5000)
+    window._pricePoller = setInterval(fetchInitialPrices, 15000)
   }
 
   priceWs.onmessage = (msg) => {
@@ -879,11 +808,13 @@ function connectPriceFeed(){
   }
 
   priceWs.onclose = () => {
+    fhWsConnected = false
     // REST polling keeps prices flowing — try to reconnect WS for faster ticks
     if(fhKey) setTimeout(connectPriceFeed, 6000)
   }
 
   priceWs.onerror = () => {
+    fhWsConnected = false
     // Silently ignore — REST polling already covers the price strip as a fallback
   }
 }
@@ -908,18 +839,14 @@ function renderPriceStrip(){
   const strip = document.getElementById('priceStrip')
   strip.innerHTML =
     '<span class="price-strip-label">Live</span>' +
-    '<div class="price-ticker-track" id="priceTickerTrack">' + tiles + '</div>'
+    '<div class="price-ticker-track" id="priceTickerTrack">' + tiles + '</div>' +
+    (!fhKey ? '<button onclick="promptPriceKey()" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);z-index:5;background:rgba(212,168,67,0.12);border:1px solid var(--border2);color:var(--gold);font-family:\'DM Mono\',monospace;font-size:9px;padding:4px 10px;border-radius:6px;cursor:pointer;letter-spacing:0.06em;text-transform:uppercase;white-space:nowrap">Connect live feed</button>' : '')
 }
 
 async function fetchInitialPrices(){
   await Promise.allSettled([fetchForexRates(), fetchBTCPrice()])
   updatePriceStrip()
 }
-
-const TD_API_KEY = '16e7a2c115c547ed9767977540156109'
-const TD_SYMBOLS = ['EUR/USD','GBP/USD','USD/JPY','USD/CHF','AUD/USD','USD/CAD','NZD/USD','EUR/GBP','GBP/JPY','XAU/USD','XAG/USD']
-let tdQuotaExceeded = false
-let tdQuotaResetTimer = null
 
 const set = (pair, price) => {
   const p = parseFloat(price)
@@ -929,47 +856,9 @@ const set = (pair, price) => {
 }
 
 async function fetchForexRates(){
-  // If the WS is live and connected, skip the REST call entirely — saves daily credits
-  if(tdWsConnected) return
-  if(!tdQuotaExceeded){
-    const ok = await fetchFromTwelveData()
-    if(ok) return
-    // Quota hit or error — fall back for the rest of the day
-    tdQuotaExceeded = true
-    scheduleQuotaReset()
-    console.warn('[Prices] TwelveData quota exceeded — falling back to ExchangeRate-API until midnight UTC')
-  }
+  // If the Finnhub WS is live, ticks are already streaming in onmessage — skip REST entirely
+  if(fhWsConnected) return
   await fetchFromExchangeRateAPI()
-}
-
-async function fetchFromTwelveData(){
-  // TwelveData — free tier, real-time-ish forex quotes. Returns false if quota exceeded.
-  try{
-    const symbols = TD_SYMBOLS.join(',')
-    const res = await fetch('https://api.twelvedata.com/price?symbol='+encodeURIComponent(symbols)+'&apikey='+TD_API_KEY)
-    const data = await res.json()
-    // Per-minute limit — just skip this cycle, don't trigger daily fallback
-    if(data.code === 429 && data.message && /current minute/i.test(data.message)){
-      console.warn('[Prices] TwelveData per-minute limit hit, skipping this cycle:', data.message)
-      return true  // pretend success — don't escalate to daily fallback
-    }
-    // Genuine daily quota / plan restriction
-    if(data.code === 429 || data.code === 403 || (data.message && /credit|limit|quota/i.test(data.message))){
-      console.warn('[Prices] TwelveData:', data.message)
-      return false
-    }
-    if(data.price){
-      set(TD_SYMBOLS[0], data.price)
-    } else {
-      let gotAny = false
-      TD_SYMBOLS.forEach(sym => {
-        const entry = data[sym]
-        if(entry && entry.price){ set(sym, entry.price); gotAny = true }
-      })
-      if(!gotAny) return false
-    }
-    return true
-  }catch(e){ console.error('[Prices] TwelveData error:', e.message); return false }
 }
 
 async function fetchFromExchangeRateAPI(){
@@ -991,15 +880,6 @@ async function fetchFromExchangeRateAPI(){
     if(r.XAU) set('XAU/USD', 1/r.XAU)
     if(r.XAG) set('XAG/USD', 1/r.XAG)
   }catch(e){ console.error('[Prices] ExchangeRate-API error:', e.message) }
-}
-
-function scheduleQuotaReset(){
-  // TwelveData quota resets at midnight UTC — schedule a retry then
-  clearTimeout(tdQuotaResetTimer)
-  const now = new Date()
-  const nextUTCMidnight = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()+1, 0, 0, 0))
-  const msUntilReset = nextUTCMidnight - now
-  tdQuotaResetTimer = setTimeout(()=>{ tdQuotaExceeded = false; console.log('[Prices] TwelveData quota reset — retrying') }, msUntilReset)
 }
 
 async function fetchBTCPrice(){
