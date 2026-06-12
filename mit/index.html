@@ -491,6 +491,7 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;fo
   <div id="priceTickerTrack" style="display:flex;align-items:center;height:100%">
     <span style="font-family:'DM Mono',monospace;font-size:11px;color:rgba(212,168,67,0.28);padding-left:16px">Loading prices...</span>
   </div>
+  <button class="connect-feed-btn" onclick="promptPriceKey()" id="fhConnectBtn" style="margin-left:auto;margin-right:12px">&#9889; Faster ticks</button>
 </div>
 <!-- u2500u2500 7-Day Gainers / Losers Strip u2500u2500 -->
 <div id="gainersStrip" class="gainers-strip" style="display:none">
@@ -699,11 +700,48 @@ function initPriceFeed(){
       priceStripBuilt = true
     }
   }catch(e){}
-  // Free REST feed — no API key required, works everywhere including mobile
+  // Free REST feed — baseline, always runs, no key required
   setPriceStripMsg('Loading prices...')
-  fetchInitialPrices()
+  fetchInitialPrices().catch(e=>{ console.error('fetchInitialPrices:', e.message); if(!priceStripBuilt){ renderPriceStrip(); priceStripBuilt=true } })
   clearInterval(window._pricePoller)
-  window._pricePoller = setInterval(fetchInitialPrices, 10000)
+  window._pricePoller = setInterval(fetchInitialPrices, 2000)
+  // Hard fallback — if nothing rendered within 5s for any reason, render anyway
+  setTimeout(()=>{ if(!priceStripBuilt){ renderPriceStrip(); priceStripBuilt=true } }, 5000)
+  // True real-time BTC ticks via Binance WebSocket (free, no key)
+  connectBinanceWS()
+  // Finnhub WebSocket — true tick-by-tick forex updates when a key is connected
+  if(fhKey) connectPriceFeed()
+}
+
+function connectBinanceWS(){
+  try{
+    const ws = new WebSocket('wss://stream.binance.com:9443/ws/btcusdt@trade')
+    ws.onmessage = (msg) => {
+      try{
+        const d = JSON.parse(msg.data)
+        const price = parseFloat(d.p)
+        if(!price || !isFinite(price)) return
+        const prev = livePrices['BTC/USD']?.price || price
+        livePrices['BTC/USD'] = { price, prev, ts: Date.now() }
+        if(priceStripBuilt) flashTile('BTC/USD', price, prev)
+        // Live update any open BTC trade
+        openTrades.forEach(t => {
+          if(t.pair !== 'BTC/USD') return
+          const nowEl = document.getElementById('otc-now-' + t.id)
+          if(nowEl) nowEl.textContent = fmtP('BTC/USD', price)
+          const pnlEl = document.getElementById('otc-pnl-' + t.id)
+          if(pnlEl){
+            const pnlUsd = calcRealPnl('BTC/USD', t.dir, t.entry, price)
+            pnlEl.textContent = pnlUsd!==null ? (pnlUsd>=0?'+':'-')+'$'+Math.abs(pnlUsd).toFixed(2) : '—'
+            pnlEl.className = 'otc-pnl '+(pnlUsd!==null?(pnlUsd>=0?'pos':'neg'):'')
+          }
+        })
+        refreshTradePrices()
+      }catch(e){}
+    }
+    ws.onclose = () => { setTimeout(connectBinanceWS, 5000) }
+    ws.onerror = () => { try{ws.close()}catch(e){} }
+  }catch(e){}
 }
 
 function connectPriceFeed(){
@@ -764,12 +802,12 @@ function connectPriceFeed(){
   }
 
   priceWs.onclose = () => {
-    priceStripBuilt = false
-    // No reconnect — REST polling (fetchInitialPrices) handles all price updates
+    // REST polling keeps prices flowing — try to reconnect WS for faster ticks
+    if(fhKey) setTimeout(connectPriceFeed, 6000)
   }
 
   priceWs.onerror = () => {
-    // Silently ignore — REST polling already covers the price strip
+    // Silently ignore — REST polling already covers the price strip as a fallback
   }
 }
 
@@ -827,10 +865,11 @@ async function fetchForexRates(){
 }
 
 async function fetchBTCPrice(){
+  // Binance public ticker — free, no key, CORS-enabled, no rate limit issues
   try{
-    const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd&cachebust='+Date.now(), {mode:'cors'})
+    const res = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT')
     const d = await res.json()
-    const price = d?.bitcoin?.usd
+    const price = parseFloat(d?.price)
     if(price > 0){
       const prev = livePrices['BTC/USD']?.price || price
       livePrices['BTC/USD'] = { price, prev, ts: Date.now() }
@@ -840,11 +879,13 @@ async function fetchBTCPrice(){
 
 function updatePriceStrip(){
   try{ localStorage.setItem('kjc_last_prices', JSON.stringify(livePrices)) }catch(e){}
-  checkOpenTradeExits()
+  // Always render the strip first — never let a downstream error leave "Loading prices..." stuck
   if(!priceStripBuilt){
     renderPriceStrip()
     priceStripBuilt = true
-  } else {
+  }
+  try{ checkOpenTradeExits() }catch(e){ console.error('checkOpenTradeExits:', e.message) }
+  if(priceStripBuilt){
     Object.keys(FH_SYMBOLS).forEach(pair => {
       const d = livePrices[pair]
       if(!d) return
