@@ -3,6 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- PWA -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0d0d0a">
+  <!-- iOS home screen -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="KJC Capital">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
 <meta name="theme-color" content="#000">
 <title>MarketIntel — KJC Capital</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -1279,7 +1287,23 @@ async function runScan(){
       const rd=document.getElementById('reportDate'); if(rd) rd.textContent=result.scan_date+' · '+result.scan_time
     }
     const urgents=allEvents.filter(e=>e.urgent||e.impact==='HIGH')
-    if(urgents.length)showToast(urgents[0].headline)
+    if(urgents.length){
+      showToast(urgents[0].headline)
+      // Send one grouped notification matching the original KJC Capital format
+      sendNtfy(
+        'KJC Capital - ' + urgents.length + ' HIGH Impact',
+        urgents.map(e => '• ' + e.headline).join('\n'),
+        'high',
+        ['rotating_light','money_with_wings']
+      )
+    }
+    // Scan complete — low priority, no sound
+    sendNtfy(
+      'KJC Capital - Scan Complete',
+      (result.market_summary || 'New scan results available'),
+      'low',
+      ['bar_chart']
+    )
     renderAll();buildTicker(allEvents);renderTrades(result.setups,result.scan_time)
     setStatus('live','Updated '+result.scan_time);queueAutoRead(allEvents)
   }catch(err){
@@ -1719,6 +1743,21 @@ async function deepDive(id){
 function openReport(){document.getElementById('reportBody').innerHTML=lastReport.replace(/\n/g,'<br>');document.getElementById('reportModal').classList.add('open')}
 function showToast(text){document.getElementById('toastText').textContent=text;document.getElementById('toast').style.display='block';setTimeout(()=>document.getElementById('toast').style.display='none',12000)}
 
+// ── ntfy push notifications ───────────────────────────────────────────────
+const NTFY_URL = 'https://ntfy.sh/KJC'
+function sendNtfy(title, message, priority='default', tags=[]){
+  fetch(NTFY_URL, {
+    method: 'POST',
+    headers: {
+      'Title': title,
+      'Priority': priority,
+      'Tags': tags.join(','),
+      'Content-Type': 'text/plain'
+    },
+    body: message
+  }).catch(()=>{}) // fire-and-forget, never block UI
+}
+
 // ── Trade Panel ───────────────────────────────────────────────────────────
 function parseSetup(s){
   if(typeof s==='object')return s
@@ -2080,14 +2119,14 @@ async function saveTradeToSupabase(t){
   }catch(e){}
   if(!currentUserId) return
   try{
-    await sb.from('trade_history').insert([{
+    await sb.from('trade_history').upsert([{
       id:t.id, user_id:currentUserId,
       pair:t.pair, dir:t.dir,
       entry:t.entry, sl:t.sl, tp:t.tp,
       close_price:t.closePrice, pnl:t.pnl,
       outcome:t.outcome, opened_at:t.openedAt,
       closed_at:t.closedAt, trade_date:t.date
-    }])
+    }], { onConflict: 'id' })
   }catch(e){console.error('saveTradeToSupabase:',e.message)}
 }
 
@@ -2283,6 +2322,8 @@ function checkOpenTradeExits(){
         closedAt:new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}),
         date:new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short'})
       }
+      // Guard: never add the same trade to history twice (prevents double-close on rapid price ticks)
+      if(tradeHistory.find(x => x.id === t.id)) return false
       tradeHistory.unshift(closedTrade)
       saveTradeToSupabase(closedTrade)
       saveTradeToAirtable(closedTrade)
@@ -2465,6 +2506,13 @@ async function showArchivesModal(){
 async function doSignOut(){await sb.auth.signOut();window.location.replace('/login.html')}
 
 init()
+</script>
+<script>
+  if('serviceWorker' in navigator){
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js').catch(()=>{})
+    })
+  }
 </script>
 </body>
 </html>
