@@ -1112,8 +1112,8 @@ function renderFeature(ev){
   document.getElementById('featureWrap').style.display='block'
   document.getElementById('featureHeadline').textContent=ev.headline
   document.getElementById('featureContext').textContent=ev.context
-  document.getElementById('featureTime').textContent=fmtEventDate(lastScanDate,ev.time)
-  document.getElementById('featureSource').textContent=ev.source||''
+  document.getElementById('featureTime').textContent = fmtEventDate(lastScanDate, ev.time)
+  document.getElementById('featureSource').textContent = (ev.source || '') + (ev.time ? ' · Published ' + ev.time : '')
   const imp=document.getElementById('featureImpact')
   imp.textContent='● '+(ev.impact||'HIGH')+' IMPACT'
   const sgc=ev.overall==='bullish'?'':ev.overall==='bearish'?'bear':'mixed'
@@ -1184,7 +1184,7 @@ function buildNewsCard(ev,i){
       </div>
       <div class="nc-source-row">
         <span class="nc-source">${ev.source||''}</span>
-        <span class="nc-timestamp">${fmtEventDate(lastScanDate,ev.time)}</span>
+        <span class="nc-timestamp">${ev.time ? 'Published ' + ev.time : fmtEventDate(lastScanDate, ev.time)}</span>
       </div>
       <div class="nc-headline">${ev.headline}</div>
       <div class="nc-context">${ev.context}</div>
@@ -1250,7 +1250,7 @@ async function runScan(){
     ? `\nCURRENT LIVE MARKET PRICES RIGHT NOW — you MUST anchor all entry, stop-loss, and take-profit levels to these exact prices: ${liveCtx}`
     : ''
 
-  const prompt=`You are a senior multi-asset macro analyst. Today is ${dateStr} at ${timeStr} UK time.${priceAnchor} Use maximum 3 web searches total — make them count. Search for breaking financial news. Cover: Trump posts on tariffs/trade/Fed, Forex Factory red events, geopolitical risks, central bank news, major equity/commodity/crypto moves. Return ONLY valid compact JSON, no markdown, no HTML tags, no citation tags, max 8 events, max 3 pairs per event: {"scan_time":"${timeStr}","scan_date":"${dateStr}","events":[{"id":"e1","type":"trump|geopolitical|central-bank|economic|equities|commodities|crypto","urgent":false,"impact":"HIGH|MEDIUM|LOW","source":"string","headline":"max 12 words","context":"one sentence only","time":"HH:MM","pairs":[{"pair":"EUR/USD","direction":"bullish|bearish|neutral","strength":75,"analysis":"brief with one price level"}],"overall":"bullish|bearish|neutral|mixed","signal":"entry zone, target, stop"}],"urgent_alerts":["string"],"sentiment":{"USD":0,"EUR":0,"GBP":0,"JPY":0,"CHF":0,"AUD":0,"CAD":0,"Gold":0,"Oil":0,"BTC":0},"setups":[{"pair":"EUR/USD","direction":"long|short","entry":"1.0820","sl":"1.0815","tp":"1.0835","rr":"2.0","reason":"one sentence"}]. Setups must be SCALP trades only: tight stops 8-20 pips (or $8-20 for gold), targets 1.5:1 to 2.5:1 RR max, entry at or very near current price, no wide swing setups,"market_summary":"2 sentence brief"}`
+  const prompt=`You are a senior multi-asset macro analyst. Today is ${dateStr} at ${timeStr} UK time.${priceAnchor} Use maximum 3 web searches total — make them count. Search for breaking financial news. Cover: Trump posts on tariffs/trade/Fed, Forex Factory red events, geopolitical risks, central bank news, major equity/commodity/crypto moves. For each event, find the ACTUAL article on the source website and extract the REAL publication time printed on that page (e.g. "Published 09:42 BST" or "Jun 14, 2026 10:15am ET" — convert to UK time HH:MM). Do NOT use the current time or scan time for "time" — it must be the article's own published timestamp. Return ONLY valid compact JSON, no markdown, no HTML tags, no citation tags, max 8 events, max 3 pairs per event: {"scan_time":"${timeStr}","scan_date":"${dateStr}","events":[{"id":"e1","type":"trump|geopolitical|central-bank|economic|equities|commodities|crypto","urgent":false,"impact":"HIGH|MEDIUM|LOW","source":"string","headline":"max 12 words","context":"one sentence only","time":"HH:MM (actual article publish time UK, NOT scan time)","pairs":[{"pair":"EUR/USD","direction":"bullish|bearish|neutral","strength":75,"analysis":"brief with one price level"}],"overall":"bullish|bearish|neutral|mixed","signal":"entry zone, target, stop"}],"urgent_alerts":["string"],"sentiment":{"USD":0,"EUR":0,"GBP":0,"JPY":0,"CHF":0,"AUD":0,"CAD":0,"Gold":0,"Oil":0,"BTC":0},"setups":[{"pair":"EUR/USD","direction":"long|short","entry":"1.0820","sl":"1.0815","tp":"1.0835","rr":"2.0","reason":"one sentence"}]. Setups must be SCALP trades only: tight stops 8-20 pips (or $8-20 for gold), targets 1.5:1 to 2.5:1 RR max, entry at or very near current price, no wide swing setups,"market_summary":"2 sentence brief"}`
 
   try{
     const res=await fetch('/api/analyze',{
