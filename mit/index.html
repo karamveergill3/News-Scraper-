@@ -1898,9 +1898,14 @@ function initCalendar(){
 async function fetchCalendar(){
   if(calFetching) return
   calFetching = true
+  // Auto-reset the lock after 10s in case the fetch hangs
+  const lockTimer = setTimeout(() => { calFetching = false }, 10000)
   try{
-    // Forex Factory's public JSON feed — same data as their calendar widget, no key needed
-    const res = await fetch('https://nfs.faireconomy.media/ff_calendar_thisweek.json')
+    // Proxy through our own Vercel function to avoid CORS/blocking issues with nfs.faireconomy.media
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 9000)
+    const res = await fetch('/api/calendar', { signal: controller.signal })
+    clearTimeout(timeout)
     const data = await res.json()
     const events = (Array.isArray(data) ? data : [])
       .filter(e => (e.impact||'').toLowerCase() === 'high')
@@ -1921,9 +1926,11 @@ async function fetchCalendar(){
       .sort((a,b)=>a._sort-b._sort)
     setCalCache(events)
     calFetching = false
+    clearTimeout(lockTimer)
     renderCalendar(events)
   }catch(err){
     calFetching = false
+    clearTimeout(lockTimer)
     if(calOpen) document.getElementById('calBody').innerHTML =
       '<div style="padding:16px;font-family:DM Mono,monospace;font-size:11px;color:var(--red)">Failed to load Forex Factory calendar.</div>'
   }
