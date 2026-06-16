@@ -1021,7 +1021,13 @@ function getCurrentPrice(pair){
   return livePrices[norm]?.price || null
 }
 
+let _refreshDebounce = null
 function refreshTradePrices(){
+  // Debounce — max once per second regardless of how many price ticks fire simultaneously
+  clearTimeout(_refreshDebounce)
+  _refreshDebounce = setTimeout(_doRefreshTradePrices, 1000)
+}
+function _doRefreshTradePrices(){
   // Update "Now" rows in already-rendered trade cards without full re-render
   if(!window._lastSetups) return
   window._lastSetups.forEach(s => {
@@ -1258,7 +1264,7 @@ async function runScan(){
     ? `\nCURRENT LIVE MARKET PRICES RIGHT NOW — you MUST anchor all entry, stop-loss, and take-profit levels to these exact prices: ${liveCtx}`
     : ''
 
-  const prompt=`You are a senior multi-asset macro analyst. Today is ${dateStr} at ${timeStr} UK time.${priceAnchor} Use maximum 3 web searches total — make them count. Search for breaking financial news. Cover: Trump posts on tariffs/trade/Fed, Forex Factory red events, geopolitical risks, central bank news, major equity/commodity/crypto moves. For each event, find the ACTUAL article on the source website and extract the REAL publication time printed on that page (e.g. "Published 09:42 BST" or "Jun 14, 2026 10:15am ET" — convert to UK time HH:MM). Do NOT use the current time or scan time for "time" — it must be the article's own published timestamp. Return ONLY valid compact JSON, no markdown, no HTML tags, no citation tags, max 8 events, max 3 pairs per event: {"scan_time":"${timeStr}","scan_date":"${dateStr}","events":[{"id":"e1","type":"trump|geopolitical|central-bank|economic|equities|commodities|crypto","urgent":false,"impact":"HIGH|MEDIUM|LOW","source":"string","headline":"max 12 words","context":"one sentence only","time":"HH:MM (actual article publish time UK, NOT scan time)","pairs":[{"pair":"EUR/USD","direction":"bullish|bearish|neutral","strength":75,"analysis":"brief with one price level"}],"overall":"bullish|bearish|neutral|mixed","signal":"entry zone, target, stop"}],"urgent_alerts":["string"],"sentiment":{"USD":0,"EUR":0,"GBP":0,"JPY":0,"CHF":0,"AUD":0,"CAD":0,"Gold":0,"Oil":0,"BTC":0},"setups":[{"pair":"EUR/USD","direction":"long|short","entry":"1.0820","sl":"1.0815","tp":"1.0835","rr":"2.0","reason":"one sentence"}]. Setups must be SCALP trades only: tight stops 8-20 pips (or $8-20 for gold), targets 1.5:1 to 2.5:1 RR max, entry at or very near current price, no wide swing setups,"market_summary":"2 sentence brief"}`
+  const prompt=`You are a senior multi-asset macro analyst. Today is ${dateStr} at ${timeStr} UK time.${priceAnchor} Use maximum 3 web searches total — make them count. Search for breaking financial news. Cover: Trump posts on tariffs/trade/Fed, Forex Factory red events, geopolitical risks, central bank news, major equity/commodity/crypto moves. For each event, find the ACTUAL article on the source website and extract the REAL publication time printed on that page (e.g. "Published 09:42 BST" or "Jun 14, 2026 10:15am ET" — convert to UK time HH:MM). Do NOT use the current time or scan time for "time" — it must be the article's own published timestamp. IMPORTANT: only use pairs from this exact list for "pairs" and "setups": EUR/USD, GBP/USD, USD/JPY, USD/CHF, AUD/USD, USD/CAD, NZD/USD, EUR/GBP, GBP/JPY, XAU/USD, XAG/USD, BTC/USD. Do not suggest any other pairs (no USD/BRL, WTI, DXY, indices etc) — they have no live price feed. Return ONLY valid compact JSON, no markdown, no HTML tags, no citation tags, max 8 events, max 3 pairs per event: {"scan_time":"${timeStr}","scan_date":"${dateStr}","events":[{"id":"e1","type":"trump|geopolitical|central-bank|economic|equities|commodities|crypto","urgent":false,"impact":"HIGH|MEDIUM|LOW","source":"string","headline":"max 12 words","context":"one sentence only","time":"HH:MM (actual article publish time UK, NOT scan time)","pairs":[{"pair":"EUR/USD","direction":"bullish|bearish|neutral","strength":75,"analysis":"brief with one price level"}],"overall":"bullish|bearish|neutral|mixed","signal":"entry zone, target, stop"}],"urgent_alerts":["string"],"sentiment":{"USD":0,"EUR":0,"GBP":0,"JPY":0,"CHF":0,"AUD":0,"CAD":0,"Gold":0,"Oil":0,"BTC":0},"setups":[{"pair":"EUR/USD","direction":"long|short","entry":"1.0820","sl":"1.0815","tp":"1.0835","rr":"2.0","reason":"one sentence"}]. Setups must be SCALP trades only: tight stops 8-20 pips (or $8-20 for gold), targets 1.5:1 to 2.5:1 RR max, entry at or very near current price, no wide swing setups,"market_summary":"2 sentence brief"}`
 
   try{
     const res=await fetch('/api/analyze',{
@@ -1763,7 +1769,7 @@ function parseSetup(s){
   if(typeof s==='object')return s
   const str=s.toString()
   const pairMatch=str.match(/([A-Z]{2,6}\/[A-Z]{2,6}|XAU\/USD|BTC\/USD|WTI|GOLD|OIL)/i)
-  const pair=pairMatch?pairMatch[0].toUpperCase():str.split(' ')[0]
+  const pair = normalizePair(pairMatch ? pairMatch[0] : str.split(' ')[0])
   const dir=/short/i.test(str)?'short':'long'
   const nums=str.match(/\d+\.?\d*/g)||[]
   const entryMatch=str.match(/(?:entry|@|at)\s*([\d.]+)/i)||[null,nums[0]||'—']
@@ -1810,7 +1816,7 @@ function renderTrades(setups,scanTime){
       if(!t.entry || t.entry === '—') return
       openTrades.push({
         id: t.pair + '-' + Date.now() + '-' + Math.random().toString(36).slice(2,5),
-        pair: t.pair, dir,
+        pair: normalizePair(t.pair), dir,
         entry: parseFloat(t.entry), sl: parseFloat(t.sl),
         tp: parseFloat(t.tp), rr: t.rr,
         openedAt: new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})
@@ -2053,7 +2059,8 @@ async function tradeAnalysis(pair,dir,entry,sl,tp,rr,btn){
 
 // ── Open Trades ───────────────────────────────────────────────────────────
 let _rawTrades = JSON.parse(localStorage.getItem('kjc_open_trades')||'[]')
-// Deduplicate — keep only the most recent trade per pair
+// Normalize pair names (e.g. EURUSD → EUR/USD) then deduplicate by pair
+_rawTrades = _rawTrades.map(t => ({...t, pair: normalizePair(t.pair)}))
 let openTrades = _rawTrades.filter((t,i,arr) => arr.findIndex(x=>x.pair===t.pair) === i)
 if(openTrades.length !== _rawTrades.length) localStorage.setItem('kjc_open_trades', JSON.stringify(openTrades))
 let tradeHistory = [] // loaded from Supabase
@@ -2092,13 +2099,18 @@ async function loadTradeHistory(){
       .gte('created_at',ws)
       .order('created_at',{ascending:false})
     if(error) throw error
+    const seen = new Set()
     tradeHistory = (data||[]).map(r=>({
-      id:r.id, pair:r.pair, dir:r.dir,
+      id:r.id, pair:normalizePair(r.pair), dir:r.dir,
       entry:r.entry, sl:r.sl, tp:r.tp,
       closePrice:r.close_price, pnl:r.pnl,
       outcome:r.outcome, openedAt:r.opened_at,
       closedAt:r.closed_at, date:r.trade_date
-    }))
+    })).filter(r => {
+      if(seen.has(r.id)) return false
+      seen.add(r.id)
+      return true
+    })
     // Cache to localStorage so it persists if Supabase is slow
     localStorage.setItem('kjc_th_cache', JSON.stringify(tradeHistory))
     const th=document.getElementById('tab-history')
@@ -2203,31 +2215,41 @@ function openTrade(pair,dir,entry,sl,tp,rr){
   switchTab('open')
 }
 
+const _closingIds = new Set()
 function closeOpenTrade(id, outcome){
+  // Prevent double-close from rapid button clicks
+  if(_closingIds.has(id)) return
+  _closingIds.add(id)
+  setTimeout(() => _closingIds.delete(id), 3000)
+
   const t = openTrades.find(t=>t.id===id)
-  if(t){
-    const cp = getCurrentPrice(t.pair)
-    const pnlUsd = cp ? (calcRealPnl(t.pair, t.dir, t.entry, cp) || 0) : 0
-    tradeHistory.unshift({
-      id, pair:t.pair, dir:t.dir, entry:t.entry, sl:t.sl, tp:t.tp,
-      closePrice: cp || t.entry,
-      pnl: pnlUsd,
-      outcome: outcome || (pnlUsd>=0?'win':'loss'),
-      openedAt:t.openedAt,
-      closedAt:new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}),
-      date: new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short'})
-    })
-    saveTradeToSupabase(tradeHistory[0])
-    saveTradeToAirtable(tradeHistory[0])
-    // Update history badge
-    const thBadge = document.getElementById('tab-history')
-    if(thBadge) thBadge.textContent = 'History ('+tradeHistory.length+')'
-  }
+  if(!t) return  // already closed or not found
+  // Remove from openTrades FIRST to prevent double-close on rapid clicks
   openTrades = openTrades.filter(t=>t.id!==id)
   localStorage.setItem('kjc_open_trades', JSON.stringify(openTrades))
   const cnt = openTrades.length
   const tabOpen = document.getElementById('tab-open')
   if(tabOpen) tabOpen.textContent = cnt ? 'Open Trades ('+cnt+')' : 'Open Trades'
+
+  // Guard: never add the same trade to history twice
+  if(tradeHistory.find(x=>x.id===id)){ renderOpenTrades(); return }
+
+  const cp = getCurrentPrice(t.pair)
+  const pnlUsd = cp ? (calcRealPnl(t.pair, t.dir, t.entry, cp) || 0) : 0
+  const closedTrade = {
+    id, pair: normalizePair(t.pair), dir:t.dir, entry:t.entry, sl:t.sl, tp:t.tp,
+    closePrice: cp || t.entry,
+    pnl: pnlUsd,
+    outcome: outcome || (pnlUsd>=0?'win':'loss'),
+    openedAt:t.openedAt,
+    closedAt:new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}),
+    date: new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short'})
+  }
+  tradeHistory.unshift(closedTrade)
+  saveTradeToSupabase(closedTrade)
+  saveTradeToAirtable(closedTrade)
+  const thBadge = document.getElementById('tab-history')
+  if(thBadge) thBadge.textContent = 'History ('+tradeHistory.length+')'
   renderOpenTrades()
   if(activeTab === 'history') renderHistory()
 }
@@ -2243,7 +2265,7 @@ function renderOpenTrades(){
     const cp = getCurrentPrice(t.pair)
     const isLong = t.dir === 'long'
     const pnlUsd = cp ? calcRealPnl(t.pair, t.dir, t.entry, cp) : null
-    const pnlStr = pnlUsd!==null ? (pnlUsd>=0?'+':'-')+'$'+Math.abs(pnlUsd).toFixed(2) : '—'
+    const pnlStr = pnlUsd!==null ? (pnlUsd>=0?'+':'-')+'$'+Math.abs(pnlUsd).toFixed(2) : (cp ? '—' : 'No price data')
     const pnlClass = pnlUsd===null?'':pnlUsd>=0?'pos':'neg'
     const slDist = cp ? '$'+Math.abs(cp-t.sl).toFixed(2) : null
     const tpDist = cp ? '$'+Math.abs(t.tp-cp).toFixed(2) : null
@@ -2284,20 +2306,40 @@ if(openTrades.length) document.addEventListener('DOMContentLoaded',()=>{
   if(el) el.textContent = 'Open Trades ('+openTrades.length+')'
 })
 
-function calcRealPnl(pair, dir, entry, currentPrice){
-  if(!currentPrice || !entry) return null
-  const priceDiff = dir==='long' ? currentPrice-entry : entry-currentPrice
-  // 1 standard lot = 100,000 units
-  if(pair==='XAU/USD') return priceDiff * 100  // 100 oz per lot
-  if(pair==='XAG/USD') return priceDiff * 5000  // 5000 oz per lot
-  if(pair==='BTC/USD') return priceDiff * 1      // 1 BTC per lot
-  if(pair.endsWith('/USD')) return priceDiff * 100000
-  if(pair.startsWith('USD/')) return (priceDiff / currentPrice) * 100000
-  // Cross pairs — approximate via USD
-  return priceDiff * 100000
+// ── Pair name normaliser ──────────────────────────────────────────────────
+// Handles AI returning EURUSD, XAUUSD, BTCUSD, GBPJPY etc without slashes
+const PAIR_ALIASES = {
+  'EURUSD':'EUR/USD','GBPUSD':'GBP/USD','USDJPY':'USD/JPY','USDCHF':'USD/CHF',
+  'AUDUSD':'AUD/USD','USDCAD':'USD/CAD','NZDUSD':'NZD/USD','EURGBP':'EUR/GBP',
+  'GBPJPY':'GBP/JPY','XAUUSD':'XAU/USD','XAGUSD':'XAG/USD','BTCUSD':'BTC/USD',
+  'GOLD':'XAU/USD','SILVER':'XAG/USD','BITCOIN':'BTC/USD'
+}
+function normalizePair(pair){
+  if(!pair) return pair
+  const upper = pair.toUpperCase().replace(/[^A-Z]/g,'')
+  return PAIR_ALIASES[upper] || pair.toUpperCase()
 }
 
+function calcRealPnl(pair, dir, entry, currentPrice){
+  if(!currentPrice || !entry) return null
+  const p = normalizePair(pair)
+  const priceDiff = dir==='long' ? currentPrice-entry : entry-currentPrice
+  // Mini lot (0.1 lot = 10,000 units) — $1/pip on EUR/USD, sensible for scalp trades
+  if(p==='XAU/USD') return priceDiff * 10       // 10 oz
+  if(p==='XAG/USD') return priceDiff * 500      // 500 oz
+  if(p==='BTC/USD') return priceDiff * 0.01     // 0.01 BTC
+  if(p.endsWith('/USD')) return priceDiff * 10000
+  if(p.startsWith('USD/')) return (priceDiff / currentPrice) * 10000
+  return priceDiff * 10000
+}
+
+let _exitDebounce = null
 function checkOpenTradeExits(){
+  // Debounce — collapse rapid simultaneous price ticks into one check per second
+  clearTimeout(_exitDebounce)
+  _exitDebounce = setTimeout(_doCheckOpenTradeExits, 1000)
+}
+function _doCheckOpenTradeExits(){
   if(!openTrades.length) return
   let changed = false
   openTrades = openTrades.filter(t => {
@@ -2315,7 +2357,7 @@ function checkOpenTradeExits(){
       changed = true
       const pnlUsd = calcRealPnl(t.pair, t.dir, t.entry, cp) || 0
       const closedTrade = {
-        id:t.id, pair:t.pair, dir:t.dir, entry:t.entry, sl:t.sl, tp:t.tp,
+        id:t.id, pair:normalizePair(t.pair), dir:t.dir, entry:t.entry, sl:t.sl, tp:t.tp,
         closePrice:cp, pnl:pnlUsd,
         outcome: hitTP?'win':'loss',
         openedAt:t.openedAt,
