@@ -656,6 +656,20 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;fo
 const SB_URL='https://xglnoorboeuiozwhdhde.supabase.co'
 const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhnbG5vb3Jib2V1aW96d2hkaGRlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MTAwNjIsImV4cCI6MjA5NjA4NjA2Mn0.TdK2R3wjp9mfmbE593uXJ6MJ0VvWyuzrAEFOQSlAUCI'
 const sb=window.supabase.createClient(SB_URL,SB_KEY)
+
+// ── Pair name normaliser (must be defined first — used during openTrades init) ──
+const PAIR_ALIASES = {
+  'EURUSD':'EUR/USD','GBPUSD':'GBP/USD','USDJPY':'USD/JPY','USDCHF':'USD/CHF',
+  'AUDUSD':'AUD/USD','USDCAD':'USD/CAD','NZDUSD':'NZD/USD','EURGBP':'EUR/GBP',
+  'GBPJPY':'GBP/JPY','XAUUSD':'XAU/USD','XAGUSD':'XAG/USD','BTCUSD':'BTC/USD',
+  'GOLD':'XAU/USD','SILVER':'XAG/USD','BITCOIN':'BTC/USD'
+}
+function normalizePair(pair){
+  if(!pair) return pair
+  const upper = pair.toUpperCase().replace(/[^A-Z]/g,'')
+  return PAIR_ALIASES[upper] || pair.toUpperCase()
+}
+
 let allEvents=[],activeFilter='all',lastReport='',featureEvent=null,currentUtterance=null,apiKey='',lastScanDate=''
 
 // ── Live Price Feed (Finnhub WebSocket) ───────────────────────────────────
@@ -2305,20 +2319,6 @@ if(openTrades.length) document.addEventListener('DOMContentLoaded',()=>{
   const el = document.getElementById('tab-open')
   if(el) el.textContent = 'Open Trades ('+openTrades.length+')'
 })
-
-// ── Pair name normaliser ──────────────────────────────────────────────────
-// Handles AI returning EURUSD, XAUUSD, BTCUSD, GBPJPY etc without slashes
-const PAIR_ALIASES = {
-  'EURUSD':'EUR/USD','GBPUSD':'GBP/USD','USDJPY':'USD/JPY','USDCHF':'USD/CHF',
-  'AUDUSD':'AUD/USD','USDCAD':'USD/CAD','NZDUSD':'NZD/USD','EURGBP':'EUR/GBP',
-  'GBPJPY':'GBP/JPY','XAUUSD':'XAU/USD','XAGUSD':'XAG/USD','BTCUSD':'BTC/USD',
-  'GOLD':'XAU/USD','SILVER':'XAG/USD','BITCOIN':'BTC/USD'
-}
-function normalizePair(pair){
-  if(!pair) return pair
-  const upper = pair.toUpperCase().replace(/[^A-Z]/g,'')
-  return PAIR_ALIASES[upper] || pair.toUpperCase()
-}
 
 function calcRealPnl(pair, dir, entry, currentPrice){
   if(!currentPrice || !entry) return null
