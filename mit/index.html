@@ -450,6 +450,47 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;fo
 /* FAB only on mobile */
 .trade-fab{display:none}
 @media(max-width:768px){.trade-fab{display:flex}}
+
+/* ── Session Clock ── */
+.session-bar{display:flex;align-items:center;gap:8px;padding:0 18px;height:28px;background:rgba(0,0,0,0.5);border-bottom:1px solid rgba(212,168,67,0.05);font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.07em;overflow-x:auto;white-space:nowrap;scrollbar-width:none}
+.session-bar::-webkit-scrollbar{display:none}
+.session-pill{display:inline-flex;align-items:center;gap:4px;padding:2px 7px;border-radius:10px;flex-shrink:0}
+.session-pill.active{background:rgba(212,168,67,0.1);border:1px solid rgba(212,168,67,0.2)}
+.session-pill.inactive{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);opacity:0.5}
+.session-pill.overlap{background:rgba(255,195,0,0.12);border:1px solid rgba(255,195,0,0.3)}
+.session-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.session-dot.active{background:var(--green)}
+.session-dot.inactive{background:rgba(255,255,255,0.2)}
+.session-dot.overlap{background:#ffc300;box-shadow:0 0 4px #ffc300}
+.session-name{color:rgba(255,255,255,0.6)}
+.session-pill.active .session-name{color:var(--gold)}
+.session-pill.overlap .session-name{color:#ffc300}
+.session-next{margin-left:auto;color:rgba(255,255,255,0.2);flex-shrink:0;font-size:8px}
+
+/* ── Currency Strength Meter ── */
+.strength-strip{height:38px;background:rgba(0,0,0,0.55);border-bottom:1px solid rgba(212,168,67,0.05);display:none;align-items:center;padding:0 14px;gap:10px;overflow:hidden}
+.strength-strip.visible{display:flex}
+.strength-strip-label{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:0.12em;text-transform:uppercase;color:rgba(212,168,67,0.35);flex-shrink:0}
+.strength-bars{display:flex;gap:10px;align-items:center;flex:1;overflow-x:auto;scrollbar-width:none}
+.strength-bars::-webkit-scrollbar{display:none}
+.sm-item{display:flex;flex-direction:column;align-items:center;gap:2px;flex-shrink:0;min-width:28px}
+.sm-name{font-family:'DM Mono',monospace;font-size:7px;letter-spacing:0.08em;color:rgba(255,255,255,0.3)}
+.sm-track{width:28px;height:3px;background:rgba(255,255,255,0.07);border-radius:2px;overflow:hidden}
+.sm-fill{height:100%;border-radius:2px;transition:width 0.8s ease}
+.sm-val{font-family:'DM Mono',monospace;font-size:7px;font-weight:600}
+
+/* ── Scan History Modal ── */
+.scan-hist-btn{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.06em;text-transform:uppercase;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.35);padding:4px 10px;border-radius:6px;cursor:pointer;flex-shrink:0}
+.scan-hist-btn:hover{background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.6)}
+#scanHistModal{display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.75);backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:20px}
+#scanHistModal.open{display:flex}
+.scan-hist-panel{background:#111;border:1px solid rgba(212,168,67,0.15);border-radius:14px;width:100%;max-width:480px;max-height:80vh;overflow-y:auto;padding:20px}
+.scan-hist-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.scan-hist-title{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:rgba(212,168,67,0.6)}
+.scan-hist-item{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:8px;padding:10px 12px;margin-bottom:8px;cursor:pointer;transition:border-color 0.15s}
+.scan-hist-item:hover{border-color:rgba(212,168,67,0.25)}
+.scan-hist-item-time{font-family:'DM Mono',monospace;font-size:10px;color:var(--gold);margin-bottom:4px}
+.scan-hist-item-summary{font-family:'DM Mono',monospace;font-size:9px;color:rgba(255,255,255,0.3);line-height:1.5}
 </style>
 </head>
 <body>
@@ -478,7 +519,19 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;fo
     <button class="btn" onclick="openReport()" id="reportBtn" disabled>Report</button>
     <button class="btn" onclick="location.href='/admin.html'" id="adminBtn" style="display:none">Admin</button>
     <button class="btn btn-scan" onclick="triggerScan()" id="scanBtn">⚡ Scan Now</button>
+    <button class="scan-hist-btn" onclick="openScanHistory()" title="Browse previous scans">↩ History</button>
     <button class="btn" onclick="doSignOut()">Sign out</button>
+  </div>
+</div>
+
+<!-- ── Scan History Modal ── -->
+<div id="scanHistModal">
+  <div class="scan-hist-panel">
+    <div class="scan-hist-header">
+      <span class="scan-hist-title">Scan History</span>
+      <button onclick="closeScanHistory()" style="background:transparent;border:none;color:rgba(255,255,255,0.4);font-size:18px;cursor:pointer;line-height:1">×</button>
+    </div>
+    <div id="scanHistList"></div>
   </div>
 </div>
 
@@ -497,7 +550,10 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;fo
   </div>
 </div>
 
-<!-- u2500u2500 Live Price Strip (scrolling) u2500u2500 -->
+<!-- ── Session Clock ── -->
+<div class="session-bar" id="sessionBar"></div>
+
+<!-- ── Live Price Strip (scrolling) ── -->
 <div id="priceStrip" class="price-strip">
   <span class="price-strip-label">Live</span>
   <div id="priceTickerTrack" style="display:flex;align-items:center;height:100%">
@@ -505,10 +561,16 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;fo
   </div>
 
 </div>
-<!-- u2500u2500 7-Day Gainers / Losers Strip u2500u2500 -->
+<!-- ── 7-Day Gainers / Losers Strip ── -->
 <div id="gainersStrip" class="gainers-strip" style="display:none">
   <span class="gainers-strip-label">7D Move</span>
   <div id="gainersTrack" class="gainers-ticker-track"></div>
+</div>
+
+<!-- ── Currency Strength Meter ── -->
+<div class="strength-strip" id="strengthStrip">
+  <span class="strength-strip-label">Sentiment</span>
+  <div class="strength-bars" id="strengthBars"></div>
 </div>
 
 <!-- Feature Story -->
@@ -853,7 +915,6 @@ function setPriceStripMsg(html){
 }
 
 function renderPriceStrip(){
-  console.log('[Prices] renderPriceStrip called, livePrices:', JSON.stringify(livePrices))
   // Build tiles, duplicate for seamless loop
   const makeTiles = () => Object.keys(FH_SYMBOLS).map(pair => {
     const d = livePrices[pair]
@@ -1010,9 +1071,10 @@ function flashTile(pair, price, prev){
 
 function fmtP(pair, p){
   if(p === undefined || p === null || isNaN(p)) return '—'
-  if(pair === 'XAU/USD' || pair === 'XAG/USD') return p.toFixed(2)
-  if(pair === 'BTC/USD') return Math.round(p).toLocaleString()
-  if(pair.includes('JPY')) return p.toFixed(3)
+  const norm = normalizePair(pair)
+  if(norm === 'XAU/USD' || norm === 'XAG/USD') return p.toFixed(2)
+  if(norm === 'BTC/USD') return Math.round(p).toLocaleString()
+  if(norm.includes('JPY')) return p.toFixed(3)
   return p.toFixed(5)
 }
 
@@ -1024,15 +1086,8 @@ function getLivePricesForPrompt(){
 
 function getCurrentPrice(pair){
   if(!pair) return null
-  // Direct match
-  if(livePrices[pair]) return livePrices[pair].price
-  // Try normalizing — handle "XAUUSD", "XAU/USD" variations
-  const norm = pair.toUpperCase().replace('XAUUSD','XAU/USD').replace('XAGUSD','XAG/USD')
-    .replace('BTCUSD','BTC/USD').replace('EURUSD','EUR/USD').replace('GBPUSD','GBP/USD')
-    .replace('USDJPY','USD/JPY').replace('USDCHF','USD/CHF').replace('AUDUSD','AUD/USD')
-    .replace('USDCAD','USD/CAD').replace('NZDUSD','NZD/USD').replace('EURGBP','EUR/GBP')
-    .replace('GBPJPY','GBP/JPY')
-  return livePrices[norm]?.price || null
+  const norm = normalizePair(pair)
+  return livePrices[norm]?.price || livePrices[pair]?.price || null
 }
 
 let _refreshDebounce = null
@@ -1061,6 +1116,153 @@ function _doRefreshTradePrices(){
   })
 }
 
+// ── Session Clock ─────────────────────────────────────────────────────────
+const SESSIONS = [
+  { name:'Tokyo',  open:0,  close:9,  tz:'Asia/Tokyo' },
+  { name:'London', open:8,  close:17, tz:'Europe/London' },
+  { name:'NY',     open:13, close:22, tz:'America/New_York' }
+]
+function getSessionState(){
+  const now = new Date()
+  const utcH = now.getUTCHours() + now.getUTCMinutes()/60
+  const active = []
+  const next = []
+  SESSIONS.forEach(s => {
+    const isOpen = utcH >= s.open && utcH < s.close
+    if(isOpen) active.push(s.name)
+    else {
+      const minsUntil = ((s.open - utcH + 24) % 24) * 60
+      next.push({ name: s.name, mins: Math.round(minsUntil) })
+    }
+  })
+  const overlap = active.length > 1
+  const nextOpen = next.sort((a,b)=>a.mins-b.mins)[0]
+  return { active, overlap, nextOpen }
+}
+function renderSessionClock(){
+  const bar = document.getElementById('sessionBar')
+  if(!bar) return
+  const { active, overlap, nextOpen } = getSessionState()
+  const pills = SESSIONS.map(s => {
+    const isActive = active.includes(s.name)
+    const isOverlap = isActive && overlap
+    const cls = isOverlap ? 'overlap' : isActive ? 'active' : 'inactive'
+    return `<span class="session-pill ${cls}"><span class="session-dot ${cls}"></span><span class="session-name">${s.name}</span></span>`
+  }).join('')
+  const nextStr = nextOpen
+    ? `<span class="session-next">${nextOpen.name} opens in ${nextOpen.mins < 60 ? nextOpen.mins+'m' : Math.floor(nextOpen.mins/60)+'h'+String(nextOpen.mins%60).padStart(2,'0')+'m'}</span>`
+    : ''
+  bar.innerHTML = pills + nextStr
+}
+setInterval(renderSessionClock, 60000)
+
+// ── Currency Strength Meter ────────────────────────────────────────────────
+function renderStrengthMeter(sentiment){
+  if(!sentiment) return
+  const strip = document.getElementById('strengthStrip')
+  const bars = document.getElementById('strengthBars')
+  if(!strip || !bars) return
+  const entries = Object.entries(sentiment).filter(([,v]) => v !== 0 || true)
+  if(!entries.length) return
+  const max = Math.max(...entries.map(([,v]) => Math.abs(v)), 1)
+  bars.innerHTML = entries.map(([name, val]) => {
+    const pct = Math.abs(val) / max * 100
+    const color = val > 0 ? 'var(--green)' : val < 0 ? 'var(--red)' : 'rgba(255,255,255,0.2)'
+    const sign = val > 0 ? '+' : ''
+    return `<div class="sm-item">
+      <span class="sm-name">${name}</span>
+      <div class="sm-track"><div class="sm-fill" style="width:${pct}%;background:${color}"></div></div>
+      <span class="sm-val" style="color:${color}">${sign}${val}</span>
+    </div>`
+  }).join('')
+  strip.classList.add('visible')
+}
+
+// ── Scan History ──────────────────────────────────────────────────────────
+const SCAN_HIST_KEY = 'kjc_scan_history'
+const SCAN_HIST_MAX = 5
+function saveScanToHistory(result){
+  try{
+    const hist = JSON.parse(localStorage.getItem(SCAN_HIST_KEY)||'[]')
+    hist.unshift({
+      scan_time: result.scan_time,
+      scan_date: result.scan_date,
+      market_summary: result.market_summary||'',
+      events: result.events||[],
+      setups: result.setups||[],
+      sentiment: result.sentiment||{}
+    })
+    localStorage.setItem(SCAN_HIST_KEY, JSON.stringify(hist.slice(0, SCAN_HIST_MAX)))
+  }catch(e){}
+}
+function openScanHistory(){
+  const modal = document.getElementById('scanHistModal')
+  const list = document.getElementById('scanHistList')
+  if(!modal||!list) return
+  const hist = JSON.parse(localStorage.getItem(SCAN_HIST_KEY)||'[]')
+  if(!hist.length){
+    list.innerHTML = '<div style="font-family:\'DM Mono\',monospace;font-size:10px;color:rgba(255,255,255,0.2);text-align:center;padding:20px">No scan history yet — run a scan first</div>'
+  } else {
+    list.innerHTML = hist.map((s,i) => `
+      <div class="scan-hist-item" onclick="loadScanFromHistory(${i})">
+        <div class="scan-hist-item-time">${s.scan_date} · ${s.scan_time} &nbsp;<span style="color:rgba(255,255,255,0.2);font-size:8px">${s.events.length} events · ${s.setups.length} setups</span></div>
+        <div class="scan-hist-item-summary">${s.market_summary ? s.market_summary.slice(0,120)+'...' : 'No summary'}</div>
+      </div>`).join('')
+  }
+  modal.classList.add('open')
+}
+function closeScanHistory(){ document.getElementById('scanHistModal').classList.remove('open') }
+function loadScanFromHistory(i){
+  try{
+    const hist = JSON.parse(localStorage.getItem(SCAN_HIST_KEY)||'[]')
+    const s = hist[i]
+    if(!s) return
+    allEvents = (s.events||[]).map(sanitizeEvent)
+    lastScanDate = s.scan_date||''
+    if(s.market_summary){ lastReport = s.market_summary }
+    renderAll()
+    buildTicker(allEvents)
+    renderTrades(s.setups, s.scan_time)
+    renderStrengthMeter(s.sentiment)
+    setStatus('live', s.scan_date+' '+s.scan_time+' (history)')
+    closeScanHistory()
+    showToast('Loaded scan from '+s.scan_date+' '+s.scan_time)
+  }catch(e){}
+}
+
+// ── Daily P&L ntfy (fires at 22:00 UK time) ───────────────────────────────
+function checkDailyPnlNotif(){
+  try{
+    const now = new Date()
+    // Convert to UK time
+    const ukTime = new Date(now.toLocaleString('en-GB', { timeZone: 'Europe/London' }))
+    const h = ukTime.getHours(), m = ukTime.getMinutes()
+    if(h !== 22 || m > 5) return  // only fire between 22:00-22:05 UK
+    const todayStr = ukTime.toLocaleDateString('en-GB')
+    const lastSent = localStorage.getItem('kjc_pnl_notif_date')
+    if(lastSent === todayStr) return  // already sent today
+    // Get today's closed trades
+    const todayTrades = tradeHistory.filter(t => {
+      const d = t.date||''
+      // Match "16 Jun" style or full date
+      return d === todayStr || now.toLocaleDateString('en-GB',{day:'numeric',month:'short'}) === d
+    })
+    if(!todayTrades.length) return
+    const totalPnl = todayTrades.reduce((s,t) => s+(t.pnl||0), 0)
+    const wins = todayTrades.filter(t=>t.outcome==='win').length
+    const losses = todayTrades.filter(t=>t.outcome==='loss').length
+    const best = todayTrades.reduce((b,t) => (!b||t.pnl>b.pnl)?t:b, null)
+    sendNtfy(
+      'KJC Capital - Daily P&L Summary',
+      `${totalPnl>=0?'+':''}$${Math.abs(totalPnl).toFixed(2)} · ${wins}W/${losses}L · Win rate ${Math.round(wins/(wins+losses)*100)}%\nBest: ${best?.pair||''} ${best?.dir||''} ${best?.pnl>=0?'+':''}$${Math.abs(best?.pnl||0).toFixed(2)}`,
+      totalPnl >= 0 ? 'default' : 'default',
+      totalPnl >= 0 ? ['chart_increasing','moneybag'] : ['chart_decreasing','disappointed']
+    )
+    localStorage.setItem('kjc_pnl_notif_date', todayStr)
+  }catch(e){}
+}
+setInterval(checkDailyPnlNotif, 60000)
+
 // ── Auth & Init ──────────────────────────────────────────────────────────
 function showApp(){
   document.getElementById('authLoading').style.display='none'
@@ -1078,6 +1280,7 @@ async function init(){
     currentUserId = user.id
     apiKey=localStorage.getItem('mit_api_key')||''
     showApp()
+    renderSessionClock()
     initPriceFeed()  // ← start live price feed
     setTimeout(initCalendar, 1000)  // ← FF calendar
     updateCountdown()
@@ -1110,6 +1313,7 @@ async function loadLatest(){
     }
     renderAll()
     renderTrades(data.setups,data.scan_time)
+    if(data.sentiment) renderStrengthMeter(data.sentiment)
     setStatus('live','Updated '+(data.scan_time||''))
     buildTicker(allEvents)
   }catch(e){}
@@ -1325,6 +1529,8 @@ async function runScan(){
       ['bar_chart']
     )
     renderAll();buildTicker(allEvents);renderTrades(result.setups,result.scan_time)
+    renderStrengthMeter(result.sentiment)
+    saveScanToHistory(result)
     setStatus('live','Updated '+result.scan_time);queueAutoRead(allEvents)
   }catch(err){
     setStatus('','Scan failed')
@@ -2158,6 +2364,10 @@ async function saveTradeToSupabase(t){
 
 // ── Save closed trade to Airtable ────────────────────────────────────────
 async function saveTradeToAirtable(t){
+  // Guard — same dedup as Supabase: never send the same trade ID twice
+  if(!window._airtableSent) window._airtableSent = new Set()
+  if(window._airtableSent.has(t.id)) return
+  window._airtableSent.add(t.id)
   try{
     await fetch('/api/trade',{
       method:'POST',
