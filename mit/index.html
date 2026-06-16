@@ -496,6 +496,19 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;fo
   .sm-bar-wrap{width:26px;height:32px}
   .sm-bar-body{width:8px}
 }
+.strength-legend{flex-shrink:0;width:220px;padding:4px 0 4px 24px;border-left:1px solid rgba(255,255,255,0.05);margin-left:20px}
+.strength-legend-title{font-family:'DM Mono',monospace;font-size:7px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(212,168,67,0.35);margin-bottom:6px}
+.strength-legend-row{display:flex;align-items:center;gap:6px;font-family:'DM Mono',monospace;font-size:7.5px;color:rgba(255,255,255,0.22);line-height:1.4;margin-bottom:3px}
+.strength-legend-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.nav-session-pill{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:8px;font-family:'DM Mono',monospace;font-size:8px;letter-spacing:0.06em;flex-shrink:0}
+.nav-session-pill.active{background:rgba(212,168,67,0.08);border:1px solid rgba(212,168,67,0.18);color:rgba(212,168,67,0.8)}
+.nav-session-pill.overlap{background:rgba(255,195,0,0.1);border:1px solid rgba(255,195,0,0.25);color:#ffc300}
+.nav-session-pill.inactive{background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);color:rgba(255,255,255,0.2)}
+.nav-sdot{width:4px;height:4px;border-radius:50%;flex-shrink:0}
+.nav-sdot.active{background:var(--green)}
+.nav-sdot.overlap{background:#ffc300;box-shadow:0 0 4px #ffc300}
+.nav-sdot.inactive{background:rgba(255,255,255,0.15)}
+@media(max-width:768px){.strength-legend{display:none}#navSessions{display:none!important}}
 
 /* ── Scan History Modal ── */
 .scan-hist-btn{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.06em;text-transform:uppercase;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.35);padding:4px 10px;border-radius:6px;cursor:pointer;flex-shrink:0}
@@ -533,6 +546,7 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;fo
     <div class="platform-name">Market<span>Intel</span></div>
   </div>
   <div class="status-pill"><span class="sdot" id="sdot"></span><span id="slabel">Ready</span></div>
+  <div id="navSessions" style="display:flex;align-items:center;gap:5px;flex-shrink:0"></div>
   <div class="top-right">
     <button class="btn" onclick="openReport()" id="reportBtn" disabled>Report</button>
     <button class="btn" onclick="location.href='/admin.html'" id="adminBtn" style="display:none">Admin</button>
@@ -591,7 +605,16 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;fo
     <span class="strength-strip-title">Market Sentiment</span>
     <span class="strength-strip-subtitle" id="strengthUpdated"></span>
   </div>
-  <div class="strength-groups" id="strengthGroups"></div>
+  <div style="display:flex;align-items:center;gap:0">
+    <div class="strength-groups" id="strengthGroups" style="flex:1"></div>
+    <div class="strength-legend">
+      <div class="strength-legend-title">How to read</div>
+      <div class="strength-legend-row"><span class="strength-legend-dot" style="background:#26d9a1"></span><span>Bullish — AI scan found positive drivers for this asset</span></div>
+      <div class="strength-legend-row"><span class="strength-legend-dot" style="background:#e05252"></span><span>Bearish — AI scan found negative drivers or risk-off pressure</span></div>
+      <div class="strength-legend-row"><span class="strength-legend-dot" style="background:rgba(255,255,255,0.15)"></span><span>Neutral — no significant catalyst found this scan</span></div>
+      <div class="strength-legend-row" style="margin-top:4px;color:rgba(255,255,255,0.12)">Scores reflect headline impact only · not a trade signal</div>
+    </div>
+  </div>
 </div>
 
 <!-- Feature Story -->
@@ -1161,19 +1184,33 @@ function getSessionState(){
   return { active, overlap, nextOpen }
 }
 function renderSessionClock(){
-  const bar = document.getElementById('sessionBar')
-  if(!bar) return
   const { active, overlap, nextOpen } = getSessionState()
-  const pills = SESSIONS.map(s => {
-    const isActive = active.includes(s.name)
-    const isOverlap = isActive && overlap
-    const cls = isOverlap ? 'overlap' : isActive ? 'active' : 'inactive'
-    return `<span class="session-pill ${cls}"><span class="session-dot ${cls}"></span><span class="session-name">${s.name}</span></span>`
-  }).join('')
-  const nextStr = nextOpen
-    ? `<span class="session-next">${nextOpen.name} opens in ${nextOpen.mins < 60 ? nextOpen.mins+'m' : Math.floor(nextOpen.mins/60)+'h'+String(nextOpen.mins%60).padStart(2,'0')+'m'}</span>`
-    : ''
-  bar.innerHTML = pills + nextStr
+
+  // ── Slim session bar below price strip ──
+  const bar = document.getElementById('sessionBar')
+  if(bar){
+    const pills = SESSIONS.map(s => {
+      const isActive = active.includes(s.name)
+      const isOverlap = isActive && overlap
+      const cls = isOverlap ? 'overlap' : isActive ? 'active' : 'inactive'
+      return `<span class="session-pill ${cls}"><span class="session-dot ${cls}"></span><span class="session-name">${s.name}</span></span>`
+    }).join('')
+    const nextStr = nextOpen
+      ? `<span class="session-next">${nextOpen.name} opens in ${nextOpen.mins < 60 ? nextOpen.mins+'m' : Math.floor(nextOpen.mins/60)+'h'+String(nextOpen.mins%60).padStart(2,'0')+'m'}</span>`
+      : ''
+    bar.innerHTML = pills + nextStr
+  }
+
+  // ── Nav pills (desktop only) ──
+  const nav = document.getElementById('navSessions')
+  if(nav){
+    nav.innerHTML = SESSIONS.map(s => {
+      const isActive = active.includes(s.name)
+      const isOverlap = isActive && overlap
+      const cls = isOverlap ? 'overlap' : isActive ? 'active' : 'inactive'
+      return `<span class="nav-session-pill ${cls}"><span class="nav-sdot ${cls}"></span>${s.name}</span>`
+    }).join('')
+  }
 }
 setInterval(renderSessionClock, 60000)
 
