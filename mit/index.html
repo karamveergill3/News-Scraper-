@@ -478,11 +478,11 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;fo
 .strength-group{display:flex;gap:0;align-items:flex-end;padding:0 16px;position:relative}
 .strength-group:not(:last-child)::after{content:'';position:absolute;right:0;top:10%;height:80%;width:1px;background:rgba(255,255,255,0.05)}
 .strength-group:first-child{padding-left:0}
-.strength-group-label{font-family:'DM Mono',monospace;font-size:7px;letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.12);writing-mode:vertical-lr;transform:rotate(180deg);margin-right:8px;align-self:center;flex-shrink:0}
+.strength-group-label{font-family:'DM Mono',monospace;font-size:7px;letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.7);writing-mode:vertical-lr;transform:rotate(180deg);margin-right:8px;align-self:center;flex-shrink:0}
 .sm-items{display:flex;gap:14px;align-items:flex-end}
 .sm-item{display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0;min-width:32px}
 .sm-val{font-family:'DM Mono',monospace;font-size:9px;font-weight:700;letter-spacing:0.04em;min-height:14px;line-height:1}
-.sm-bar-wrap{width:32px;height:80px;position:relative;display:flex;align-items:center;justify-content:center}
+.sm-bar-wrap{width:32px;height:140px;position:relative;display:flex;align-items:center;justify-content:center}
 .sm-bar-center{position:absolute;top:50%;left:0;right:0;height:1px;background:rgba(255,255,255,0.1)}
 .sm-bar-body{position:absolute;width:12px;left:50%;transform:translateX(-50%);border-radius:3px;transition:height 0.7s cubic-bezier(0.4,0,0.2,1),top 0.7s cubic-bezier(0.4,0,0.2,1)}
 .sm-name{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:0.08em;color:rgba(255,255,255,0.28);text-transform:uppercase}
@@ -1229,7 +1229,7 @@ function renderStrengthMeter(sentiment, scanTime){
       const isPos = val > 0
       const isNeg = val < 0
       const color = isPos ? '#26d9a1' : isNeg ? '#e05252' : 'rgba(255,255,255,0.2)'
-      const barH = pct * 0.36 // max 36px each side in 80px track
+      const barH = pct * 0.64 // max 64px each side in 140px track
       const barStyle = isPos
         ? `height:${barH}px;bottom:50%;top:auto;background:${color};box-shadow:0 0 6px rgba(38,217,161,0.3)`
         : isNeg
