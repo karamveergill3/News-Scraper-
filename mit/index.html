@@ -474,12 +474,12 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;fo
 .strength-strip-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
 .strength-strip-title{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:0.18em;text-transform:uppercase;color:rgba(212,168,67,0.45)}
 .strength-strip-subtitle{font-family:'DM Mono',monospace;font-size:8px;color:rgba(255,255,255,0.15);letter-spacing:0.05em}
-.strength-groups{display:flex;gap:0;align-items:stretch}
-.strength-group{display:flex;gap:0;align-items:flex-end;padding:0 16px;position:relative}
+.strength-groups{display:flex;gap:0;align-items:stretch;width:100%;justify-content:space-between}
+.strength-group{display:flex;gap:0;align-items:flex-end;padding:0 16px;position:relative;flex:1}
 .strength-group:not(:last-child)::after{content:'';position:absolute;right:0;top:10%;height:80%;width:1px;background:rgba(255,255,255,0.05)}
 .strength-group:first-child{padding-left:0}
 .strength-group-label{font-family:'DM Mono',monospace;font-size:7px;letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.12);writing-mode:vertical-lr;transform:rotate(180deg);margin-right:8px;align-self:center;flex-shrink:0}
-.sm-items{display:flex;gap:14px;align-items:flex-end}
+.sm-items{display:flex;gap:0;align-items:flex-end;justify-content:space-around;flex:1}
 .sm-item{display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0;min-width:32px}
 .sm-val{font-family:'DM Mono',monospace;font-size:9px;font-weight:700;letter-spacing:0.04em;min-height:14px;line-height:1}
 .sm-bar-wrap{width:32px;height:40px;position:relative;display:flex;align-items:center;justify-content:center}
@@ -582,9 +582,6 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;fo
   </div>
 </div>
 
-<!-- ── Session Clock ── -->
-<div class="session-bar" id="sessionBar"></div>
-
 <!-- ── Live Price Strip (scrolling) ── -->
 <div id="priceStrip" class="price-strip">
   <span class="price-strip-label">Live</span>
@@ -605,14 +602,15 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;fo
     <span class="strength-strip-title">Market Sentiment</span>
     <span class="strength-strip-subtitle" id="strengthUpdated"></span>
   </div>
-  <div style="display:flex;align-items:center;gap:0">
-    <div class="strength-groups" id="strengthGroups" style="flex:1"></div>
+  <div style="display:flex;align-items:stretch;gap:0;width:100%">
+    <div class="strength-groups" id="strengthGroups" style="flex:1;justify-content:space-between"></div>
     <div class="strength-legend">
-      <div class="strength-legend-title">How to read</div>
-      <div class="strength-legend-row"><span class="strength-legend-dot" style="background:#26d9a1"></span><span>Bullish — AI scan found positive drivers for this asset</span></div>
-      <div class="strength-legend-row"><span class="strength-legend-dot" style="background:#e05252"></span><span>Bearish — AI scan found negative drivers or risk-off pressure</span></div>
-      <div class="strength-legend-row"><span class="strength-legend-dot" style="background:rgba(255,255,255,0.15)"></span><span>Neutral — no significant catalyst found this scan</span></div>
-      <div class="strength-legend-row" style="margin-top:4px;color:rgba(255,255,255,0.12)">Scores reflect headline impact only · not a trade signal</div>
+      <div class="strength-legend-title">How to read this</div>
+      <div class="strength-legend-row"><span class="strength-legend-dot" style="background:#26d9a1"></span><span>Bullish — AI identified positive macro drivers, safe-haven inflows, or strong demand signals for this asset this scan cycle</span></div>
+      <div class="strength-legend-row"><span class="strength-legend-dot" style="background:#e05252"></span><span>Bearish — AI found negative catalysts, risk-off pressure, supply concerns or deteriorating fundamentals affecting this asset</span></div>
+      <div class="strength-legend-row"><span class="strength-legend-dot" style="background:rgba(255,255,255,0.2)"></span><span>Neutral — no significant headline catalyst found this scan. Asset may still be in play from prior sessions</span></div>
+      <div class="strength-legend-row" style="margin-top:6px"><span class="strength-legend-dot" style="background:rgba(212,168,67,0.4)"></span><span>Bar height = conviction strength relative to other assets this scan. Taller bar = stronger signal from AI analysis</span></div>
+      <div class="strength-legend-row" style="margin-top:4px;color:rgba(255,255,255,0.1);font-size:7px">Scores reflect AI headline analysis only · not financial advice · always apply your own confluence</div>
     </div>
   </div>
 </div>
@@ -1186,30 +1184,18 @@ function getSessionState(){
 function renderSessionClock(){
   const { active, overlap, nextOpen } = getSessionState()
 
-  // ── Slim session bar below price strip ──
-  const bar = document.getElementById('sessionBar')
-  if(bar){
-    const pills = SESSIONS.map(s => {
-      const isActive = active.includes(s.name)
-      const isOverlap = isActive && overlap
-      const cls = isOverlap ? 'overlap' : isActive ? 'active' : 'inactive'
-      return `<span class="session-pill ${cls}"><span class="session-dot ${cls}"></span><span class="session-name">${s.name}</span></span>`
-    }).join('')
-    const nextStr = nextOpen
-      ? `<span class="session-next">${nextOpen.name} opens in ${nextOpen.mins < 60 ? nextOpen.mins+'m' : Math.floor(nextOpen.mins/60)+'h'+String(nextOpen.mins%60).padStart(2,'0')+'m'}</span>`
-      : ''
-    bar.innerHTML = pills + nextStr
-  }
-
-  // ── Nav pills (desktop only) ──
+  // ── Nav pills next to Updated status ──
   const nav = document.getElementById('navSessions')
   if(nav){
+    const nextStr = nextOpen
+      ? `<span style="font-family:'DM Mono',monospace;font-size:8px;color:rgba(255,255,255,0.18);margin-left:4px">${nextOpen.name} in ${nextOpen.mins < 60 ? nextOpen.mins+'m' : Math.floor(nextOpen.mins/60)+'h'+String(nextOpen.mins%60).padStart(2,'0')+'m'}</span>`
+      : ''
     nav.innerHTML = SESSIONS.map(s => {
       const isActive = active.includes(s.name)
       const isOverlap = isActive && overlap
       const cls = isOverlap ? 'overlap' : isActive ? 'active' : 'inactive'
       return `<span class="nav-session-pill ${cls}"><span class="nav-sdot ${cls}"></span>${s.name}</span>`
-    }).join('')
+    }).join('') + nextStr
   }
 }
 setInterval(renderSessionClock, 60000)
