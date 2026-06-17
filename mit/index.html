@@ -474,12 +474,12 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;fo
 .strength-strip-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
 .strength-strip-title{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:0.18em;text-transform:uppercase;color:rgba(212,168,67,0.45)}
 .strength-strip-subtitle{font-family:'DM Mono',monospace;font-size:8px;color:rgba(255,255,255,0.15);letter-spacing:0.05em}
-.strength-groups{display:flex;gap:0;align-items:stretch;width:100%;justify-content:space-between}
-.strength-group{display:flex;gap:0;align-items:flex-end;padding:0 16px;position:relative;flex:1}
+.strength-groups{display:flex;gap:0;align-items:stretch;flex-shrink:0}
+.strength-group{display:flex;gap:0;align-items:flex-end;padding:0 16px;position:relative}
 .strength-group:not(:last-child)::after{content:'';position:absolute;right:0;top:10%;height:80%;width:1px;background:rgba(255,255,255,0.05)}
 .strength-group:first-child{padding-left:0}
 .strength-group-label{font-family:'DM Mono',monospace;font-size:7px;letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.12);writing-mode:vertical-lr;transform:rotate(180deg);margin-right:8px;align-self:center;flex-shrink:0}
-.sm-items{display:flex;gap:0;align-items:flex-end;justify-content:space-around;flex:1}
+.sm-items{display:flex;gap:14px;align-items:flex-end}
 .sm-item{display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0;min-width:32px}
 .sm-val{font-family:'DM Mono',monospace;font-size:9px;font-weight:700;letter-spacing:0.04em;min-height:14px;line-height:1}
 .sm-bar-wrap{width:32px;height:40px;position:relative;display:flex;align-items:center;justify-content:center}
@@ -496,10 +496,10 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;fo
   .sm-bar-wrap{width:26px;height:32px}
   .sm-bar-body{width:8px}
 }
-.strength-legend{flex-shrink:0;width:220px;padding:4px 0 4px 24px;border-left:1px solid rgba(255,255,255,0.05);margin-left:20px}
-.strength-legend-title{font-family:'DM Mono',monospace;font-size:7px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(212,168,67,0.35);margin-bottom:6px}
-.strength-legend-row{display:flex;align-items:center;gap:6px;font-family:'DM Mono',monospace;font-size:7.5px;color:rgba(255,255,255,0.22);line-height:1.4;margin-bottom:3px}
-.strength-legend-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.strength-legend{flex:1;min-width:0;padding:8px 0 8px 28px;border-left:1px solid rgba(255,255,255,0.07);margin-left:28px}
+.strength-legend-title{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:rgba(212,168,67,0.55);margin-bottom:10px}
+.strength-legend-row{display:flex;align-items:flex-start;gap:9px;font-family:'DM Mono',monospace;font-size:11px;color:rgba(255,255,255,0.38);line-height:1.55;margin-bottom:7px}
+.strength-legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:3px}
 .nav-session-pill{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:8px;font-family:'DM Mono',monospace;font-size:8px;letter-spacing:0.06em;flex-shrink:0}
 .nav-session-pill.active{background:rgba(212,168,67,0.08);border:1px solid rgba(212,168,67,0.18);color:rgba(212,168,67,0.8)}
 .nav-session-pill.overlap{background:rgba(255,195,0,0.1);border:1px solid rgba(255,195,0,0.25);color:#ffc300}
@@ -603,7 +603,7 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;fo
     <span class="strength-strip-subtitle" id="strengthUpdated"></span>
   </div>
   <div style="display:flex;align-items:stretch;gap:0;width:100%">
-    <div class="strength-groups" id="strengthGroups" style="flex:1;justify-content:space-between"></div>
+    <div class="strength-groups" id="strengthGroups"></div>
     <div class="strength-legend">
       <div class="strength-legend-title">How to read this</div>
       <div class="strength-legend-row"><span class="strength-legend-dot" style="background:#26d9a1"></span><span>Bullish — AI identified positive macro drivers, safe-haven inflows, or strong demand signals for this asset this scan cycle</span></div>
