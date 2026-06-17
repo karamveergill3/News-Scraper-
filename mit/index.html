@@ -497,9 +497,9 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;fo
   .sm-bar-body{width:8px}
 }
 .strength-legend{flex:1;min-width:0;padding:8px 0 8px 28px;border-left:1px solid rgba(255,255,255,0.07);margin-left:28px}
-.strength-legend-title{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:rgba(212,168,67,0.55);margin-bottom:10px}
-.strength-legend-row{display:flex;align-items:flex-start;gap:9px;font-family:'DM Mono',monospace;font-size:11px;color:rgba(255,255,255,0.38);line-height:1.55;margin-bottom:7px}
-.strength-legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:3px}
+.strength-legend-title{font-family:'Playfair Display',Georgia,serif;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:rgba(212,168,67,0.7);margin-bottom:12px;font-style:italic}
+.strength-legend-row{display:flex;align-items:flex-start;gap:9px;font-family:'Inter','Helvetica Neue',sans-serif;font-size:11.5px;color:rgba(255,255,255,0.72);line-height:1.6;margin-bottom:8px;font-weight:400}
+.strength-legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px}
 .nav-session-pill{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:8px;font-family:'DM Mono',monospace;font-size:8px;letter-spacing:0.06em;flex-shrink:0}
 .nav-session-pill.active{background:rgba(212,168,67,0.08);border:1px solid rgba(212,168,67,0.18);color:rgba(212,168,67,0.8)}
 .nav-session-pill.overlap{background:rgba(255,195,0,0.1);border:1px solid rgba(255,195,0,0.25);color:#ffc300}
@@ -606,11 +606,11 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;fo
     <div class="strength-groups" id="strengthGroups"></div>
     <div class="strength-legend">
       <div class="strength-legend-title">How to read this</div>
-      <div class="strength-legend-row"><span class="strength-legend-dot" style="background:#26d9a1"></span><span>Bullish — AI identified positive macro drivers, safe-haven inflows, or strong demand signals for this asset this scan cycle</span></div>
-      <div class="strength-legend-row"><span class="strength-legend-dot" style="background:#e05252"></span><span>Bearish — AI found negative catalysts, risk-off pressure, supply concerns or deteriorating fundamentals affecting this asset</span></div>
-      <div class="strength-legend-row"><span class="strength-legend-dot" style="background:rgba(255,255,255,0.2)"></span><span>Neutral — no significant headline catalyst found this scan. Asset may still be in play from prior sessions</span></div>
-      <div class="strength-legend-row" style="margin-top:6px"><span class="strength-legend-dot" style="background:rgba(212,168,67,0.4)"></span><span>Bar height = conviction strength relative to other assets this scan. Taller bar = stronger signal from AI analysis</span></div>
-      <div class="strength-legend-row" style="margin-top:4px;color:rgba(255,255,255,0.1);font-size:7px">Scores reflect AI headline analysis only · not financial advice · always apply your own confluence</div>
+      <div class="strength-legend-row"><span class="strength-legend-dot" style="background:#26d9a1"></span><span><strong>Bullish</strong> — The AI identified positive macro drivers for this asset during the scan: could be safe-haven inflows, strong economic data beats, central bank dovish signals, or demand-side momentum. The higher the bar, the more conviction the AI has relative to other assets scanned this cycle.</span></div>
+      <div class="strength-legend-row"><span class="strength-legend-dot" style="background:#e05252"></span><span><strong>Bearish</strong> — The AI found negative catalysts weighing on this asset: risk-off pressure, supply concerns, hawkish central bank language, disappointing data, geopolitical headwinds, or deteriorating fundamentals. Treat as a headwind — not necessarily a signal to short without your own confluence.</span></div>
+      <div class="strength-legend-row"><span class="strength-legend-dot" style="background:rgba(255,255,255,0.25)"></span><span><strong>Neutral</strong> — No significant headline catalyst was found for this asset in the current scan. It may still be technically in play from prior sessions or react to correlated assets — always check the broader context before dismissing it entirely.</span></div>
+      <div class="strength-legend-row"><span class="strength-legend-dot" style="background:rgba(212,168,67,0.6)"></span><span><strong>Bar height</strong> — Represents conviction strength relative to all other assets scanned this cycle. The tallest bar scored highest in the AI's assessment. All scores are normalised so the strongest signal always fills to the top — use it to rank which assets have the clearest macro backdrop right now.</span></div>
+      <div class="strength-legend-row" style="margin-top:6px;color:rgba(255,255,255,0.22);font-size:10px;font-family:'Inter',sans-serif">Sentiment scores are generated by AI headline analysis only and update with each scan · not financial advice · always apply your own technical and fundamental confluence before trading</div>
     </div>
   </div>
 </div>
