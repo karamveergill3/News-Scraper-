@@ -482,9 +482,9 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;fo
 .sm-items{display:flex;gap:14px;align-items:flex-end}
 .sm-item{display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0;min-width:32px}
 .sm-val{font-family:'DM Mono',monospace;font-size:9px;font-weight:700;letter-spacing:0.04em;min-height:14px;line-height:1}
-.sm-bar-wrap{width:32px;height:40px;position:relative;display:flex;align-items:center;justify-content:center}
+.sm-bar-wrap{width:32px;height:80px;position:relative;display:flex;align-items:center;justify-content:center}
 .sm-bar-center{position:absolute;top:50%;left:0;right:0;height:1px;background:rgba(255,255,255,0.1)}
-.sm-bar-body{position:absolute;width:10px;left:50%;transform:translateX(-50%);border-radius:2px;transition:height 0.7s cubic-bezier(0.4,0,0.2,1),top 0.7s cubic-bezier(0.4,0,0.2,1)}
+.sm-bar-body{position:absolute;width:12px;left:50%;transform:translateX(-50%);border-radius:3px;transition:height 0.7s cubic-bezier(0.4,0,0.2,1),top 0.7s cubic-bezier(0.4,0,0.2,1)}
 .sm-name{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:0.08em;color:rgba(255,255,255,0.28);text-transform:uppercase}
 @media(max-width:768px){
   .strength-strip{padding:8px 14px 10px;overflow-x:auto}
@@ -1229,7 +1229,7 @@ function renderStrengthMeter(sentiment, scanTime){
       const isPos = val > 0
       const isNeg = val < 0
       const color = isPos ? '#26d9a1' : isNeg ? '#e05252' : 'rgba(255,255,255,0.2)'
-      const barH = pct * 0.18 // max 18px each side, total track 40px
+      const barH = pct * 0.36 // max 36px each side in 80px track
       const barStyle = isPos
         ? `height:${barH}px;bottom:50%;top:auto;background:${color};box-shadow:0 0 6px rgba(38,217,161,0.3)`
         : isNeg
