@@ -482,7 +482,7 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;fo
 .sm-items{display:flex;gap:14px;align-items:flex-end}
 .sm-item{display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0;min-width:32px}
 .sm-val{font-family:'DM Mono',monospace;font-size:9px;font-weight:700;letter-spacing:0.04em;min-height:14px;line-height:1}
-.sm-bar-wrap{width:32px;height:140px;position:relative;display:flex;align-items:center;justify-content:center}
+.sm-bar-wrap{width:32px;height:200px;position:relative;display:flex;align-items:center;justify-content:center}
 .sm-bar-center{position:absolute;top:50%;left:0;right:0;height:1px;background:rgba(255,255,255,0.1)}
 .sm-bar-body{position:absolute;width:12px;left:50%;transform:translateX(-50%);border-radius:3px;transition:height 0.7s cubic-bezier(0.4,0,0.2,1),top 0.7s cubic-bezier(0.4,0,0.2,1)}
 .sm-name{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:0.08em;color:rgba(255,255,255,0.28);text-transform:uppercase}
@@ -1229,7 +1229,7 @@ function renderStrengthMeter(sentiment, scanTime){
       const isPos = val > 0
       const isNeg = val < 0
       const color = isPos ? '#26d9a1' : isNeg ? '#e05252' : 'rgba(255,255,255,0.2)'
-      const barH = pct * 0.64 // max 64px each side in 140px track
+      const barH = pct * 0.92 // max 92px each side in 200px track
       const barStyle = isPos
         ? `height:${barH}px;bottom:50%;top:auto;background:${color};box-shadow:0 0 6px rgba(38,217,161,0.3)`
         : isNeg
@@ -2501,16 +2501,16 @@ function switchTab(tab){
 }
 
 function openTrade(pair,dir,entry,sl,tp,rr){
+  const normPair = normalizePair(pair)
   // Prevent duplicate open trades for same pair
-  if(openTrades.find(t=>t.pair===pair)){
-    showToast('⚠️ '+pair+' already has an open trade')
+  if(openTrades.find(t=>t.pair===normPair)){
+    showToast('⚠️ '+normPair+' already has an open trade')
     return
   }
-  const id = pair+'-'+Date.now()
-  const trade = {id,pair,dir,entry:parseFloat(entry),sl:parseFloat(sl),tp:parseFloat(tp),rr,openedAt:new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}
+  const id = normPair+'-'+Date.now()
+  const trade = {id,pair:normPair,dir,entry:parseFloat(entry),sl:parseFloat(sl),tp:parseFloat(tp),rr,openedAt:new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}
   openTrades.push(trade)
   localStorage.setItem('kjc_open_trades', JSON.stringify(openTrades))
-  // Badge on tab
   document.getElementById('tab-open').textContent = 'Open Trades ('+openTrades.length+')'
   switchTab('open')
 }
