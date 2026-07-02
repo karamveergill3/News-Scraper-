@@ -11,7 +11,6 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="KJC Capital">
   <link rel="apple-touch-icon" href="/icons/icon-192.png">
-<meta name="theme-color" content="#000">
 <title>MarketIntel — KJC Capital</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,900;1,400;1,700&family=Cormorant+Garamond:wght@600;700&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -685,7 +684,11 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;fo
 </div><!-- end mainContent -->
 
 <!-- Auto-read unlock banner -->
-
+<div id="autoReadBanner" style="display:none;position:fixed;bottom:26px;left:50%;transform:translateX(-50%);z-index:300;background:rgba(6,6,6,0.97);border:1px solid var(--border2);border-radius:999px;padding:8px 10px 8px 18px;align-items:center;gap:12px;backdrop-filter:blur(16px);box-shadow:0 16px 48px rgba(0,0,0,0.6);animation:fadeUp 0.28s ease;white-space:nowrap">
+  <span style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.08em;color:var(--w2)">🔊 High-impact events ready to read aloud</span>
+  <button onclick="unlockAutoRead()" style="background:linear-gradient(135deg,#7a5a10,#d4a843,#f0c050);border:none;color:#000;font-family:'DM Mono',monospace;font-size:9px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;padding:6px 14px;border-radius:999px;cursor:pointer">Enable Audio</button>
+  <button onclick="autoReadQueue=[];this.parentElement.style.display='none'" style="background:none;border:none;color:rgba(255,255,255,0.3);font-size:14px;cursor:pointer;line-height:1;padding:0 6px">×</button>
+</div>
 
 <div id="emptyState" class="empty-state">
   <span class="empty-icon">📰</span>
@@ -702,12 +705,16 @@ body{background:var(--bg);color:var(--white);font-family:'DM Sans',sans-serif;fo
 <div class="trade-panel" id="tradePanel">
   <div class="trade-panel-head">
     <div style="display:flex;gap:0;margin-bottom:8px;background:rgba(255,255,255,0.03);border-radius:8px;padding:3px">
-      <button class="tp-tab on" id="tab-open" onclick="switchTab('open')">Open Trades</button>
+      <button class="tp-tab on" id="tab-ideas" onclick="switchTab('ideas')">Ideas</button>
+      <button class="tp-tab" id="tab-open" onclick="switchTab('open')">Open Trades</button>
       <button class="tp-tab" id="tab-history" onclick="switchTab('history')">History</button>
     </div>
     <div class="tp-scan-time" id="tpScanTime"></div>
   </div>
-  <div class="trade-list" id="openTradeList">
+  <div class="trade-list" id="ideasList">
+    <div class="trade-empty"><span class="trade-empty-icon">💡</span>No trade ideas yet<br><span style="font-size:10px;opacity:0.6">Hit ⚡ Scan Now to generate setups</span></div>
+  </div>
+  <div class="trade-list" id="openTradeList" style="display:none">
     <div class="trade-empty"><span class="trade-empty-icon">📊</span>No open trades yet<br><span style="font-size:10px;opacity:0.6">Trades auto-open on scan</span></div>
   </div>
   <div class="trade-list" id="historyList" style="display:none"></div>
@@ -1229,11 +1236,11 @@ function renderStrengthMeter(sentiment, scanTime){
       const isPos = val > 0
       const isNeg = val < 0
       const color = isPos ? '#26d9a1' : isNeg ? '#e05252' : 'rgba(255,255,255,0.2)'
-      const barH = pct * 0.92 // max 92px each side in 200px track
+      const barH = pct * 0.46 // % of track height, max 46% each side of the centre line
       const barStyle = isPos
-        ? `height:${barH}px;bottom:50%;top:auto;background:${color};box-shadow:0 0 6px rgba(38,217,161,0.3)`
+        ? `height:${barH}%;bottom:50%;top:auto;background:${color};box-shadow:0 0 6px rgba(38,217,161,0.3)`
         : isNeg
-          ? `height:${barH}px;top:50%;bottom:auto;background:${color};box-shadow:0 0 6px rgba(224,82,82,0.3)`
+          ? `height:${barH}%;top:50%;bottom:auto;background:${color};box-shadow:0 0 6px rgba(224,82,82,0.3)`
           : `height:1px;top:50%;background:rgba(255,255,255,0.1)`
       const sign = isPos ? '+' : ''
       return `<div class="sm-item">
@@ -1310,11 +1317,11 @@ function loadScanFromHistory(i){
 function checkDailyPnlNotif(){
   try{
     const now = new Date()
-    // Convert to UK time
-    const ukTime = new Date(now.toLocaleString('en-GB', { timeZone: 'Europe/London' }))
-    const h = ukTime.getHours(), m = ukTime.getMinutes()
+    // Get UK hours/minutes reliably (parsing en-GB date strings is not supported by Date)
+    const ukHM = new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',hour:'2-digit',minute:'2-digit',hour12:false}).format(now)
+    const [h, m] = ukHM.split(':').map(Number)
     if(h !== 22 || m > 5) return  // only fire between 22:00-22:05 UK
-    const todayStr = ukTime.toLocaleDateString('en-GB')
+    const todayStr = now.toLocaleDateString('en-GB',{timeZone:'Europe/London'})
     const lastSent = localStorage.getItem('kjc_pnl_notif_date')
     if(lastSent === todayStr) return  // already sent today
     // Get today's closed trades
@@ -1380,6 +1387,11 @@ async function loadLatest(){
   try{
     const{data}=await sb.from('scans').select('*').order('created_at',{ascending:false}).limit(1).single()
     if(!data)return
+    // Skip full re-render if this is the same scan we already rendered —
+    // prevents the 60s poll from resetting filters and replaying animations
+    const scanKey=(data.scan_date||'')+(data.scan_time||'')
+    if(window._lastRenderedScanKey===scanKey) return
+    window._lastRenderedScanKey=scanKey
     allEvents=(data.events||[]).map(sanitizeEvent)
     lastScanDate=data.scan_date||''
     if(data.market_summary){
@@ -1442,8 +1454,7 @@ function renderMasonry(events){
 function sanitizeText(text){
   if(!text)return''
   return text
-    .replace(/<cite[^>]*>.*?<\/cite>/gi,'')
-    .replace(/]*>.*?<\/antml:cite>/gi,'')
+    .replace(/<\/?[a-z]*:?cite[^>]*>/gi,'')
     .replace(/<[^>]+>/g,'')
     .replace(/\s+/g,' ')
     .trim()
@@ -1558,7 +1569,7 @@ async function runScan(){
     ? `\nCURRENT LIVE MARKET PRICES RIGHT NOW — you MUST anchor all entry, stop-loss, and take-profit levels to these exact prices: ${liveCtx}`
     : ''
 
-  const prompt=`You are a senior multi-asset macro analyst. Today is ${dateStr} at ${timeStr} UK time.${priceAnchor} Use maximum 3 web searches total — make them count. Search for breaking financial news. Cover: Trump posts on tariffs/trade/Fed, Forex Factory red events, geopolitical risks, central bank news, major equity/commodity/crypto moves. For each event, find the ACTUAL article on the source website and extract the REAL publication time printed on that page (e.g. "Published 09:42 BST" or "Jun 14, 2026 10:15am ET" — convert to UK time HH:MM). Do NOT use the current time or scan time for "time" — it must be the article's own published timestamp. IMPORTANT: only use pairs from this exact list for "pairs" and "setups": EUR/USD, GBP/USD, USD/JPY, USD/CHF, AUD/USD, USD/CAD, NZD/USD, EUR/GBP, GBP/JPY, XAU/USD, XAG/USD, BTC/USD. Do not suggest any other pairs (no USD/BRL, WTI, DXY, indices etc) — they have no live price feed. Return ONLY valid compact JSON, no markdown, no HTML tags, no citation tags, max 8 events, max 3 pairs per event: {"scan_time":"${timeStr}","scan_date":"${dateStr}","events":[{"id":"e1","type":"trump|geopolitical|central-bank|economic|equities|commodities|crypto","urgent":false,"impact":"HIGH|MEDIUM|LOW","source":"string","headline":"max 12 words","context":"one sentence only","time":"HH:MM (actual article publish time UK, NOT scan time)","pairs":[{"pair":"EUR/USD","direction":"bullish|bearish|neutral","strength":75,"analysis":"brief with one price level"}],"overall":"bullish|bearish|neutral|mixed","signal":"entry zone, target, stop"}],"urgent_alerts":["string"],"sentiment":{"USD":0,"EUR":0,"GBP":0,"JPY":0,"CHF":0,"AUD":0,"CAD":0,"Gold":0,"Oil":0,"BTC":0},"setups":[{"pair":"EUR/USD","direction":"long|short","entry":"1.0820","sl":"1.0815","tp":"1.0835","rr":"2.0","reason":"one sentence"}]. Setups must be SCALP trades only: tight stops 8-20 pips (or $8-20 for gold), targets 1.5:1 to 2.5:1 RR max, entry at or very near current price, no wide swing setups,"market_summary":"2 sentence brief"}`
+  const prompt=`You are a senior multi-asset macro analyst. Today is ${dateStr} at ${timeStr} UK time.${priceAnchor} Use maximum 3 web searches total — make them count. Search for breaking financial news. Cover: Trump posts on tariffs/trade/Fed, Forex Factory red events, geopolitical risks, central bank news, major equity/commodity/crypto moves. For each event, find the ACTUAL article on the source website and extract the REAL publication time printed on that page (e.g. "Published 09:42 BST" or "Jun 14, 2026 10:15am ET" — convert to UK time HH:MM). Do NOT use the current time or scan time for "time" — it must be the article's own published timestamp. IMPORTANT: only use pairs from this exact list for "pairs" and "setups": EUR/USD, GBP/USD, USD/JPY, USD/CHF, AUD/USD, USD/CAD, NZD/USD, EUR/GBP, GBP/JPY, XAU/USD, XAG/USD, BTC/USD. Do not suggest any other pairs (no USD/BRL, WTI, DXY, indices etc) — they have no live price feed. Return ONLY valid compact JSON, no markdown, no HTML tags, no citation tags, max 8 events, max 3 pairs per event: {"scan_time":"${timeStr}","scan_date":"${dateStr}","events":[{"id":"e1","type":"trump|geopolitical|central-bank|economic|equities|commodities|crypto","urgent":false,"impact":"HIGH|MEDIUM|LOW","source":"string","headline":"max 12 words","context":"one sentence only","time":"HH:MM (actual article publish time UK, NOT scan time)","pairs":[{"pair":"EUR/USD","direction":"bullish|bearish|neutral","strength":75,"analysis":"brief with one price level"}],"overall":"bullish|bearish|neutral|mixed","signal":"entry zone, target, stop"}],"urgent_alerts":["string"],"sentiment":{"USD":0,"EUR":0,"GBP":0,"JPY":0,"CHF":0,"AUD":0,"CAD":0,"Gold":0,"Oil":0,"BTC":0},"setups":[{"pair":"EUR/USD","direction":"long|short","entry":"1.0820","sl":"1.0815","tp":"1.0835","rr":"2.0","reason":"one sentence"}],"market_summary":"2 sentence brief"}. Setups must be SCALP trades only: tight stops 8-20 pips (or $8-20 for gold), targets 1.5:1 to 2.5:1 RR max, entry at or very near current price, no wide swing setups.`
 
   try{
     const res=await fetch('/api/analyze',{
@@ -1579,6 +1590,7 @@ async function runScan(){
     const result=JSON.parse(raw.slice(s,e+1))
     result.event_count=(result.events||[]).length
     lastScanDate=result.scan_date||''
+    window._lastRenderedScanKey=(result.scan_date||'')+(result.scan_time||'')
     await sb.from('scans').insert([result])
     allEvents=(result.events||[]).map(sanitizeEvent)
     if(result.market_summary){
@@ -2097,24 +2109,62 @@ function getExpiryLabel(scanTime){
 
 let _lastAutoOpenScanTime = localStorage.getItem('kjc_last_autoopen_scan') || null
 
+// ── Cross-tab safety: always re-read shared state before mutating ────────
+function syncOpenTradesFromStorage(){
+  try{
+    const stored = JSON.parse(localStorage.getItem('kjc_open_trades')||'[]')
+    openTrades = stored.map(t => ({...t, pair: normalizePair(t.pair)}))
+  }catch(e){}
+}
+window.addEventListener('storage', e => {
+  if(e.key === 'kjc_open_trades'){
+    syncOpenTradesFromStorage()
+    updateTradeFabBadge()
+    if(activeTab==='open') renderOpenTrades()
+  }
+  if(e.key === 'kjc_last_autoopen_scan') _lastAutoOpenScanTime = e.newValue
+  if(e.key === 'kjc_th_cache'){
+    try{ tradeHistory = dedupeTrades(JSON.parse(e.newValue||'[]')) }catch(err){}
+    if(activeTab==='history') renderHistory()
+  }
+})
+
+// How close (as a fraction of live price) the entry must be to count as fillable
+function entryTolerance(pair){
+  if(pair==='BTC/USD') return 0.02        // 2%
+  if(pair==='XAU/USD'||pair==='XAG/USD') return 0.01  // 1%
+  return 0.004                             // ~40 pips on EUR/USD
+}
+
 function renderTrades(setups,scanTime){
   window._lastSetups=setups
   window._lastScanTime=scanTime
   // Auto-open setups ONLY on a genuinely NEW scan — prevents the 60s refresh timer
-  // from re-opening pairs that were just closed (infinite open/close loop)
-  if(setups && setups.length && scanTime !== _lastAutoOpenScanTime){
+  // from re-opening pairs that were just closed (infinite open/close loop).
+  // Re-read the guard from localStorage so a second tab/device can't re-open the same scan.
+  _lastAutoOpenScanTime = localStorage.getItem('kjc_last_autoopen_scan') || _lastAutoOpenScanTime
+  const notExpired = getExpiryLabel(scanTime).label !== 'Expired'
+  if(setups && setups.length && scanTime !== _lastAutoOpenScanTime && notExpired){
+    syncOpenTradesFromStorage()  // merge with what other tabs/devices already opened
     let changed = false
     setups.forEach(s => {
       const t = parseSetup(s)
       const dir = (t.direction||'long').toLowerCase().includes('short') ? 'short' : 'long'
+      const pair = normalizePair(t.pair)
       // Skip if ANY trade for this pair already exists (regardless of direction)
-      if(openTrades.some(o => o.pair === t.pair)) return
+      if(openTrades.some(o => o.pair === pair)) return
       if(!t.entry || t.entry === '—') return
+      const entry = parseFloat(t.entry), sl = parseFloat(t.sl), tp = parseFloat(t.tp)
+      if(isNaN(entry) || isNaN(sl) || isNaN(tp)) return
+      // REALISTIC FILL GUARD — only simulate a fill if we have a live price and
+      // the entry is actually near the market. Prevents phantom positions at
+      // hallucinated/stale levels that instantly show huge P&L.
+      const cp = getCurrentPrice(pair)
+      if(!cp) return                                        // no live price — can't verify, don't fill
+      if(Math.abs(cp - entry) / cp > entryTolerance(pair)) return  // entry too far from market
       openTrades.push({
-        id: t.pair + '-' + Date.now() + '-' + Math.random().toString(36).slice(2,5),
-        pair: normalizePair(t.pair), dir,
-        entry: parseFloat(t.entry), sl: parseFloat(t.sl),
-        tp: parseFloat(t.tp), rr: t.rr,
+        id: pair + '-' + Date.now() + '-' + Math.random().toString(36).slice(2,5),
+        pair, dir, entry, sl, tp, rr: t.rr,
         openedAt: new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})
       })
       changed = true
@@ -2124,16 +2174,24 @@ function renderTrades(setups,scanTime){
       const cnt = openTrades.length
       const el = document.getElementById('tab-open')
       if(el) el.textContent = cnt ? 'Open Trades ('+cnt+')' : 'Open Trades'
+      updateTradeFabBadge()
     }
     _lastAutoOpenScanTime = scanTime
     localStorage.setItem('kjc_last_autoopen_scan', scanTime)
   }
   const tst=document.getElementById('tpScanTime'); if(tst) tst.textContent=scanTime?'Signal time: '+scanTime:''
-if(!setups||!setups.length){renderOpenTrades();return}
-const expiry=getExpiryLabel(scanTime)
-if(expiry.label==='Expired'){renderOpenTrades();return}
-const list=document.createElement('div')
-list.innerHTML=setups.map((s,i)=>{
+  const ideasEl=document.getElementById('ideasList')
+  if(!setups||!setups.length){
+    if(ideasEl) ideasEl.innerHTML='<div class="trade-empty"><span class="trade-empty-icon">💡</span>No trade ideas yet<br><span style="font-size:10px;opacity:0.6">Hit ⚡ Scan Now to generate setups</span></div>'
+    renderOpenTrades();return
+  }
+  const expiry=getExpiryLabel(scanTime)
+  if(expiry.label==='Expired'){
+    if(ideasEl) ideasEl.innerHTML='<div class="trade-empty"><span class="trade-empty-icon">⏱</span>Signals expired<br><span style="font-size:10px;opacity:0.6">Run a new scan for fresh setups</span></div>'
+    renderOpenTrades();return
+  }
+  if(!ideasEl){renderOpenTrades();return}
+  ideasEl.innerHTML=setups.map((s,i)=>{
     const t=parseSetup(s)
     const dir=(t.direction||'long').toLowerCase().includes('short')?'short':'long'
     const exp=getExpiryLabel(scanTime)
@@ -2171,6 +2229,7 @@ list.innerHTML=setups.map((s,i)=>{
       <div style="display:flex;gap:5px;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.06)">
         <button class="nc-btn" style="flex:1;justify-content:center" onclick="tradeAnalysis('${t.pair}','${dir}','${t.entry}','${t.sl}','${t.tp}','${t.rr}',this)">⚡ Analysis</button>
         <button class="nc-btn" style="flex:1;justify-content:center;color:var(--green);border-color:rgba(34,199,122,0.2)" onclick="openTrade('${t.pair}','${dir}','${t.entry}','${t.sl}','${t.tp}','${t.rr}')">→ Open</button>
+        <button class="nc-btn" style="justify-content:center" title="Copy levels" onclick="copyLevels('${t.pair}','${dir}','${t.entry}','${t.sl}','${t.tp}','${t.rr}',this)">📋</button>
       </div>
       <div class="trade-analysis-body" style="display:none"></div>
     </div>`
@@ -2186,21 +2245,24 @@ let calOpen = false
 let calFetching = false
 
 function toggleCalendar(){
-  calOpen = !calOpen
   const panel = document.getElementById('calPanel')
   const btn = document.getElementById('calBtn')
+  if(!panel || !btn) return  // calendar panel not present on this page
+  calOpen = !calOpen
   if(calOpen){
     panel.style.display = 'block'
     btn.style.background = 'var(--gold-d)'
     btn.style.borderColor = 'var(--border2)'
-    document.getElementById('calDate').textContent = new Date().toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'})
+    const cd = document.getElementById('calDate')
+    if(cd) cd.textContent = new Date().toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'})
     const cached = getCalCache()
     if(cached){
       // Instant render from cache
       renderCalendar(cached)
     } else if(calFetching){
       // Already fetching in background — show live status
-      document.getElementById('calBody').innerHTML =
+      const cb = document.getElementById('calBody')
+      if(cb) cb.innerHTML =
         '<div style="display:flex;align-items:center;gap:12px;padding:28px 18px;font-family:DM Mono,monospace;font-size:11px;color:rgba(212,168,67,0.45)">' +
         '<div style="width:14px;height:14px;border:2px solid rgba(212,168,67,0.15);border-top-color:var(--gold);border-radius:50%;animation:spin 0.7s linear infinite;flex-shrink:0"></div>' +
         'Fetching from Forex Factory...</div>'
@@ -2272,7 +2334,8 @@ async function fetchCalendar(){
   }catch(err){
     calFetching = false
     clearTimeout(lockTimer)
-    if(calOpen) document.getElementById('calBody').innerHTML =
+    const cb = document.getElementById('calBody')
+    if(calOpen && cb) cb.innerHTML =
       '<div style="padding:16px;font-family:DM Mono,monospace;font-size:11px;color:var(--red)">Failed to load Forex Factory calendar.</div>'
   }
 }
@@ -2363,6 +2426,23 @@ let tradeHistory = [] // loaded from Supabase
 let otcAnalysisCache = {}
 let currentUserId = null
 
+// ── Dedupe: same trade closed twice on different tabs/devices gets a new id,
+// so dedupe by CONTENT signature as well as id ─────────────────────────────
+function tradeSig(t){
+  return [t.pair, t.dir, t.entry, t.openedAt, t.closedAt, (t.pnl||0).toFixed(2)].join('|')
+}
+function dedupeTrades(arr){
+  const ids = new Set(), sigs = new Set()
+  return (arr||[]).filter(t => {
+    if(!t) return false
+    const sig = tradeSig(t)
+    if((t.id && ids.has(t.id)) || sigs.has(sig)) return false
+    if(t.id) ids.add(t.id)
+    sigs.add(sig)
+    return true
+  })
+}
+
 // ── Week helpers ─────────────────────────────────────────────────────────
 function getWeekStartUTC(){
   const now = new Date()
@@ -2384,7 +2464,7 @@ async function loadTradeHistory(){
   // Load from localStorage immediately so history shows instantly
   try{
     const cached=localStorage.getItem('kjc_th_cache')
-    if(cached) tradeHistory=JSON.parse(cached)
+    if(cached) tradeHistory=dedupeTrades(JSON.parse(cached))
   }catch(e){}
   if(!currentUserId) return
   try{
@@ -2395,18 +2475,13 @@ async function loadTradeHistory(){
       .gte('created_at',ws)
       .order('created_at',{ascending:false})
     if(error) throw error
-    const seen = new Set()
-    tradeHistory = (data||[]).map(r=>({
+    tradeHistory = dedupeTrades((data||[]).map(r=>({
       id:r.id, pair:normalizePair(r.pair), dir:r.dir,
       entry:r.entry, sl:r.sl, tp:r.tp,
       closePrice:r.close_price, pnl:r.pnl,
       outcome:r.outcome, openedAt:r.opened_at,
       closedAt:r.closed_at, date:r.trade_date
-    })).filter(r => {
-      if(seen.has(r.id)) return false
-      seen.add(r.id)
-      return true
-    })
+    })))
     // Cache to localStorage so it persists if Supabase is slow
     localStorage.setItem('kjc_th_cache', JSON.stringify(tradeHistory))
     const th=document.getElementById('tab-history')
@@ -2488,19 +2563,32 @@ function updateTradeFabBadge(){
 }
 function switchTab(tab){
   activeTab = tab
+  const il=document.getElementById('ideasList')
   const ol=document.getElementById('openTradeList')
   const hl=document.getElementById('historyList')
+  const ti=document.getElementById('tab-ideas')
   const to=document.getElementById('tab-open')
   const th=document.getElementById('tab-history')
+  if(il) il.style.display=tab==='ideas'?'block':'none'
   if(ol) ol.style.display=tab==='open'?'block':'none'
   if(hl) hl.style.display=tab==='history'?'block':'none'
+  if(ti) ti.className='tp-tab'+(tab==='ideas'?' on':'')
   if(to) to.className='tp-tab'+(tab==='open'?' on':'')
   if(th) th.className='tp-tab'+(tab==='history'?' on':'')
+  if(tab==='ideas'&&window._lastSetups) renderTrades(window._lastSetups, window._lastScanTime)
   if(tab==='open') renderOpenTrades()
   if(tab==='history') renderHistory()
 }
 
+function copyLevels(pair,dir,entry,sl,tp,rr,btn){
+  const text=pair+' '+dir.toUpperCase()+'\nEntry: '+entry+'\nSL: '+sl+'\nTP: '+tp+'\nRR: '+rr
+  navigator.clipboard.writeText(text).then(()=>{
+    if(btn){const old=btn.textContent;btn.textContent='✓';setTimeout(()=>btn.textContent=old,1200)}
+  }).catch(()=>{showToast('Copy failed — clipboard unavailable')})
+}
+
 function openTrade(pair,dir,entry,sl,tp,rr){
+  syncOpenTradesFromStorage()
   const normPair = normalizePair(pair)
   // Prevent duplicate open trades for same pair
   if(openTrades.find(t=>t.pair===normPair)){
@@ -2522,6 +2610,7 @@ function closeOpenTrade(id, outcome){
   _closingIds.add(id)
   setTimeout(() => _closingIds.delete(id), 3000)
 
+  syncOpenTradesFromStorage()  // another tab may have already closed this trade
   const t = openTrades.find(t=>t.id===id)
   if(!t) return  // already closed or not found
   // Remove from openTrades FIRST to prevent double-close on rapid clicks
@@ -2531,11 +2620,14 @@ function closeOpenTrade(id, outcome){
   const tabOpen = document.getElementById('tab-open')
   if(tabOpen) tabOpen.textContent = cnt ? 'Open Trades ('+cnt+')' : 'Open Trades'
 
-  // Guard: never add the same trade to history twice
+  // Guard: never add the same trade to history twice (id OR identical content)
   if(tradeHistory.find(x=>x.id===id)){ renderOpenTrades(); return }
 
   const cp = getCurrentPrice(t.pair)
-  const pnlUsd = cp ? (calcRealPnl(t.pair, t.dir, t.entry, cp) || 0) : 0
+  // Corruption guard — if entry is wildly off from live price the position was
+  // never a realistic fill; close it flat instead of booking fantasy P&L
+  const corrupted = cp && t.entry && Math.abs(cp - t.entry) > Math.max(Math.abs(t.entry), Math.abs(cp), 1) * 0.5
+  const pnlUsd = (cp && !corrupted) ? (calcRealPnl(t.pair, t.dir, t.entry, cp) || 0) : 0
   const closedTrade = {
     id, pair: normalizePair(t.pair), dir:t.dir, entry:t.entry, sl:t.sl, tp:t.tp,
     closePrice: cp || t.entry,
@@ -2616,6 +2708,15 @@ function calcRealPnl(pair, dir, entry, currentPrice){
   if(p==='BTC/USD') return priceDiff * 0.01     // 0.01 BTC
   if(p.endsWith('/USD')) return priceDiff * 10000
   if(p.startsWith('USD/')) return (priceDiff / currentPrice) * 10000
+  // Cross pairs — P&L accrues in the quote currency, convert to USD
+  if(p.endsWith('/JPY')){
+    const usdJpy = livePrices['USD/JPY']?.price
+    return usdJpy ? (priceDiff * 10000) / usdJpy : null   // JPY P&L → USD
+  }
+  if(p==='EUR/GBP'){
+    const gbpUsd = livePrices['GBP/USD']?.price
+    return gbpUsd ? priceDiff * 10000 * gbpUsd : null     // GBP P&L → USD
+  }
   return priceDiff * 10000
 }
 
@@ -2626,6 +2727,7 @@ function checkOpenTradeExits(){
   _exitDebounce = setTimeout(_doCheckOpenTradeExits, 1000)
 }
 function _doCheckOpenTradeExits(){
+  syncOpenTradesFromStorage()  // never act on a stale in-memory copy from another tab's writes
   if(!openTrades.length) return
   let changed = false
   openTrades = openTrades.filter(t => {
@@ -2635,7 +2737,28 @@ function _doCheckOpenTradeExits(){
     // (e.g. corrupted data), don't auto-close. Prevents runaway fake P&L loops.
     if(!t.entry || !t.sl || !t.tp || isNaN(t.entry) || isNaN(t.sl) || isNaN(t.tp)) return true
     const refScale = Math.max(Math.abs(t.entry), Math.abs(cp), 1)
-    if(Math.abs(cp - t.entry) > refScale * 0.5) return true  // entry/price mismatch > 50% — corrupted, skip
+    if(Math.abs(cp - t.entry) > refScale * 0.5){
+      // Entry wildly mismatched vs live price — corrupted/phantom position.
+      // Don't book fantasy P&L. After 10 consecutive mismatched checks (~10s+),
+      // close it FLAT as void so it stops haunting the open trades list.
+      t._mm = (t._mm||0) + 1
+      if(t._mm < 10) return true
+      changed = true
+      const voided = {
+        id:t.id, pair:normalizePair(t.pair), dir:t.dir, entry:t.entry, sl:t.sl, tp:t.tp,
+        closePrice:t.entry, pnl:0, outcome:'void',
+        openedAt:t.openedAt,
+        closedAt:new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}),
+        date:new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short'})
+      }
+      if(!tradeHistory.find(x => x.id === t.id || tradeSig(x) === tradeSig(voided))){
+        tradeHistory.unshift(voided)
+        saveTradeToSupabase(voided)
+      }
+      showToast('⚪ Voided ' + t.pair + ' — entry was never near market price')
+      return false
+    }
+    t._mm = 0
     const isLong = t.dir === 'long'
     const hitTP = isLong ? cp >= t.tp : cp <= t.tp
     const hitSL = isLong ? cp <= t.sl : cp >= t.sl
@@ -2651,7 +2774,7 @@ function _doCheckOpenTradeExits(){
         date:new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short'})
       }
       // Guard: never add the same trade to history twice (prevents double-close on rapid price ticks)
-      if(tradeHistory.find(x => x.id === t.id)) return false
+      if(tradeHistory.find(x => x.id === t.id || tradeSig(x) === tradeSig(closedTrade))) return false
       tradeHistory.unshift(closedTrade)
       saveTradeToSupabase(closedTrade)
       saveTradeToAirtable(closedTrade)
@@ -2674,6 +2797,47 @@ function _doCheckOpenTradeExits(){
   }
 }
 
+async function clearWeekHistory(){
+  const n = tradeHistory.length
+  if(!n){ showToast('History is already empty'); return }
+  if(!confirm('Delete ALL ' + n + " trades from this week's history?\n\nThis also deletes them from the database and cannot be undone.")) return
+  if(!confirm('Are you sure? Final confirmation.')) return
+  try{
+    if(currentUserId){
+      const{error}=await sb.from('trade_history').delete().eq('user_id',currentUserId).gte('created_at',getWeekStartUTC())
+      if(error) throw error
+    }
+    tradeHistory=[]
+    localStorage.removeItem('kjc_th_cache')
+    const th=document.getElementById('tab-history'); if(th) th.textContent='History'
+    renderHistory()
+    showToast('🗑 Week history cleared ('+n+' trades deleted)')
+  }catch(e){ showToast('Clear failed: '+e.message) }
+}
+
+function buildEquitySparkline(trades){
+  // trades newest-first → build cumulative P&L oldest-first
+  if(!trades || trades.length < 2) return ''
+  const pts=[0]
+  ;[...trades].reverse().forEach(t=>pts.push(pts[pts.length-1]+(t.pnl||0)))
+  const W=240,H=44,PAD=3
+  const min=Math.min(...pts),max=Math.max(...pts),range=(max-min)||1
+  const x=i=>PAD+(i/(pts.length-1))*(W-PAD*2)
+  const y=v=>H-PAD-((v-min)/range)*(H-PAD*2)
+  const path=pts.map((v,i)=>(i?'L':'M')+x(i).toFixed(1)+','+y(v).toFixed(1)).join(' ')
+  const up=pts[pts.length-1]>=0
+  const col=up?'#26d9a1':'#e05252'
+  const zeroY=y(0)
+  return `<div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.05)">
+    <div style="font-family:'DM Mono',monospace;font-size:8px;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.2);margin-bottom:4px">Equity Curve</div>
+    <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;display:block" preserveAspectRatio="none">
+      ${(min<0&&max>0)?`<line x1="0" y1="${zeroY.toFixed(1)}" x2="${W}" y2="${zeroY.toFixed(1)}" stroke="rgba(255,255,255,0.08)" stroke-width="1" stroke-dasharray="3,3"/>`:''}
+      <path d="${path}" fill="none" stroke="${col}" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+      <circle cx="${x(pts.length-1).toFixed(1)}" cy="${y(pts[pts.length-1]).toFixed(1)}" r="2.5" fill="${col}"/>
+    </svg>
+  </div>`
+}
+
 function renderHistory(){
   const list = document.getElementById('historyList')
   if(!list) return
@@ -2681,13 +2845,12 @@ function renderHistory(){
     list.innerHTML='<div class="trade-empty"><span class="trade-empty-icon">📋</span>No closed trades yet</div>'
     return
   }
-  // Deduplicate by id before rendering
-  const seen = new Set()
-  const uniqueHistory = tradeHistory.filter(t=>{ if(seen.has(t.id)) return false; seen.add(t.id); return true })
-  tradeHistory = uniqueHistory
-  const weekPnl = tradeHistory.reduce((sum,t)=>sum+(t.pnl||0),0)
-  const wins = tradeHistory.filter(t=>t.outcome==='win').length
-  const losses = tradeHistory.filter(t=>t.outcome==='loss').length
+  // Deduplicate by id AND content signature before rendering
+  tradeHistory = dedupeTrades(tradeHistory)
+  const scored = tradeHistory.filter(t=>t.outcome!=='void')
+  const weekPnl = scored.reduce((sum,t)=>sum+(t.pnl||0),0)
+  const wins = scored.filter(t=>t.outcome==='win').length
+  const losses = scored.filter(t=>t.outcome==='loss').length
   const total = wins+losses
   const winRate = total>0?Math.round((wins/total)*100):0
   const pnlColor = weekPnl>=0?'var(--green)':'var(--red)'
@@ -2695,7 +2858,10 @@ function renderHistory(){
     <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:12px 14px;margin-bottom:12px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
         <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:rgba(212,168,67,0.4)">This Week</div>
-        <button onclick="showArchivesModal()" style="font-family:'DM Mono',monospace;font-size:8px;color:rgba(212,168,67,0.5);background:rgba(212,168,67,0.06);border:1px solid rgba(212,168,67,0.15);padding:3px 8px;border-radius:4px;cursor:pointer;letter-spacing:0.06em;text-transform:uppercase">📁 Archives</button>
+        <div style="display:flex;gap:5px">
+          <button onclick="showArchivesModal()" style="font-family:'DM Mono',monospace;font-size:8px;color:rgba(212,168,67,0.5);background:rgba(212,168,67,0.06);border:1px solid rgba(212,168,67,0.15);padding:3px 8px;border-radius:4px;cursor:pointer;letter-spacing:0.06em;text-transform:uppercase">📁 Archives</button>
+          <button onclick="clearWeekHistory()" style="font-family:'DM Mono',monospace;font-size:8px;color:rgba(240,68,68,0.6);background:rgba(240,68,68,0.05);border:1px solid rgba(240,68,68,0.15);padding:3px 8px;border-radius:4px;cursor:pointer;letter-spacing:0.06em;text-transform:uppercase">🗑 Clear</button>
+        </div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
         <div style="text-align:center">
@@ -2711,14 +2877,16 @@ function renderHistory(){
           <div style="font-family:'DM Mono',monospace;font-size:14px;font-weight:700;color:rgba(255,255,255,0.6)">${wins}<span style="color:rgba(255,255,255,0.2)"> / </span>${total}</div>
         </div>
       </div>
+      ${buildEquitySparkline(scored)}
     </div>
     ${tradeHistory.map(t=>{
-      const pnlColor=t.pnl>=0?'var(--green)':'var(--red)'
-      const icon=t.outcome==='win'?'✅':'🛑'
-      return`<div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-left:3px solid ${t.pnl>=0?'var(--green)':'var(--red)'};border-radius:8px;padding:10px 12px;margin-bottom:8px">
+      const pnl=t.pnl||0
+      const pnlColor=pnl>=0?'var(--green)':'var(--red)'
+      const icon=t.outcome==='win'?'✅':t.outcome==='void'?'⚪':'🛑'
+      return`<div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-left:3px solid ${pnl>=0?'var(--green)':'var(--red)'};border-radius:8px;padding:10px 12px;margin-bottom:8px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
           <span style="font-family:'DM Mono',monospace;font-size:12px;font-weight:600;color:var(--white)">${t.pair}</span>
-          <span style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:${pnlColor}">${t.pnl>=0?'+':''}$${Math.abs(t.pnl).toFixed(2)}</span>
+          <span style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:${pnlColor}">${pnl>=0?'+':''}$${Math.abs(pnl).toFixed(2)}</span>
         </div>
         <div style="display:flex;justify-content:space-between">
           <span style="font-family:'DM Mono',monospace;font-size:9px;color:rgba(255,255,255,0.25)">${t.dir.toUpperCase()} · ${t.date} · ${t.closedAt}</span>
@@ -2832,6 +3000,21 @@ async function showArchivesModal(){
 }
 
 async function doSignOut(){await sb.auth.signOut();window.location.replace('/login.html')}
+
+// ── Modal UX: Escape key + click-outside closes any open modal ───────────
+function closeAllModals(){
+  document.querySelectorAll('.modal-overlay.open').forEach(m=>m.classList.remove('open'))
+  const sh=document.getElementById('scanHistModal'); if(sh) sh.classList.remove('open')
+  const ta=document.getElementById('tradeAnalysisModal'); if(ta) ta.style.display='none'
+  const ar=document.getElementById('archivesModal'); if(ar) ar.remove()
+}
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeAllModals() })
+document.addEventListener('click', e=>{
+  // Only when the dimmed backdrop itself is clicked, not the panel inside it
+  if(e.target.classList && (e.target.classList.contains('modal-overlay') || ['scanHistModal','tradeAnalysisModal','archivesModal'].includes(e.target.id))){
+    closeAllModals()
+  }
+})
 
 init()
 </script>
