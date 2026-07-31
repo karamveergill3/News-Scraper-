@@ -89,7 +89,7 @@ module.exports = async function handler(req, res) {
         await fetch('https://ntfy.sh/KJC', {
           method: 'POST',
           headers: {
-            'Title': 'KJC Capital - ' + urgentEvents.length + ' HIGH Impact',
+            'Title': 'MarketIntel - ' + urgentEvents.length + ' HIGH Impact',
             'Tags': 'warning',
             'Priority': '4',
             'Click': 'https://news-scraper-five.vercel.app/index.html'

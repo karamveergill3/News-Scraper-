@@ -256,7 +256,7 @@ async function main() {
 
   // Step 3 — Full analysis with Sonnet + web search
   console.log('\n🤖 Step 3: Running full market analysis with web search...');
-  const prompt = `You are a senior multi-asset macro analyst for KJC Capital.
+  const prompt = `You are a senior multi-asset macro analyst.
 Today is ${dateStr} at ${timeStr} UK time.
 
 TRUMP TRUTH SOCIAL POSTS — MARKET RELEVANT ONLY (pre-filtered):
